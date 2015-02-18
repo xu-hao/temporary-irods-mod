@@ -148,6 +148,8 @@ LDADD += -lrt
 endif
 
 SVR_RE_OBJS =	\
+		$(svrReObjDir)/irods_re_plugin.o \
+		$(svrReObjDir)/irods_operation_rule_execution_manager.o \
 		$(svrReObjDir)/extractAvuMS.o \
 		$(svrReObjDir)/genQueryMS.o \
 		$(svrReObjDir)/icatAdminMS.o \
@@ -186,8 +188,7 @@ SVR_RE_OBJS =	\
 		$(svrReObjDir)/xmsgMS.o \
 		$(svrReObjDir)/testMS.o \
 		$(svrReObjDir)/configuration.o \
-		$(svrReObjDir)/irods_ms_plugin.o \
-		$(svrReObjDir)/irods_operation_rule_execution_manager.o
+		$(svrReObjDir)/irods_ms_plugin.o
 
 INCLUDES +=	-I$(svrReIncDir)
 SERVER_BINS +=	$(serverBinDir)/irodsReServer
@@ -216,8 +217,8 @@ endif
 
 
 # All objects (except tests)
-OBJS =		$(SVR_CORE_OBJS) $(SVR_DRIVERS_OBJS) $(SVR_API_OBJS) \
-		$(SVR_ICAT_OBJS) $(SVR_RE_OBJS) $(SVR_DBR_OBJS)
+OBJS =		$(SVR_RE_OBJS) $(SVR_CORE_OBJS) $(SVR_DRIVERS_OBJS) $(SVR_API_OBJS) \
+		$(SVR_ICAT_OBJS) $(SVR_DBR_OBJS)
 
 
 # Compilation and link flags

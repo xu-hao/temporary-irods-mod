@@ -44,13 +44,17 @@
 // irods includes
 #include "reGlobalsExtern.hpp"
 #include "dataObjInpOut.h"
+#include "irods_re_plugin.hpp"
 
 #include <iostream>
+irods::error add_global_re_params_to_kvp_for_dynpep( KeyValPair & );
 
 namespace irods {
-// =-=-=-=-=-=-=-
-// const signifying failure of operation call for post dynPEP
-    static std::string OP_FAILED( "OPERATION_FAILED" );
+    // we need these for separating server and client dependencies
+    enum operation_wrapper_class {
+        OP_SERVER,
+        OP_CLIENT
+    };
 
 // =-=-=-=-=-=-=-
     /**
@@ -58,9 +62,10 @@ namespace irods {
      * \brief
      *
      **/
-    class operation_wrapper {
-        public:
-            // =-=-=-=-=-=-=-
+    
+    class operation_wrapper final {
+    public:
+        // =-=-=-=-=-=-=-
             /// @brief constructors
             operation_wrapper( );
             operation_wrapper(
@@ -70,10 +75,6 @@ namespace irods {
                 plugin_operation );     // fcn ptr to loaded operation
 
             // =-=-=-=-=-=-=-
-            /// @brief destructor
-            virtual ~operation_wrapper();
-
-            // =-=-=-=-=-=-=-
             /// @brief copy constructor - necessary for stl containers
             operation_wrapper( const operation_wrapper& _rhs );
 
@@ -81,8 +82,30 @@ namespace irods {
             /// @brief assignment operator - necessary for stl containers
             operation_wrapper& operator=( const operation_wrapper& _rhs );
 
-           template< typename... T1 >
-            error call(
+            // the origin design has this function call an oper_rule_exec_mgr_base which has a virtual method
+            // the server subclasses the base class and implement the virtual method using server side data structures
+            // that limits the use of template method in oper_rule_exec_mgr_base because c++ doesn't support virtual function template
+            // in turn that limits the arguments to pre and post rules, unless we put them in boost any here
+            // the solution is to test on whether key server data structure which the server-side version depends on exists
+            // the data structure chosen here is ruleExecInfo_t, but others will suffice too
+            
+            template< bool cond, typename T, typename... T1 >
+            using resolve = typename std::tuple_element<0, typename std::enable_if<cond, std::tuple<T, T1...> >::type>::type;
+            
+            template< typename... T1 >
+            resolve<!std::is_class<ruleExecInfo_t>::value, error, T1...> call(
+                plugin_context& _ctx,
+                T1            ... _t1 ) {
+                if ( operation_ ) {
+                    error op_err = operation_( _ctx, _t1...);
+                    return op_err;
+                } else {
+                    return ERROR( NULL_VALUE_ERR, "null resource operation." );
+                }
+            }
+            
+            template< typename... T1 >
+            resolve<std::is_class<ruleExecInfo_t>::value, error, T1...> call(
                 plugin_context& _ctx,
                 T1            ... _t1 ) {
                 if ( operation_ ) {
@@ -91,6 +114,13 @@ namespace irods {
                     keyValPair_t kvp;
                     bzero( &kvp, sizeof( kvp ) );
                     _ctx.fco()->get_re_vars( kvp );
+                    
+                    // =-=-=-=-=-=-=-
+                    // add additional global re params
+                    error err = add_global_re_params_to_kvp_for_dynpep( kvp );
+                    if( !err.ok() ) {
+                        return PASS( err );
+                    }
                     
                     ruleExecInfo_t rei;
                     memset( ( char* )&rei, 0, sizeof( ruleExecInfo_t ) );
@@ -118,8 +148,7 @@ namespace irods {
 
             } // operator() - T1
 
-
-        private:
+        protected:
             /// =-=-=-=-=-=-=-
             /// @brief instance name used for calling rules
             std::string instance_name_;
@@ -130,8 +159,7 @@ namespace irods {
             /// @brief function pointer to actual operation
             plugin_operation operation_;
             ///
-
-    }; // class operation_wrapper
+    };
 
 }; // namespace irods
 

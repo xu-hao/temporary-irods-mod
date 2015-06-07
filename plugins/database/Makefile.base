@@ -20,8 +20,26 @@ CHL_OBJS=$(IRODSDIR)/server/icat/obj/icatHighLevelRoutines.o  \
          $(IRODSDIR)/server/core/obj/readServerConfig.o       \
          $(IRODSDIR)/lib/core/obj/irods_server_properties.o	  \
          $(IRODSDIR)/lib/core/obj/irods_plugin_base.o
+
+SVR_ICAT_OBJS_NO_RE =	\
+		$(IRODSDIR)/server/icat/obj/icatHighLevelRoutines_no_re.o
+
+CHL_OBJS_NO_RE=$(SVR_ICAT_OBJS_NO_RE)  \
+	     $(IRODSDIR)/server/core/obj/irods_database_factory.o \
+   	 	 $(IRODSDIR)/server/core/obj/irods_database_manager.o \
+   	 	 $(IRODSDIR)/server/core/obj/irods_database_object.o  \
+   	 	 $(IRODSDIR)/server/core/obj/irods_postgres_object.o  \
+   	 	 $(IRODSDIR)/server/core/obj/irods_mysql_object.o     \
+   	 	 $(IRODSDIR)/server/core/obj/irods_oracle_object.o    \
+         $(IRODSDIR)/server/core/obj/readServerConfig.o       \
+         $(IRODSDIR)/lib/core/obj/irods_server_properties.o	  \
+         $(IRODSDIR)/lib/core/obj/irods_plugin_base.o
+
 DB_PLUGIN_SRC = $(IRODSDIR)/server/core/src/irods_database_plugin.cpp
-DB_PLUGIN_OBJ_WITH_NO_RE = $(OBJDIR)/irods_database_plugin_with_no_re.o 
+DB_PLUGIN_OBJ_WITH_NO_RE = $(OBJDIR)/irods_database_plugin_with_no_re.o
+
+SVR_ICAT_OBJS_NO_RE_SRC =	\
+		$(IRODSDIR)/server/icat/src/icatHighLevelRoutines.cpp
 
 GCC = g++ -Wno-write-strings -DRODS_SERVER
 
@@ -68,23 +86,26 @@ clean:
 $(FULLTARGET): $(OBJS)
 	@echo "Building Database Plugins"
 	@-mkdir -p $(SODIR) > /dev/null 2>&1
-	$(V_at)$(GCC) $(INC) -D$(OS_platform) $(CFLAGS) $(LDRFLAGS) -fPIC $(LDADD)  -shared -o $(FULLTARGET) $(OBJS) $(EXTRALIBS) $(EXTRA_LDRFLAGS) $(DBMS_LIB)
+	@$(GCC) -DENABLE_RE -std=c++11 $(INC) -D$(OS_platform) $(CFLAGS) $(LDRFLAGS) -fPIC $(LDADD)  -shared -o $(FULLTARGET) $(OBJS) $(EXTRALIBS) $(EXTRA_LDRFLAGS) $(DBMS_LIB)
+
+$(SVR_ICAT_OBJS_NO_RE): $(SVR_ICAT_OBJS_NO_RE_SRC)
+	@$(GCC) -std=c++11 $(INC) $(EXTRA_CFLAGS) -D$(OS_platform) -fPIC -c -g -o $@ $<
 
 $(OBJDIR)/%.o: ../src/%.cpp
-	$(V_at)$(GCC) $(INC) $(EXTRA_CFLAGS) -D$(OS_platform) -fPIC -c -g -o $@ $<
+	@$(GCC) -DENABLE_RE -std=c++11 $(INC) $(EXTRA_CFLAGS) -D$(OS_platform) -fPIC -c -g -o $@ $<
 
 $(DB_PLUGIN_OBJ_WITH_NO_RE): $(DB_PLUGIN_SRC)
 	@echo "Compile Without RE `basename $@`..."
-	$(V_at)$(CC) -DLINK_NO_OP_RE_MGR $(EXTRA_CFLAGS) $(INC) -c $(DB_PLUGIN_SRC) -o $(DB_PLUGIN_OBJ_WITH_NO_RE)
+	@$(CC) -std=c++11 -DLINK_NO_OP_RE_MGR $(EXTRA_CFLAGS) $(INC) -c $(DB_PLUGIN_SRC) -o $(DB_PLUGIN_OBJ_WITH_NO_RE)
 
 $(SODIR)/test_cll: $(OBJDIR)/test_cll.o $(CLL_OBJS) $(LIBRARY) $(BOOST_LIBS)
 	@echo "Link server test `basename $@`..."
 	$(V_at)$(LDR) -o $@ $^ $(LIBRARY) $(LDFLAGS) $(BOOST_LIBS) $(DBMS_LIB) $(LDRFLAGS) $(EXTRA_LDRFLAGS) -fPIC -rdynamic -ldl -lpthread -lssl -lcrypto
 
-$(SODIR)/test_genq: $(OBJDIR)/test_genq.o  $(DB_PLUGIN_OBJ_WITH_NO_RE) $(CLL_OBJS) $(GENQ_OBJS) $(CHL_OBJS) $(LIBRARY) $(BOOST_LIBS)
+$(SODIR)/test_genq: $(OBJDIR)/test_genq.o  $(DB_PLUGIN_OBJ_WITH_NO_RE) $(CLL_OBJS) $(GENQ_OBJS) $(CHL_OBJS_NO_RE) $(LIBRARY) $(BOOST_LIBS)
 	@echo "Link server test `basename $@`..."
 	$(V_at)$(LDR) -o $@ $^ $(LIBRARY) $(LDFLAGS) $(DBMS_LIB) $(LDRFLAGS) $(EXTRA_LDRFLAGS) -fPIC -rdynamic -ldl -lpthread -lssl -lcrypto
 
-$(SODIR)/test_genu: $(OBJDIR)/test_genu.o $(GENU_OBJS) $(CHL_OBJS) $(CLL_OBJS) $(DB_PLUGIN_OBJ_WITH_NO_RE) $(LIBRARY) $(BOOST_LIBS)
+$(SODIR)/test_genu: $(OBJDIR)/test_genu.o $(GENU_OBJS) $(CHL_OBJS_NO_RE) $(CLL_OBJS) $(DB_PLUGIN_OBJ_WITH_NO_RE) $(LIBRARY) $(BOOST_LIBS)
 	@echo "Link server test `basename $@`..."
 	$(V_at)$(LDR) -o $@ $^ $(LIBRARY) $(LDFLAGS) $(DBMS_LIB) $(LDRFLAGS) $(EXTRA_LDRFLAGS) -fPIC -rdynamic -ldl -lpthread -lssl -lcrypto

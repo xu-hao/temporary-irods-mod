@@ -14,7 +14,7 @@ MAKEFLAGS += --no-print-directory
 CFLAGS += -Wno-write-strings
 
 CFLAGS += -L$(IRODS_BUILD_DIR)
-
+CFLAGS += -std=c++11
 EXTRAINCS += -I$(IRODSDIR)/lib/core/include/ -I$(IRODSDIR)/lib/api/include/ -I$(IRODSDIR)/lib/hasher/include \
 						-I$(IRODSDIR)/server/core/include/ -I$(IRODSDIR)/server/icat/include/ -I$(IRODSDIR)/server/re/include/ \
 						-I$(IRODSDIR)/server/drivers/include/ -I$(LIBARCHIVE_DIR)/libarchive/ -I$(BOOST_DIR) \

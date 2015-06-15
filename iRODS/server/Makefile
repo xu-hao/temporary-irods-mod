@@ -123,7 +123,7 @@ SVR_ICAT_OBJS =	\
 		$(svrIcatObjDir)/icatHighLevelRoutines.o
 
 SVR_ICAT_OBJS_NO_RE =	\
-		$(svrIcatObjDir)/icatHighLevelRoutines_no_re.o
+		$(svrIcatObjDir)/icatHighLevelRoutines_with_no_re.o
 
 SVR_ICAT_OBJS_NO_RE_SRC =	\
 		$(svrIcatSrcDir)/icatHighLevelRoutines.cpp
@@ -441,7 +441,7 @@ $(svrTestBinDir)/reTest: $(svrTestObjDir)/reTest.o $(OBJS) $(BOOST_LIBS) $(BOOST
 	$(V_at)$(LDR) -o $@ $^ $(LDFLAGS) $(BOOST_LIBS)
 
 # chl
-$(svrTestBinDir)/test_chl: db_plugin_with_no_re $(svrTestObjDir)/test_chl.o $(SVR_ICAT_OBJS) $(LIBRARY) $(BOOST_LIBS) $(DB_IFACE_OBJS)
+$(svrTestBinDir)/test_chl: db_plugin_with_no_re $(svrTestObjDir)/test_chl.o $(SVR_ICAT_OBJS_NO_RE) $(LIBRARY) $(BOOST_LIBS) $(DB_IFACE_OBJS)
 	@echo "Link server test `basename $@`..."
 	@$(LDR) -o $@ $(svrTestObjDir)/test_chl.o $(LIBRARY) $(SVR_ICAT_OBJS_NO_RE) $(DB_PLUGIN_OBJ_WITH_NO_RE) $(DB_IFACE_OBJS) $(BOOST_LIBS) $(LDFLAGS)
 

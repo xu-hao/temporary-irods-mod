@@ -215,27 +215,3 @@ extern "C" {
   }
   DEFINE_FACTORY
 }
-
-//
-// int main(int argc, char* argv[])
-//
-// {
-//     start();
-//     bool b;
-//     rule_exists(argv[1], b);
-//
-//     std::list<std::string> ps0;
-//     std::list<boost::any> ps;
-//     for(int i=2;i<argc;i++) {
-//       ps0.emplace_back(argv[i]);
-//       ps.emplace_back(&ps0.back());
-//     }
-//     if(b)
-//     exec_rule(argv[1],ps,dummy);
-//     for (auto itr = begin(ps0);itr!=end(ps0);++itr) {
-//       std::cout << *itr;
-//
-//     }
-//     stop();
-//     return 0;
-// }

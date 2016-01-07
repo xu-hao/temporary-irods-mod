@@ -213,5 +213,9 @@ extern "C" {
     }
 
   }
-  DEFINE_FACTORY
+
+  irods::pluggable_rule_engine<irods::default_re_ctx>* plugin_factory(const std::string& _inst_name, const std::string& _context) {
+    return new irods::pluggable_rule_engine<irods::default_re_ctx>( _inst_name , _context);
+  }
+
 }

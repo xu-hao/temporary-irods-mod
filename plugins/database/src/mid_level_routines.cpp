@@ -23,6 +23,7 @@
 
 #include <vector>
 #include <string>
+#include "Plugin_stub.h"
 
 /* Size of the R_OBJT_AUDIT comment field;must match table column definition */
 #define AUDIT_COMMENT_MAX_SIZE       1000
@@ -609,12 +610,7 @@ int cmlCheckNameToken( const char *nameSpace, const char *tokenName, icatSession
     if ( logSQL_CML != 0 ) {
         rodsLog( LOG_SQL, "cmlCheckNameToken SQL 1 " );
     }
-    std::vector<std::string> bindVars;
-    bindVars.push_back( nameSpace );
-    bindVars.push_back( tokenName );
-    status = cmlGetIntegerValueFromSql(
-                 "select token_id from  R_TOKN_MAIN where token_namespace=? and token_name=?",
-                 &iVal, bindVars, icss );
+    status = hs_get_int_token_id(icss, (void *) nameSpace, (void *) tokenName, &iVal);
     return status;
 
 }
@@ -808,14 +804,7 @@ cmlCheckResc( const char *rescName, const char *userName, const char *userZone, 
         rodsLog( LOG_SQL, "cmlCheckResc SQL 1 " );
     }
 
-    std::vector<std::string> bindVars;
-    bindVars.push_back( rescName );
-    bindVars.push_back( userName );
-    bindVars.push_back( userZone );
-    bindVars.push_back( accessLevel );
-    status = cmlGetIntegerValueFromSql(
-                 "select resc_id from R_RESC_MAIN RM, R_OBJT_ACCESS OA, R_USER_GROUP UG, R_USER_MAIN UM, R_TOKN_MAIN TM where RM.resc_name=? and UM.user_name=? and UM.zone_name=? and UM.user_type_name!='rodsgroup' and UM.user_id = UG.user_id and OA.object_id = RM.resc_id and UG.group_user_id = OA.user_id and OA.access_type_id >= TM.token_id and  TM.token_namespace ='access_type' and TM.token_name = ?",
-                 &iVal, bindVars, icss );
+    status = hs_get_int_resc_id_by_access(&icss, (void *) rescName, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
     if ( status ) {
         /* There was an error, so do another sql to see which
            of the two likely cases is problem. */
@@ -824,11 +813,7 @@ cmlCheckResc( const char *rescName, const char *userName, const char *userZone, 
             rodsLog( LOG_SQL, "cmlCheckResc SQL 2 " );
         }
 
-        bindVars.clear();
-        bindVars.push_back( rescName );
-        status = cmlGetIntegerValueFromSql(
-                     "select resc_id from R_RESC_MAIN where resc_name=?",
-                     &iVal, bindVars, icss );
+        status = hs_get_int_resc_id(icss, rescName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_RESOURCE;
         }
@@ -854,14 +839,7 @@ cmlCheckDir( const char *dirName, const char *userName, const char *userZone, co
         rodsLog( LOG_SQL, "cmlCheckDir SQL 1 " );
     }
 
-    std::vector<std::string> bindVars;
-    bindVars.push_back( dirName );
-    bindVars.push_back( userName );
-    bindVars.push_back( userZone );
-    bindVars.push_back( accessLevel );
-    status = cmlGetIntegerValueFromSql(
-                 "select coll_id from R_COLL_MAIN CM, R_OBJT_ACCESS OA, R_USER_GROUP UG, R_USER_MAIN UM, R_TOKN_MAIN TM where CM.coll_name=? and UM.user_name=? and UM.zone_name=? and UM.user_type_name!='rodsgroup' and UM.user_id = UG.user_id and OA.object_id = CM.coll_id and UG.group_user_id = OA.user_id and OA.access_type_id >= TM.token_id and  TM.token_namespace ='access_type' and TM.token_name = ?",
-                 &iVal, bindVars, icss );
+    status = hs_get_int_coll_id_by_access(icss, dirName ,userName ,userZone ,accessLevel, &iVal);
     if ( status ) {
         /* There was an error, so do another sql to see which
            of the two likely cases is problem. */
@@ -870,11 +848,7 @@ cmlCheckDir( const char *dirName, const char *userName, const char *userZone, co
             rodsLog( LOG_SQL, "cmlCheckDir SQL 2 " );
         }
 
-        bindVars.clear();
-        bindVars.push_back( dirName );
-        status = cmlGetIntegerValueFromSql(
-                     "select coll_id from R_COLL_MAIN where coll_name=?",
-                     &iVal, bindVars, icss );
+        status = hs_get_int_coll_id(icss, dirName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_COLLECTION;
         }
@@ -899,15 +873,8 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
     int status;
     rodsLong_t iVal = 0;
 
-    int cValSize[2];
-    char *cVal[3];
-    char cValStr1[MAX_INTEGER_SIZE + 10];
-    char cValStr2[MAX_INTEGER_SIZE + 10];
-
-    cVal[0] = cValStr1;
-    cVal[1] = cValStr2;
-    cValSize[0] = MAX_INTEGER_SIZE;
-    cValSize[1] = MAX_INTEGER_SIZE;
+    int cValSize = MAX_INTEGER_SIZE;
+    char *cVal[(MAX_INTEGER_SIZE + 10) * 3];
 
     *inheritFlag = 0;
 
@@ -925,13 +892,8 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
         if ( logSQL_CML != 0 ) {
             rodsLog( LOG_SQL, "cmlCheckDirAndGetInheritFlag SQL 2 " );
         }
-        std::vector<std::string> bindVars;
-        bindVars.push_back( dirName );
-        bindVars.push_back( userName );
-        bindVars.push_back( userZone );
-        bindVars.push_back( accessLevel );
-        status = cmlGetOneRowFromSqlBV( "select coll_id, coll_inheritance from R_COLL_MAIN CM, R_OBJT_ACCESS OA, R_USER_GROUP UG, R_USER_MAIN UM, R_TOKN_MAIN TM where CM.coll_name=? and UM.user_name=? and UM.zone_name=? and UM.user_type_name!='rodsgroup' and UM.user_id = UG.user_id and OA.object_id = CM.coll_id and UG.group_user_id = OA.user_id and OA.access_type_id >= TM.token_id and  TM.token_namespace ='access_type' and TM.token_name = ?",
-                                        cVal, cValSize, 2, bindVars, icss );
+        status = hs_get_int_coll_id_and_inheritance_from_access(icss,dirName,userZone,userName,accessLevel,
+                                        cVal, cValSize, 2);
     }
     if ( status == 2 ) {
         if ( *cVal[0] == '\0' ) {
@@ -952,11 +914,7 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
             rodsLog( LOG_SQL, "cmlCheckDirAndGetInheritFlag SQL 3 " );
         }
 
-        std::vector<std::string> bindVars;
-        bindVars.push_back( dirName );
-        status = cmlGetIntegerValueFromSql(
-                     "select coll_id from R_COLL_MAIN where coll_name=?",
-                     &iVal, bindVars, icss );
+        status = hs_get_int_coll_id(icss, dirName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_COLLECTION;
         }
@@ -994,14 +952,7 @@ cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckDirId S-Q-L 1 " );
     }
 
-    std::vector<std::string> bindVars;
-    bindVars.push_back( userName );
-    bindVars.push_back( userZone );
-    bindVars.push_back( dirId );
-    bindVars.push_back( accessLevel );
-    status = cmlGetIntegerValueFromSql(
-                 "select object_id from R_OBJT_ACCESS OA, R_USER_GROUP UG, R_USER_MAIN UM, R_TOKN_MAIN TM where UM.user_name=? and UM.zone_name=? and UM.user_type_name!='rodsgroup' and UM.user_id = UG.user_id and OA.object_id = ? and UG.group_user_id = OA.user_id and OA.access_type_id >= TM.token_id and  TM.token_namespace ='access_type' and TM.token_name = ?",
-                 &iVal, bindVars, icss );
+    status = hs_get_int_coll_id_by_coll_id_and_access(icss, dirId, userZone, userName, accessLevel, &iVal);
     if ( status ) {
         /* There was an error, so do another sql to see which
            of the two likely cases is problem. */
@@ -1010,11 +961,7 @@ cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
             rodsLog( LOG_SQL, "cmlCheckDirId S-Q-L 2 " );
         }
 
-        std::vector<std::string> bindVars;
-        bindVars.push_back( dirId );
-        status = cmlGetIntegerValueFromSql(
-                     "select coll_id from R_COLL_MAIN where coll_id=?",
-                     &iVal, bindVars, icss );
+        status = hs_get_int_coll_id(      icss, dirId, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_COLLECTION;
         }
@@ -1037,13 +984,7 @@ cmlCheckDirOwn( const char *dirName, const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckDirOwn SQL 1 " );
     }
 
-    std::vector<std::string> bindVars;
-    bindVars.push_back( dirName );
-    bindVars.push_back( userName );
-    bindVars.push_back( userZone );
-    status = cmlGetIntegerValueFromSql(
-                 "select coll_id from R_COLL_MAIN where coll_name=? and coll_owner_name=? and coll_owner_zone=?",
-                 &iVal, bindVars, icss );
+    status = hs_get_coll_id_by_own(icss, dirName, userZone, userName,  &iVal);
     if ( status < 0 ) {
         return status;
     }
@@ -1067,15 +1008,7 @@ cmlCheckDataObjOnly( const char *dirName, const char *dataName,
         rodsLog( LOG_SQL, "cmlCheckDataObjOnly SQL 1 " );
     }
 
-    std::vector<std::string> bindVars;
-    bindVars.push_back( dataName );
-    bindVars.push_back( dirName );
-    bindVars.push_back( userName );
-    bindVars.push_back( userZone );
-    bindVars.push_back( accessLevel );
-    status = cmlGetIntegerValueFromSql(
-                 "select data_id from R_DATA_MAIN DM, R_OBJT_ACCESS OA, R_USER_GROUP UG, R_USER_MAIN UM, R_TOKN_MAIN TM, R_COLL_MAIN CM where DM.data_name=? and DM.coll_id=CM.coll_id and CM.coll_name=? and UM.user_name=? and UM.zone_name=? and UM.user_type_name!='rodsgroup' and UM.user_id = UG.user_id and OA.object_id = DM.data_id and UG.group_user_id = OA.user_id and OA.access_type_id >= TM.token_id and  TM.token_namespace ='access_type' and TM.token_name = ?",
-                 &iVal, bindVars, icss );
+    status = hs_get_int_data_id_by_access(icss,    dirName,dataName,userZone,userName,accessLevel, &iVal);
 
     if ( status ) {
         /* There was an error, so do another sql to see which
@@ -1084,12 +1017,7 @@ cmlCheckDataObjOnly( const char *dirName, const char *dataName,
             rodsLog( LOG_SQL, "cmlCheckDataObjOnly SQL 2 " );
         }
 
-        bindVars.clear();
-        bindVars.push_back( dataName );
-        bindVars.push_back( dirName );
-        status = cmlGetIntegerValueFromSql(
-                     "select data_id from R_DATA_MAIN DM, R_COLL_MAIN CM where DM.data_name=? and DM.coll_id=CM.coll_id and CM.coll_name=?",
-                     &iVal, bindVars, icss );
+        status = hs_get_int_data_id(  icss,      dirName,dataName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_FILE;
         }
@@ -1113,11 +1041,7 @@ cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userN
     if ( logSQL_CML != 0 ) {
         rodsLog( LOG_SQL, "cmlCheckDataObjOwn SQL 1 " );
     }
-    std::vector<std::string> bindVars;
-    bindVars.push_back( dirName );
-    status = cmlGetIntegerValueFromSql(
-                 "select coll_id from R_COLL_MAIN where coll_name=?",
-                 &iVal, bindVars, icss );
+    status = get_hs_int_coll_id(icss,dirName, &iVal);
     if ( status < 0 ) {
         return status;
     }
@@ -1127,14 +1051,7 @@ cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userN
     if ( logSQL_CML != 0 ) {
         rodsLog( LOG_SQL, "cmlCheckDataObjOwn SQL 2 " );
     }
-    bindVars.clear();
-    bindVars.push_back( dataName );
-    bindVars.push_back( collIdStr );
-    bindVars.push_back( userName );
-    bindVars.push_back( userZone );
-    status = cmlGetIntegerValueFromSql(
-                 "select data_id from R_DATA_MAIN where data_name=? and coll_id=? and data_owner_name=? and data_owner_zone=?",
-                 &iVal, bindVars, icss );
+    status = hs_get_int_data_id_by_own(icss,  collIdStr, dataName, userZone, userName, &iVal);
 
     if ( status ) {
         return status;
@@ -1153,12 +1070,7 @@ int cmlCheckUserInGroup( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckUserInGroup SQL 1 " );
     }
 
-    std::vector<std::string> bindVars;
-    bindVars.push_back( userName );
-    bindVars.push_back( userZone );
-    status = cmlGetStringValueFromSql(
-                 "select user_id from R_USER_MAIN where user_name=? and zone_name=? and user_type_name!='rodsgroup'",
-                 sVal, MAX_NAME_LEN, bindVars, icss );
+    status = hs_get_non_group_user_id(icss,userZone,userName,sVal, MAX_NAME_LEN);
     if ( status == CAT_NO_ROWS_FOUND ) {
         return CAT_INVALID_USER;
     }
@@ -1170,12 +1082,7 @@ int cmlCheckUserInGroup( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckUserInGroup SQL 2 " );
     }
 
-    bindVars.clear();
-    bindVars.push_back( sVal );
-    bindVars.push_back( groupName );
-    status = cmlGetIntegerValueFromSql(
-                 "select group_user_id from R_USER_GROUP where user_id=? and group_user_id = (select user_id from R_USER_MAIN where user_type_name='rodsgroup' and user_name=?)",
-                 &iVal, bindVars, icss );
+    status = hs_get_int_group_id_by_user(icss, sVal, groupName,&iVal);
     if ( status ) {
         return status;
     }
@@ -1579,16 +1486,8 @@ int cmlCheckDataObjId( const char *dataId, const char *userName,  const char *zo
         if ( logSQL_CML != 0 ) {
             rodsLog( LOG_SQL, "cmlCheckDataObjId SQL 1 " );
         }
-        std::vector<std::string> bindVars;
-        bindVars.push_back( dataId );
-        bindVars.push_back( userName );
-        bindVars.push_back( zoneName );
-        bindVars.push_back( accessLevel );
-        status = cmlGetIntegerValueFromSql(
-                     "select object_id from R_OBJT_ACCESS OA, R_DATA_MAIN DM, R_USER_GROUP UG, R_USER_MAIN UM, R_TOKN_MAIN TM where OA.object_id=? and UM.user_name=? and UM.zone_name=? and UM.user_type_name!='rodsgroup' and UM.user_id = UG.user_id and OA.object_id = DM.data_id and UG.group_user_id = OA.user_id and OA.access_type_id >= TM.token_id and  TM.token_namespace ='access_type' and TM.token_name = ?",
-                     &iVal,
-                     bindVars,
-                     icss );
+        status = hs_get_int_data_id_by_data_id_and_access(icss, dataId, zoneName, userName, accessLevel, &iVal
+                      );
         if ( iVal == 0 ) {
             return CAT_NO_ACCESS_PERMISSION;
         }
@@ -1614,12 +1513,7 @@ int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckGroupAdminAccess SQL 1 " );
     }
 
-    std::vector<std::string> bindVars;
-    bindVars.push_back( userName );
-    bindVars.push_back( userZone );
-    status = cmlGetStringValueFromSql(
-                 "select user_id from R_USER_MAIN where user_name=? and zone_name=? and user_type_name='groupadmin'",
-                 sVal, MAX_NAME_LEN, bindVars, icss );
+    status = hs_get_group_admin_user_id(icss, userZone, userName, sVal, MAX_NAME_LEN);
     if ( status == CAT_NO_ROWS_FOUND ) {
         return CAT_INSUFFICIENT_PRIVILEGE_LEVEL;
     }
@@ -1641,12 +1535,7 @@ int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckGroupAdminAccess SQL 2 " );
     }
 
-    bindVars.clear();
-    bindVars.push_back( sVal );
-    bindVars.push_back( groupName );
-    status = cmlGetIntegerValueFromSql(
-                 "select group_user_id from R_USER_GROUP where user_id=? and group_user_id = (select user_id from R_USER_MAIN where user_type_name='rodsgroup' and user_name=?)",
-                 &iVal, bindVars, icss );
+    status = hs_get_int_group_id_by_user(icss, sVal, groupName, &iVal);
     if ( status == CAT_NO_ROWS_FOUND ) {
         return CAT_INSUFFICIENT_PRIVILEGE_LEVEL;
     }
@@ -1664,11 +1553,7 @@ int cmlGetGroupMemberCount( const char *groupName, icatSessionStruct *icss ) {
 
     rodsLong_t iVal;
     int status;
-    std::vector<std::string> bindVars;
-    bindVars.push_back( groupName );
-    status = cmlGetIntegerValueFromSql(
-                 "select count(user_id) from r_user_group where  group_user_id != user_id and group_user_id in (select user_id from r_user_main where user_name=? and user_type_name='rodsgroup')",
-                 &iVal, bindVars, icss );
+    status = hs_get_group_member_count(icss, groupName, &iVal);
     if ( status == 0 ) {
         status = iVal;
     }

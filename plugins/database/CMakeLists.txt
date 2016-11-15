@@ -26,6 +26,11 @@ set(
   oracle
   )
 
+set(
+  GHC_INSTALL_DIR
+  ~/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/
+  )
+  
 foreach(PLUGIN ${IRODS_DATABASE_PLUGINS})
   string(TOUPPER ${PLUGIN} PLUGIN_UPPERCASE)
 
@@ -62,6 +67,7 @@ foreach(PLUGIN ${IRODS_DATABASE_PLUGINS})
     ${CMAKE_SOURCE_DIR}/plugins/database/include
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
     ${IRODS_EXTERNALS_FULLPATH_JANSSON}/include
+    ${GHC_INSTALL_DIR}/include
     )
 
   target_link_libraries(

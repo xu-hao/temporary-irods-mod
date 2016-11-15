@@ -25,20 +25,13 @@
 #include <string>
 #include "Plugin_stub.h"
 
-/* Size of the R_OBJT_AUDIT comment field;must match table column definition */
-#define AUDIT_COMMENT_MAX_SIZE       1000
 
 extern int logSQL_CML;
-extern int auditEnabled;  /* Set this to 2 and rebuild to enable iRODS
-                        auditing (non-zero means auditing but 1 will
-                        allow cmlDebug to modify it, so 2 means
-                        permanently enabled).  We plan to change this
-                        sometime to have better control. */
 
 int checkObjIdByTicket( const char *dataId, const char *accessLevel,
                         const char *ticketStr, const char *ticketHost,
                         const char *userName, const char *userZone,
-                        icatSessionStruct *icss );
+                        void *icss );
 
 /*
   Convert the intput arrays to a string and add bind variables
@@ -71,538 +64,13 @@ char *cmlArraysToStrWithBind( char*         str,
 
 int cmlDebug( int mode ) {
     logSQL_CML = mode;
-    if ( mode > 1 ) {
-        if ( auditEnabled == 0 ) {
-            auditEnabled = 1;
-        }
-        /* This is needed for testing each sql form, which is needed for
-        the 'irodsctl devtest' to pass */
-    }
-    else {
-        if ( auditEnabled == 1 ) {
-            auditEnabled = 0;
-        }
-    }
-    return 0;
-}
-
-int cmlOpen( icatSessionStruct *icss ) {
-    int i;
-
-    /* Initialize the icss statement pointers */
-    for ( i = 0; i < MAX_NUM_OF_CONCURRENT_STMTS; i++ ) {
-        icss->stmtPtr[i] = 0;
-    }
-
-    /*
-     Set the ICAT DBMS type.  The Low Level now uses this instead of the
-     ifdefs so it can interact with either at the same time.
-     */
-    icss->databaseType = DB_TYPE_POSTGRES;
-#ifdef ORA_ICAT
-    icss->databaseType = DB_TYPE_ORACLE;
-#endif
-#ifdef MY_ICAT
-    icss->databaseType = DB_TYPE_MYSQL;
-#endif
-
-
-    /* Open Environment */
-    i = cllOpenEnv( icss );
-    if ( i != 0 ) {
-        return CAT_ENV_ERR;
-    }
-
-    /* Connect to the DBMS */
-    i = cllConnect( icss );
-    if ( i != 0 ) {
-        return CAT_CONNECT_ERR;
-    }
-
-    return 0;
-}
-
-int cmlClose( icatSessionStruct *icss ) {
-    int status, stat2;
-    static int pending = 0;
-
-    if ( pending == 1 ) {
-        return ( 0 );   /* avoid hang if stuck doing this */
-    }
-    pending = 1;
-
-    status = cllDisconnect( icss );
-
-    stat2 = cllCloseEnv( icss );
-
-    pending = 0;
-    if ( status ) {
-        return CAT_DISCONNECT_ERR;
-    }
-    if ( stat2 ) {
-        return CAT_CLOSE_ENV_ERR;
-    }
     return 0;
 }
 
 
-int cmlExecuteNoAnswerSql( const char *sql,
-                           icatSessionStruct *icss ) {
-    int i;
-    i = cllExecSqlNoResult( icss, sql );
-    if ( i ) {
-        if ( i <= CAT_ENV_ERR ) {
-            return ( i );   /* already an iRODS error code */
-        }
-        return CAT_SQL_ERR;
-    }
-    return 0;
-
-}
-
-int cmlGetOneRowFromSqlBV( const char *sql,
-                           char *cVal[],
-                           int cValSize[],
-                           int numOfCols,
-                           std::vector<std::string> &bindVars,
-                           icatSessionStruct *icss ) {
-    int stmtNum;
-    char updatedSql[MAX_SQL_SIZE + 1];
-
-//TODO: this should be a function, probably inside low-level icat
-#ifdef ORA_ICAT
-    strncpy( updatedSql, sql, MAX_SQL_SIZE );
-    updatedSql[MAX_SQL_SIZE] = '\0';
-#else
-    strncpy( updatedSql, sql, MAX_SQL_SIZE );
-    updatedSql[MAX_SQL_SIZE] = '\0';
-    /* Verify there no limit or offset statement */
-    if ( ( strstr( updatedSql, "limit " ) == NULL ) && ( strstr( updatedSql, "offset " ) == NULL ) ) {
-        /* add 'limit 1' for performance improvement */
-        strncat( updatedSql, " limit 1", MAX_SQL_SIZE );
-        rodsLog( LOG_DEBUG10, "cmlGetOneRowFromSqlBV %s", updatedSql );
-    }
-#endif
-    int status = cllExecSqlWithResultBV( icss, &stmtNum, updatedSql,
-                                         bindVars );
-    if ( status != 0 ) {
-        if ( status <= CAT_ENV_ERR ) {
-            return status;    /* already an iRODS error code */
-        }
-        return CAT_SQL_ERR;
-    }
-
-    if ( cllGetRow( icss, stmtNum ) != 0 )  {
-        cllFreeStatement( icss, stmtNum );
-        return CAT_GET_ROW_ERR;
-    }
-    if ( icss->stmtPtr[stmtNum]->numOfCols == 0 ) {
-        cllFreeStatement( icss, stmtNum );
-        return CAT_NO_ROWS_FOUND;
-    }
-    int numCVal = std::min( numOfCols, icss->stmtPtr[stmtNum]->numOfCols );
-    for ( int j = 0; j < numCVal ; j++ ) {
-        rstrcpy( cVal[j], icss->stmtPtr[stmtNum]->resultValue[j], cValSize[j] );
-    }
-
-    cllFreeStatement( icss, stmtNum );
-    return numCVal;
-
-}
-
-int cmlGetOneRowFromSql( const char *sql,
-                         char *cVal[],
-                         int cValSize[],
-                         int numOfCols,
-                         icatSessionStruct *icss ) {
-    int i, j, stmtNum;
-    char updatedSql[MAX_SQL_SIZE + 1];
-
-//TODO: this should be a function, probably inside low-level icat
-#ifdef ORA_ICAT
-    strncpy( updatedSql, sql, MAX_SQL_SIZE );
-    updatedSql[MAX_SQL_SIZE] = '\0';
-#else
-    strncpy( updatedSql, sql, MAX_SQL_SIZE );
-    updatedSql[MAX_SQL_SIZE] = '\0';
-    /* Verify there no limit or offset statement */
-    if ( ( strstr( updatedSql, "limit " ) == NULL ) && ( strstr( updatedSql, "offset " ) == NULL ) ) {
-        /* add 'limit 1' for performance improvement */
-        strncat( updatedSql, " limit 1", MAX_SQL_SIZE );
-        rodsLog( LOG_DEBUG10, "cmlGetOneRowFromSql %s", updatedSql );
-    }
-#endif
-
-    std::vector<std::string> emptyBindVars;
-    i = cllExecSqlWithResultBV( icss, &stmtNum, updatedSql,
-                                emptyBindVars );
-    if ( i != 0 ) {
-        if ( i <= CAT_ENV_ERR ) {
-            return ( i );   /* already an iRODS error code */
-        }
-        return CAT_SQL_ERR;
-    }
-    i = cllGetRow( icss, stmtNum );
-    if ( i != 0 )  {
-        cllFreeStatement( icss, stmtNum );
-        return CAT_GET_ROW_ERR;
-    }
-    if ( icss->stmtPtr[stmtNum]->numOfCols == 0 ) {
-        cllFreeStatement( icss, stmtNum );
-        return CAT_NO_ROWS_FOUND;
-    }
-    for ( j = 0; j < numOfCols && j < icss->stmtPtr[stmtNum]->numOfCols ; j++ ) {
-        rstrcpy( cVal[j], icss->stmtPtr[stmtNum]->resultValue[j], cValSize[j] );
-    }
-
-    i = cllFreeStatement( icss, stmtNum );
-    return j;
-
-}
-
-/* like cmlGetOneRowFromSql but cVal uses space from query
-   and then caller frees it later (via cmlFreeStatement).
-   This is simplier for the caller, in some cases.   */
-int cmlGetOneRowFromSqlV2( const char *sql,
-                           char *cVal[],
-                           int maxCols,
-                           std::vector<std::string> &bindVars,
-                           icatSessionStruct *icss ) {
-    int i, j, stmtNum;
-    char updatedSql[MAX_SQL_SIZE + 1];
-
-//TODO: this should be a function, probably inside low-level icat
-#ifdef ORA_ICAT
-    strncpy( updatedSql, sql, MAX_SQL_SIZE );
-    updatedSql[MAX_SQL_SIZE] = '\0';
-#else
-    strncpy( updatedSql, sql, MAX_SQL_SIZE );
-    updatedSql[MAX_SQL_SIZE] = '\0';
-    /* Verify there no limit or offset statement */
-    if ( ( strstr( updatedSql, "limit " ) == NULL ) && ( strstr( updatedSql, "offset " ) == NULL ) ) {
-        /* add 'limit 1' for performance improvement */
-        strncat( updatedSql, " limit 1", MAX_SQL_SIZE );
-        rodsLog( LOG_DEBUG10, "cmlGetOneRowFromSqlV2 %s", updatedSql );
-    }
-#endif
-
-    i = cllExecSqlWithResultBV( icss, &stmtNum, updatedSql,
-                                bindVars );
-
-    if ( i != 0 ) {
-        if ( i <= CAT_ENV_ERR ) {
-            return ( i );   /* already an iRODS error code */
-        }
-        return CAT_SQL_ERR;
-    }
-    i = cllGetRow( icss, stmtNum );
-    if ( i != 0 )  {
-        cllFreeStatement( icss, stmtNum );
-        return CAT_GET_ROW_ERR;
-    }
-    if ( icss->stmtPtr[stmtNum]->numOfCols == 0 ) {
-        return CAT_NO_ROWS_FOUND;
-    }
-    for ( j = 0; j < maxCols && j < icss->stmtPtr[stmtNum]->numOfCols ; j++ ) {
-        cVal[j] = icss->stmtPtr[stmtNum]->resultValue[j];
-    }
-
-    return ( stmtNum ); /* 0 or positive is the statement number */
-}
-
-/*
- Like cmlGetOneRowFromSql but uses bind variable array (via
-    cllExecSqlWithResult).
- */
-static
-int cmlGetOneRowFromSqlV3( const char *sql,
-                           char *cVal[],
-                           int cValSize[],
-                           int numOfCols,
-                           icatSessionStruct *icss ) {
-    int i, j, stmtNum;
-    char updatedSql[MAX_SQL_SIZE + 1];
-
-//TODO: this should be a function, probably inside low-level icat
-#ifdef ORA_ICAT
-    strncpy( updatedSql, sql, MAX_SQL_SIZE );
-    updatedSql[MAX_SQL_SIZE] = '\0';
-#else
-    strncpy( updatedSql, sql, MAX_SQL_SIZE );
-    updatedSql[MAX_SQL_SIZE] = '\0';
-    /* Verify there no limit or offset statement */
-    if ( ( strstr( updatedSql, "limit " ) == NULL ) && ( strstr( updatedSql, "offset " ) == NULL ) ) {
-        /* add 'limit 1' for performance improvement */
-        strncat( updatedSql, " limit 1", MAX_SQL_SIZE );
-        rodsLog( LOG_DEBUG10, "cmlGetOneRowFromSqlV3 %s", updatedSql );
-    }
-#endif
-
-    i = cllExecSqlWithResult( icss, &stmtNum, updatedSql );
-
-    if ( i != 0 ) {
-        if ( i <= CAT_ENV_ERR ) {
-            return ( i );   /* already an iRODS error code */
-        }
-        return CAT_SQL_ERR;
-    }
-    i = cllGetRow( icss, stmtNum );
-    if ( i != 0 )  {
-        cllFreeStatement( icss, stmtNum );
-        return CAT_GET_ROW_ERR;
-    }
-    if ( icss->stmtPtr[stmtNum]->numOfCols == 0 ) {
-        cllFreeStatement( icss, stmtNum );
-        return CAT_NO_ROWS_FOUND;
-    }
-    for ( j = 0; j < numOfCols && j < icss->stmtPtr[stmtNum]->numOfCols ; j++ ) {
-        rstrcpy( cVal[j], icss->stmtPtr[stmtNum]->resultValue[j], cValSize[j] );
-    }
-
-    i = cllFreeStatement( icss, stmtNum );
-    return j;
-
-}
 
 
-int cmlFreeStatement( int statementNumber, icatSessionStruct *icss ) {
-    int i;
-    i = cllFreeStatement( icss, statementNumber );
-    return i;
-}
-
-
-int cmlGetFirstRowFromSql( const char *sql,
-                           int *statement,
-                           int skipCount,
-                           icatSessionStruct *icss ) {
-
-    int i = cllExecSqlWithResult( icss, statement, sql );
-
-    if ( i != 0 ) {
-        *statement = 0;
-        if ( i <= CAT_ENV_ERR ) {
-            return ( i );   /* already an iRODS error code */
-        }
-        return CAT_SQL_ERR;
-    }
-
-#ifdef ORA_ICAT
-    if ( skipCount > 0 ) {
-        for ( int j = 0; j < skipCount; j++ ) {
-            i = cllGetRow( icss, *statement );
-            if ( i != 0 )  {
-                cllFreeStatement( icss, *statement );
-                *statement = 0;
-                return CAT_GET_ROW_ERR;
-            }
-            if ( icss->stmtPtr[*statement]->numOfCols == 0 ) {
-                i = cllFreeStatement( icss, *statement );
-                *statement = 0;
-                return CAT_NO_ROWS_FOUND;
-            }
-        }
-    }
-#endif
-
-    i = cllGetRow( icss, *statement );
-    if ( i != 0 )  {
-        cllFreeStatement( icss, *statement );
-        *statement = 0;
-        return CAT_GET_ROW_ERR;
-    }
-    if ( icss->stmtPtr[*statement]->numOfCols == 0 ) {
-        i = cllFreeStatement( icss, *statement );
-        *statement = 0;
-        return CAT_NO_ROWS_FOUND;
-    }
-
-    return 0;
-}
-
-/* with bind-variables */
-int cmlGetFirstRowFromSqlBV( const char *sql,
-                             std::vector<std::string> &bindVars,
-                             int *statement,
-                             icatSessionStruct *icss ) {
-    if ( int status = cllExecSqlWithResultBV( icss, statement, sql, bindVars ) ) {
-        *statement = 0;
-        if ( status <= CAT_ENV_ERR ) {
-            return status;    /* already an iRODS error code */
-        }
-        return CAT_SQL_ERR;
-    }
-    if ( cllGetRow( icss, *statement ) ) {
-        cllFreeStatement( icss, *statement );
-        *statement = 0;
-        return CAT_GET_ROW_ERR;
-    }
-    if ( icss->stmtPtr[*statement]->numOfCols == 0 ) {
-        cllFreeStatement( icss, *statement );
-        *statement = 0;
-        return CAT_NO_ROWS_FOUND;
-    }
-    return 0;
-}
-
-int cmlGetNextRowFromStatement( int stmtNum,
-                                icatSessionStruct *icss ) {
-    int i;
-
-    i = cllGetRow( icss, stmtNum );
-    if ( i != 0 )  {
-        cllFreeStatement( icss, stmtNum );
-        return CAT_GET_ROW_ERR;
-    }
-    if ( icss->stmtPtr[stmtNum]->numOfCols == 0 ) {
-        i = cllFreeStatement( icss, stmtNum );
-        return CAT_NO_ROWS_FOUND;
-    }
-    return 0;
-}
-
-int cmlGetStringValueFromSql( const char *sql,
-                              char *cVal,
-                              int cValSize,
-                              std::vector<std::string> &bindVars,
-                              icatSessionStruct *icss ) {
-    int status;
-    char *cVals[2];
-    int iVals[2];
-
-    cVals[0] = cVal;
-    iVals[0] = cValSize;
-
-    status = cmlGetOneRowFromSqlBV( sql, cVals, iVals, 1,
-                                    bindVars, icss );
-    if ( status == 1 ) {
-        return 0;
-    }
-    else {
-        return status;
-    }
-
-}
-
-int cmlGetStringValuesFromSql( const char *sql,
-                               char *cVal[],
-                               int cValSize[],
-                               int numberOfStringsToGet,
-                               std::vector<std::string> &bindVars,
-                               icatSessionStruct *icss ) {
-
-    int i = cmlGetOneRowFromSqlBV( sql, cVal, cValSize, numberOfStringsToGet,
-                                   bindVars, icss );
-    if ( i == numberOfStringsToGet ) {
-        return 0;
-    }
-    else {
-        return i;
-    }
-
-}
-
-int cmlGetMultiRowStringValuesFromSql( const char *sql,
-                                       char *returnedStrings,
-                                       int maxStringLen,
-                                       int maxNumberOfStringsToGet,
-                                       std::vector<std::string> &bindVars,
-                                       icatSessionStruct *icss ) {
-
-    int i, j, stmtNum;
-    int tsg; /* total strings gotten */
-    char *pString;
-
-    if ( maxNumberOfStringsToGet <= 0 ) {
-        return CAT_INVALID_ARGUMENT;
-    }
-
-    i = cllExecSqlWithResultBV( icss, &stmtNum, sql, bindVars );
-    if ( i != 0 ) {
-        if ( i <= CAT_ENV_ERR ) {
-            return ( i );   /* already an iRODS error code */
-        }
-        return CAT_SQL_ERR;
-    }
-    tsg = 0;
-    pString = returnedStrings;
-    for ( ;; ) {
-        i = cllGetRow( icss, stmtNum );
-        if ( i != 0 )  {
-            cllFreeStatement( icss, stmtNum );
-            if ( tsg > 0 ) {
-                return tsg;
-            }
-            return CAT_GET_ROW_ERR;
-        }
-        if ( icss->stmtPtr[stmtNum]->numOfCols == 0 ) {
-            cllFreeStatement( icss, stmtNum );
-            if ( tsg > 0 ) {
-                return tsg;
-            }
-            return CAT_NO_ROWS_FOUND;
-        }
-        for ( j = 0; j < icss->stmtPtr[stmtNum]->numOfCols; j++ ) {
-            rstrcpy( pString, icss->stmtPtr[stmtNum]->resultValue[j],
-                     maxStringLen );
-            tsg++;
-            pString += maxStringLen;
-            if ( tsg >= maxNumberOfStringsToGet ) {
-                i = cllFreeStatement( icss, stmtNum );
-                return tsg;
-            }
-        }
-    }
-    return 0;
-}
-
-
-int cmlGetIntegerValueFromSql( const char *sql,
-                               rodsLong_t *iVal,
-                               std::vector<std::string> &bindVars,
-                               icatSessionStruct *icss ) {
-    int i, cValSize;
-    char *cVal[2];
-    char cValStr[MAX_INTEGER_SIZE + 10];
-
-    cVal[0] = cValStr;
-    cValSize = MAX_INTEGER_SIZE;
-
-    i = cmlGetOneRowFromSqlBV( sql, cVal, &cValSize, 1,
-                               bindVars, icss );
-    if ( i == 1 ) {
-        if ( *cVal[0] == '\0' ) {
-            return CAT_NO_ROWS_FOUND;
-        }
-        *iVal = strtoll( *cVal, NULL, 0 );
-        return 0;
-    }
-    return i;
-}
-
-/* Like cmlGetIntegerValueFromSql but uses bind-variable array */
-int cmlGetIntegerValueFromSqlV3( const char *sql,
-                                 rodsLong_t *iVal,
-                                 icatSessionStruct *icss ) {
-    int i, cValSize;
-    char *cVal[2];
-    char cValStr[MAX_INTEGER_SIZE + 10];
-
-    cVal[0] = cValStr;
-    cValSize = MAX_INTEGER_SIZE;
-
-    i = cmlGetOneRowFromSqlV3( sql, cVal, &cValSize, 1, icss );
-    if ( i == 1 ) {
-        if ( *cVal[0] == '\0' ) {
-            return CAT_NO_ROWS_FOUND;
-        }
-        *iVal = strtoll( *cVal, NULL, 0 );
-        return 0;
-    }
-    return i;
-}
-
-int cmlCheckNameToken( const char *nameSpace, const char *tokenName, icatSessionStruct *icss ) {
+int cmlCheckNameToken( const char *nameSpace, const char *tokenName, void *icss ) {
 
     rodsLong_t iVal;
     int status;
@@ -615,178 +83,11 @@ int cmlCheckNameToken( const char *nameSpace, const char *tokenName, icatSession
 
 }
 
-int cmlModifySingleTable( const char *tableName,
-                          const char *updateCols[],
-                          const char *updateValues[],
-                          const char *whereColsAndConds[],
-                          const char *whereValues[],
-                          int numOfUpdates,
-                          int numOfConds,
-                          icatSessionStruct *icss ) {
-    char tsql[MAX_SQL_SIZE];
-    int i, l;
-    char *rsql;
-
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlModifySingleTable SQL 1 " );
-    }
-
-    snprintf( tsql, MAX_SQL_SIZE, "update %s set ", tableName );
-    l = strlen( tsql );
-    rsql = tsql + l;
-
-    cmlArraysToStrWithBind( rsql, "", updateCols, updateValues, numOfUpdates, " = ", ", ", MAX_SQL_SIZE - l );
-    l = strlen( tsql );
-    rsql = tsql + l;
-
-    cmlArraysToStrWithBind( rsql, " where ", whereColsAndConds, whereValues, numOfConds, "", " and ", MAX_SQL_SIZE - l );
-
-    i = cmlExecuteNoAnswerSql( tsql, icss );
-    return i;
-
-}
-
-#define STR_LEN 100
-rodsLong_t
-cmlGetNextSeqVal( icatSessionStruct *icss ) {
-    char nextStr[STR_LEN];
-    char sql[STR_LEN];
-    int status;
-    rodsLong_t iVal;
-
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlGetNextSeqVal SQL 1 " );
-    }
-
-    nextStr[0] = '\0';
-
-    cllNextValueString( "R_ObjectID", nextStr, STR_LEN );
-    /* R_ObjectID is created in icatSysTables.sql as
-       the sequence item for objects */
-
-#ifdef ORA_ICAT
-    /* For Oracle, use the built-in one-row table */
-    snprintf( sql, STR_LEN, "select %s from DUAL", nextStr );
-#else
-    /* Postgres can just get the next value without a table */
-    snprintf( sql, STR_LEN, "select %s", nextStr );
-#endif
-
-    std::vector<std::string> emptyBindVars;
-    status = cmlGetIntegerValueFromSql( sql, &iVal, emptyBindVars, icss );
-    if ( status < 0 ) {
-        rodsLog( LOG_NOTICE,
-                 "cmlGetNextSeqVal cmlGetIntegerValueFromSql failure %d", status );
-        return status;
-    }
-    return iVal;
-}
-
-rodsLong_t
-cmlGetCurrentSeqVal( icatSessionStruct *icss ) {
-    char nextStr[STR_LEN];
-    char sql[STR_LEN];
-    int status;
-    rodsLong_t iVal;
-
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlGetCurrentSeqVal S-Q-L 1 " );
-    }
-
-    nextStr[0] = '\0';
-
-    cllCurrentValueString( "R_ObjectID", nextStr, STR_LEN );
-    /* R_ObjectID is created in icatSysTables.sql as
-       the sequence item for objects */
-
-#ifdef ORA_ICAT
-    /* For Oracle, use the built-in one-row table */
-    snprintf( sql, STR_LEN, "select %s from DUAL", nextStr );
-#else
-    /* Postgres can just get the next value without a table */
-    snprintf( sql, STR_LEN, "select %s", nextStr );
-#endif
-
-    std::vector<std::string> emptyBindVars;
-    status = cmlGetIntegerValueFromSql( sql, &iVal, emptyBindVars, icss );
-    if ( status < 0 ) {
-        rodsLog( LOG_NOTICE,
-                 "cmlGetCurrentSeqVal cmlGetIntegerValueFromSql failure %d",
-                 status );
-        return status;
-    }
-    return iVal;
-}
-
-int
-cmlGetNextSeqStr( char *seqStr, int maxSeqStrLen, icatSessionStruct *icss ) {
-    char nextStr[STR_LEN];
-    char sql[STR_LEN];
-    int status;
-
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlGetNextSeqStr SQL 1 " );
-    }
-
-    nextStr[0] = '\0';
-    cllNextValueString( "R_ObjectID", nextStr, STR_LEN );
-    /* R_ObjectID is created in icatSysTables.sql as
-       the sequence item for objects */
-
-#ifdef ORA_ICAT
-    snprintf( sql, STR_LEN, "select %s from DUAL", nextStr );
-#else
-    snprintf( sql, STR_LEN, "select %s", nextStr );
-#endif
-
-    std::vector<std::string> emptyBindVars;
-    status = cmlGetStringValueFromSql( sql, seqStr, maxSeqStrLen, emptyBindVars, icss );
-    if ( status < 0 ) {
-        rodsLog( LOG_NOTICE,
-                 "cmlGetNextSeqStr cmlGetStringValueFromSql failure %d", status );
-    }
-    return status;
-}
 
 /* modifed for various tests */
-int cmlTest( icatSessionStruct *icss ) {
-    int i, cValSize;
-    char *cVal[2];
-    char cValStr[MAX_INTEGER_SIZE + 10];
-    char sql[100];
+int cmlTest( void *icss ) {
 
-    strncpy( icss->databaseUsername, "schroede", DB_USERNAME_LEN );
-    strncpy( icss->databasePassword, "", DB_PASSWORD_LEN );
-    i = cmlOpen( icss );
-    if ( i != 0 ) {
-        return i;
-    }
-
-    cVal[0] = cValStr;
-    cValSize = MAX_INTEGER_SIZE;
-    snprintf( sql, sizeof sql,
-              "select coll_id from R_COLL_MAIN where coll_name='a'" );
-
-    i = cmlGetOneRowFromSql( sql, cVal, &cValSize, 1, icss );
-    if ( i == 1 ) {
-        printf( "result = %s\n", cValStr );
-        i = 0;
-    }
-    else {
-        return i;
-    }
-
-    snprintf( sql, sizeof sql,
-              "select data_id from R_DATA_MAIN where coll_id='1' and data_name='a'" );
-    i = cmlGetOneRowFromSql( sql, cVal, &cValSize, 1, icss );
-    if ( i == 1 ) {
-        printf( "result = %s\n", cValStr );
-        i = 0;
-    }
-
-    cmlGetCurrentSeqVal( icss );
-
-    return i;
+    return 0;
 
 }
 
@@ -796,7 +97,7 @@ int cmlTest( icatSessionStruct *icss ) {
 */
 rodsLong_t
 cmlCheckResc( const char *rescName, const char *userName, const char *userZone, const char *accessLevel,
-              icatSessionStruct *icss ) {
+              void *icss ) {
     int status;
     rodsLong_t iVal;
 
@@ -813,7 +114,7 @@ cmlCheckResc( const char *rescName, const char *userName, const char *userZone, 
             rodsLog( LOG_SQL, "cmlCheckResc SQL 2 " );
         }
 
-        status = hs_get_int_resc_id(icss, rescName, &iVal);
+        status = hs_get_int_resc_id_by_name(icss, (void *) rescName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_RESOURCE;
         }
@@ -831,7 +132,7 @@ cmlCheckResc( const char *rescName, const char *userName, const char *userZone, 
 */
 rodsLong_t
 cmlCheckDir( const char *dirName, const char *userName, const char *userZone, const char *accessLevel,
-             icatSessionStruct *icss ) {
+             void *icss ) {
     int status;
     rodsLong_t iVal;
 
@@ -839,7 +140,7 @@ cmlCheckDir( const char *dirName, const char *userName, const char *userZone, co
         rodsLog( LOG_SQL, "cmlCheckDir SQL 1 " );
     }
 
-    status = hs_get_int_coll_id_by_access(icss, dirName ,userName ,userZone ,accessLevel, &iVal);
+    status = hs_get_int_coll_id_by_access(icss,(void *) dirName ,(void *) userName ,(void *) userZone ,(void *) accessLevel, &iVal);
     if ( status ) {
         /* There was an error, so do another sql to see which
            of the two likely cases is problem. */
@@ -848,7 +149,7 @@ cmlCheckDir( const char *dirName, const char *userName, const char *userZone, co
             rodsLog( LOG_SQL, "cmlCheckDir SQL 2 " );
         }
 
-        status = hs_get_int_coll_id(icss, dirName, &iVal);
+        status = hs_get_int_coll_id_by_name(icss, (void *) dirName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_COLLECTION;
         }
@@ -869,12 +170,19 @@ rodsLong_t
 cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const char *userZone,
                               const char *accessLevel, int *inheritFlag,
                               const char *ticketStr, const char *ticketHost,
-                              icatSessionStruct *icss ) {
+                              void *icss ) {
     int status;
     rodsLong_t iVal = 0;
 
-    int cValSize = MAX_INTEGER_SIZE;
-    char *cVal[(MAX_INTEGER_SIZE + 10) * 3];
+    int cValSize[2];
+    char *cVal[3];
+    char cValStr1[MAX_INTEGER_SIZE + 10];
+    char cValStr2[MAX_INTEGER_SIZE + 10];
+
+    cVal[0] = cValStr1;
+    cVal[1] = cValStr2;
+    cValSize[0] = MAX_INTEGER_SIZE;
+    cValSize[1] = MAX_INTEGER_SIZE;
 
     *inheritFlag = 0;
 
@@ -882,17 +190,18 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
         if ( logSQL_CML != 0 ) {
             rodsLog( LOG_SQL, "cmlCheckDirAndGetInheritFlag SQL 1 " );
         }
-        std::vector<std::string> bindVars;
+        /* std::vector<std::string> bindVars;
         bindVars.push_back( dirName );
         bindVars.push_back( ticketStr );
         status = cmlGetOneRowFromSqlBV( "select coll_id, coll_inheritance from R_COLL_MAIN CM, R_TICKET_MAIN TM where CM.coll_name=? and TM.ticket_string=? and TM.ticket_type = 'write' and TM.object_id = CM.coll_id",
-                                        cVal, cValSize, 2, bindVars, icss );
+                                        cVal, cValSize, 2, bindVars, icss ); */
+        return -1;
     }
     else {
         if ( logSQL_CML != 0 ) {
             rodsLog( LOG_SQL, "cmlCheckDirAndGetInheritFlag SQL 2 " );
         }
-        status = hs_get_int_coll_id_and_inheritance_from_access(icss,dirName,userZone,userName,accessLevel,
+        status = hs_get_some2_coll_id_and_inheritance_by_access(icss,(void *) dirName,(void *) userZone,(void *) userName,(void *) accessLevel,
                                         cVal, cValSize, 2);
     }
     if ( status == 2 ) {
@@ -914,7 +223,7 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
             rodsLog( LOG_SQL, "cmlCheckDirAndGetInheritFlag SQL 3 " );
         }
 
-        status = hs_get_int_coll_id(icss, dirName, &iVal);
+        status = hs_get_int_coll_id_by_name(icss, (void *) dirName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_COLLECTION;
         }
@@ -944,7 +253,7 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
 */
 rodsLong_t
 cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
-               const char *accessLevel, icatSessionStruct *icss ) {
+               const char *accessLevel, void *icss ) {
     int status;
     rodsLong_t iVal;
 
@@ -952,7 +261,7 @@ cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckDirId S-Q-L 1 " );
     }
 
-    status = hs_get_int_coll_id_by_coll_id_and_access(icss, dirId, userZone, userName, accessLevel, &iVal);
+    status = hs_get_int_coll_id_by_coll_id_and_access(icss, (void *) dirId, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
     if ( status ) {
         /* There was an error, so do another sql to see which
            of the two likely cases is problem. */
@@ -961,7 +270,7 @@ cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
             rodsLog( LOG_SQL, "cmlCheckDirId S-Q-L 2 " );
         }
 
-        status = hs_get_int_coll_id(      icss, dirId, &iVal);
+        status = hs_get_int_coll_id_by_name(      icss, (void *) dirId, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_COLLECTION;
         }
@@ -976,7 +285,7 @@ cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
 */
 rodsLong_t
 cmlCheckDirOwn( const char *dirName, const char *userName, const char *userZone,
-                icatSessionStruct *icss ) {
+                void *icss ) {
     int status;
     rodsLong_t iVal;
 
@@ -984,7 +293,7 @@ cmlCheckDirOwn( const char *dirName, const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckDirOwn SQL 1 " );
     }
 
-    status = hs_get_coll_id_by_own(icss, dirName, userZone, userName,  &iVal);
+    status = hs_get_int_coll_id_by_own(icss, (void *) dirName, (void *) userZone, (void *) userName,  &iVal);
     if ( status < 0 ) {
         return status;
     }
@@ -1000,7 +309,7 @@ cmlCheckDirOwn( const char *dirName, const char *userName, const char *userZone,
 rodsLong_t
 cmlCheckDataObjOnly( const char *dirName, const char *dataName,
                      const char *userName, const char *userZone,
-                     const char *accessLevel, icatSessionStruct *icss ) {
+                     const char *accessLevel, void *icss ) {
     int status;
     rodsLong_t iVal;
 
@@ -1008,7 +317,7 @@ cmlCheckDataObjOnly( const char *dirName, const char *dataName,
         rodsLog( LOG_SQL, "cmlCheckDataObjOnly SQL 1 " );
     }
 
-    status = hs_get_int_data_id_by_access(icss,    dirName,dataName,userZone,userName,accessLevel, &iVal);
+    status = hs_get_int_data_id_by_access(icss,    (void *) dirName, (void *) dataName, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
 
     if ( status ) {
         /* There was an error, so do another sql to see which
@@ -1017,7 +326,7 @@ cmlCheckDataObjOnly( const char *dirName, const char *dataName,
             rodsLog( LOG_SQL, "cmlCheckDataObjOnly SQL 2 " );
         }
 
-        status = hs_get_int_data_id(  icss,      dirName,dataName, &iVal);
+        status = hs_get_int_data_id(  icss,      (void *) dirName, (void *) dataName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_FILE;
         }
@@ -1033,7 +342,7 @@ cmlCheckDataObjOnly( const char *dirName, const char *dataName,
 */
 rodsLong_t
 cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userName,
-                    const char *userZone, icatSessionStruct *icss ) {
+                    const char *userZone, void *icss ) {
     int status;
     rodsLong_t iVal, collId;
     char collIdStr[MAX_NAME_LEN];
@@ -1041,7 +350,7 @@ cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userN
     if ( logSQL_CML != 0 ) {
         rodsLog( LOG_SQL, "cmlCheckDataObjOwn SQL 1 " );
     }
-    status = get_hs_int_coll_id(icss,dirName, &iVal);
+    status = hs_get_int_coll_id_by_name(icss,(void *) dirName, &iVal);
     if ( status < 0 ) {
         return status;
     }
@@ -1051,7 +360,7 @@ cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userN
     if ( logSQL_CML != 0 ) {
         rodsLog( LOG_SQL, "cmlCheckDataObjOwn SQL 2 " );
     }
-    status = hs_get_int_data_id_by_own(icss,  collIdStr, dataName, userZone, userName, &iVal);
+    status = hs_get_int_data_id_by_own(icss,  collIdStr, (void *) dataName, (void *) userZone, (void *) userName, &iVal);
 
     if ( status ) {
         return status;
@@ -1061,7 +370,7 @@ cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userN
 
 
 int cmlCheckUserInGroup( const char *userName, const char *userZone,
-                         const char *groupName, icatSessionStruct *icss ) {
+                         const char *groupName, void *icss ) {
     int status;
     char sVal[MAX_NAME_LEN];
     rodsLong_t iVal;
@@ -1070,7 +379,7 @@ int cmlCheckUserInGroup( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckUserInGroup SQL 1 " );
     }
 
-    status = hs_get_non_group_user_id(icss,userZone,userName,sVal, MAX_NAME_LEN);
+    status = hs_get_non_group_user_id(icss,(void *) userZone,(void *) userName,sVal, MAX_NAME_LEN);
     if ( status == CAT_NO_ROWS_FOUND ) {
         return CAT_INVALID_USER;
     }
@@ -1082,7 +391,7 @@ int cmlCheckUserInGroup( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckUserInGroup SQL 2 " );
     }
 
-    status = hs_get_int_group_id_by_user(icss, sVal, groupName,&iVal);
+    status = hs_get_int_group_id_by_user(icss, sVal, (void *) groupName,&iVal);
     if ( status ) {
         return status;
     }
@@ -1094,123 +403,7 @@ int cmlCheckUserInGroup( const char *userName, const char *userZone,
 int
 cmlCheckTicketRestrictions( const char *ticketId, const char *ticketHost,
                             const char *userName, const char *userZone,
-                            icatSessionStruct *icss ) {
-    int status;
-    int stmtNum;
-    int hostOK = 0;
-    int userOK = 0;
-    int groupOK = 0;
-
-    /* first, check if there are any host restrictions, and if so
-       return error if the connected client host is not in the list */
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlCheckTicketRestrictions SQL 1" );
-    }
-    std::vector<std::string> bindVars;
-    bindVars.push_back( ticketId );
-    status = cmlGetFirstRowFromSqlBV(
-                 "select host from R_TICKET_ALLOWED_HOSTS where ticket_id=?",
-                 bindVars, &stmtNum, icss );
-    if ( status == CAT_NO_ROWS_FOUND ) {
-        hostOK = 1;
-    }
-    else {
-        if ( status != 0 ) {
-            return status;
-        }
-    }
-
-    for ( ; status != CAT_NO_ROWS_FOUND; ) {
-        if ( strncmp( ticketHost,
-                      icss->stmtPtr[stmtNum]->resultValue[0],
-                      NAME_LEN ) == 0 ) {
-            hostOK = 1;
-        }
-        status = cmlGetNextRowFromStatement( stmtNum, icss );
-        if ( status != 0 && status != CAT_NO_ROWS_FOUND ) {
-            return status;
-        }
-    }
-    if ( hostOK == 0 ) {
-        return CAT_TICKET_HOST_EXCLUDED;
-    }
-
-    /* Now check on user restrictions */
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlCheckTicketRestrictions SQL 2" );
-    }
-    bindVars.clear();
-    bindVars.push_back( ticketId );
-    status = cmlGetFirstRowFromSqlBV(
-                 "select user_name from R_TICKET_ALLOWED_USERS where ticket_id=?",
-                 bindVars,  &stmtNum, icss );
-    if ( status == CAT_NO_ROWS_FOUND ) {
-        userOK = 1;
-    }
-    else {
-        if ( status != 0 ) {
-            return status;
-        }
-    }
-    std::string myUser( userName );
-    myUser += "#";
-    myUser += userZone;
-    for ( ; status != CAT_NO_ROWS_FOUND; ) {
-        if ( strncmp( userName,
-                      icss->stmtPtr[stmtNum]->resultValue[0],
-                      NAME_LEN ) == 0 ) {
-            userOK = 1;
-        }
-        else {
-            /* try user#zone */
-            if ( strncmp( myUser.c_str(),
-                          icss->stmtPtr[stmtNum]->resultValue[0],
-                          NAME_LEN ) == 0 ) {
-                userOK = 1;
-            }
-        }
-        status = cmlGetNextRowFromStatement( stmtNum, icss );
-        if ( status != 0 && status != CAT_NO_ROWS_FOUND ) {
-            return status;
-        }
-    }
-    if ( userOK == 0 ) {
-        return CAT_TICKET_USER_EXCLUDED;
-    }
-
-    /* Now check on group restrictions */
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlCheckTicketRestrictions SQL 3" );
-    }
-    bindVars.clear();
-    bindVars.push_back( ticketId );
-    status = cmlGetFirstRowFromSqlBV(
-                 "select group_name from R_TICKET_ALLOWED_GROUPS where ticket_id=?",
-                 bindVars, &stmtNum, icss );
-    if ( status == CAT_NO_ROWS_FOUND ) {
-        groupOK = 1;
-    }
-    else {
-        if ( status != 0 ) {
-            return status;
-        }
-    }
-    for ( ; status != CAT_NO_ROWS_FOUND; ) {
-        int status2;
-        status2 = cmlCheckUserInGroup( userName, userZone,
-                                       icss->stmtPtr[stmtNum]->resultValue[0],
-                                       icss );
-        if ( status2 == 0 ) {
-            groupOK = 1;
-        }
-        status = cmlGetNextRowFromStatement( stmtNum, icss );
-        if ( status != 0 && status != CAT_NO_ROWS_FOUND ) {
-            return status;
-        }
-    }
-    if ( groupOK == 0 ) {
-        return CAT_TICKET_GROUP_EXCLUDED;
-    }
+                            void *icss ) {
     return 0;
 }
 
@@ -1218,245 +411,14 @@ cmlCheckTicketRestrictions( const char *ticketId, const char *ticketHost,
 int checkObjIdByTicket( const char *dataId, const char *accessLevel,
                         const char *ticketStr, const char *ticketHost,
                         const char *userName, const char *userZone,
-                        icatSessionStruct *icss ) {
-    int status, i;
-    char *cVal[10];
-    int iVal[10];
-    char ticketId[NAME_LEN] = "";
-    char usesCount[NAME_LEN] = "";
-    char usesLimit[NAME_LEN] = "";
-    char ticketExpiry[NAME_LEN] = "";
-    char restrictions[NAME_LEN] = "";
-    char writeFileCount[NAME_LEN] = "";
-    char writeFileLimit[NAME_LEN] = "";
-    char writeByteCount[NAME_LEN] = "";
-    char writeByteLimit[NAME_LEN] = "";
-    int iUsesCount = 0;
-    int iUsesLimit = 0;
-    int iWriteFileCount = 0;
-    int iWriteFileLimit = 0;
-    int iWriteByteCount = 0;
-    int iWriteByteLimit = 0;
-    char myUsesCount[NAME_LEN];
-    char myWriteFileCount[NAME_LEN];
-    rodsLong_t intDataId;
-    static rodsLong_t previousDataId1 = 0;
-    static rodsLong_t previousDataId2 = 0;
-
-    static char prevTicketId[50] = "";
-
-    for ( i = 0; i < 10; i++ ) {
-        iVal[i] = NAME_LEN;
-    }
-
-    cVal[0] = ticketId;
-    cVal[1] = usesLimit;
-    cVal[2] = usesCount;
-    cVal[3] = ticketExpiry;
-    cVal[4] = restrictions;
-    if ( strncmp( accessLevel, "modify", 6 ) == 0 ) {
-        if ( logSQL_CML != 0 ) {
-            rodsLog( LOG_SQL, "checkObjIdByTicket SQL 1 " );
-        }
-        /* ticket must also be of type 'write', and get the
-            writeFileCount and writeFileLimit  */
-        cVal[5] = writeFileCount;
-        cVal[6] = writeFileLimit;
-        cVal[7] = writeByteCount;
-        cVal[8] = writeByteLimit;
-        std::vector<std::string> bindVars;
-        bindVars.push_back( ticketStr );
-        bindVars.push_back( dataId );
-        bindVars.push_back( dataId );
-        status = cmlGetStringValuesFromSql(
-                     "select ticket_id, uses_limit, uses_count, ticket_expiry_ts, restrictions, write_file_count, write_file_limit, write_byte_count, write_byte_limit from R_TICKET_MAIN where ticket_type = 'write' and ticket_string = ? and (object_id = ? or object_id in (select coll_id from R_DATA_MAIN where data_id = ?))",
-                     cVal, iVal, 9, bindVars, icss );
-
-    }
-    else {
-        /* don't check ticket type, 'read' or 'write' is fine */
-        if ( logSQL_CML != 0 ) {
-            rodsLog( LOG_SQL, "checkObjIdByTicket SQL 2 " );
-        }
-        std::vector<std::string> bindVars;
-        bindVars.push_back( ticketStr );
-        bindVars.push_back( dataId );
-        bindVars.push_back( dataId );
-        status = cmlGetStringValuesFromSql(
-                     "select ticket_id, uses_limit, uses_count, ticket_expiry_ts, restrictions from R_TICKET_MAIN where ticket_string = ? and (object_id = ? or object_id in (select coll_id from R_DATA_MAIN where data_id = ?))",
-                     cVal, iVal, 5, bindVars, icss );
-    }
-
-    if ( status != 0 ) {
-        return CAT_TICKET_INVALID;
-    }
-
-    if ( strncmp( ticketId, prevTicketId, sizeof( prevTicketId ) ) != 0 ) {
-        snprintf( prevTicketId, sizeof( prevTicketId ), "%s", ticketId );
-        status = cmlAudit3( AU_USE_TICKET, ticketId, userName, userZone,
-                            ticketStr, icss );
-        if ( status != 0 ) {
-            return status;
-        }
-    }
-
-    if ( ticketExpiry[0] != '\0' ) {
-        rodsLong_t ticketExp, now;
-        char myTime[50];
-
-        ticketExp = atoll( ticketExpiry );
-        if ( ticketExp > 0 ) {
-            getNowStr( myTime );
-            now = atoll( myTime );
-            if ( now > ticketExp ) {
-                return CAT_TICKET_EXPIRED;
-            }
-        }
-    }
-
-    status = cmlCheckTicketRestrictions( ticketId, ticketHost,
-                                         userName, userZone, icss );
-    if ( status != 0 ) {
-        return status;
-    }
-
-    if ( strncmp( accessLevel, "modify", 6 ) == 0 ) {
-        iWriteByteLimit = atoi( writeByteLimit );
-        if ( iWriteByteLimit > 0 ) {
-            iWriteByteCount = atoi( writeByteCount );
-            if ( iWriteByteCount > iWriteByteLimit ) {
-                return CAT_TICKET_WRITE_BYTES_EXCEEDED;
-            }
-        }
-
-        iWriteFileLimit = atoi( writeFileLimit );
-        if ( iWriteFileLimit > 0 ) {
-            iWriteFileCount = atoi( writeFileCount );
-            if ( iWriteFileCount > iWriteFileLimit ) {
-                return CAT_TICKET_WRITE_USES_EXCEEDED;
-            }
-            intDataId = atoll( dataId );
-            /* Don't update a second time if this id matches the last one */
-            if ( previousDataId1 != intDataId ) {
-                iWriteFileCount++;
-                snprintf( myWriteFileCount, sizeof myWriteFileCount, "%d",
-                          iWriteFileCount );
-                cllBindVars[cllBindVarCount++] = myWriteFileCount;
-                cllBindVars[cllBindVarCount++] = ticketId;
-                if ( logSQL_CML != 0 ) {
-                    rodsLog( LOG_SQL, "checkObjIdByTicket SQL 3 " );
-                }
-                status =  cmlExecuteNoAnswerSql(
-                              "update R_TICKET_MAIN set write_file_count=? where ticket_id=?",
-                              icss );
-                if ( status != 0 ) {
-                    return status;
-                }
-#ifndef ORA_ICAT
-                /* as with auditing, do a commit on disconnect if needed */
-                cllCheckPending( "", 2, icss->databaseType );
-#endif
-            }
-            previousDataId1 = intDataId;
-        }
-    }
-
-    iUsesLimit = atoi( usesLimit );
-    if ( iUsesLimit > 0 ) {
-        iUsesCount = atoi( usesCount );
-        if ( iUsesCount > iUsesLimit ) {
-            return CAT_TICKET_USES_EXCEEDED;
-        }
-        intDataId = atoll( dataId );
-        /* Don't update a second time if this id matches the last one */
-        if ( previousDataId2 != intDataId ) {
-            iUsesCount++;
-            snprintf( myUsesCount, sizeof myUsesCount, "%d", iUsesCount );
-            cllBindVars[cllBindVarCount++] = myUsesCount;
-            cllBindVars[cllBindVarCount++] = ticketId;
-            if ( logSQL_CML != 0 ) {
-                rodsLog( LOG_SQL, "checkObjIdByTicket SQL 4 " );
-            }
-            status =  cmlExecuteNoAnswerSql(
-                          "update R_TICKET_MAIN set uses_count=? where ticket_id=?", icss );
-            if ( status != 0 ) {
-                return status;
-            }
-#ifndef ORA_ICAT
-            /* as with auditing, do a commit on disconnect if needed*/
-            cllCheckPending( "", 2, icss->databaseType );
-#endif
-        }
-        previousDataId2 = intDataId;
-    }
+                        void *icss ) {
     return 0;
 }
 
 int
 cmlTicketUpdateWriteBytes( const char *ticketStr,
                            const char *dataSize, const char *objectId,
-                           icatSessionStruct *icss ) {
-    int status, i;
-    char *cVal[10];
-    int iVal[10];
-    char ticketId[NAME_LEN] = "";
-    char writeByteCount[NAME_LEN] = "";
-    char writeByteLimit[NAME_LEN] = "";
-    rodsLong_t iWriteByteCount = 0;
-    rodsLong_t iWriteByteLimit = 0;
-    rodsLong_t iDataSize;
-    char myWriteByteCount[NAME_LEN];
-    rodsLong_t iNewByteCount;
-
-    iDataSize = atoll( dataSize );
-    if ( iDataSize == 0 ) {
-        return 0;
-    }
-
-    for ( i = 0; i < 10; i++ ) {
-        iVal[i] = NAME_LEN;
-    }
-
-    cVal[0] = ticketId;
-    cVal[1] = writeByteCount;
-    cVal[2] = writeByteLimit;
-
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlTicketUpdateWriteBytes SQL 1 " );
-    }
-    std::vector<std::string> bindVars;
-    bindVars.push_back( ticketStr );
-    bindVars.push_back( objectId );
-    bindVars.push_back( objectId );
-    status = cmlGetStringValuesFromSql(
-                 "select ticket_id, write_byte_count, write_byte_limit from R_TICKET_MAIN where ticket_type = 'write' and ticket_string = ? and (object_id = ? or object_id in (select coll_id from R_DATA_MAIN where data_id = ?))",
-                 cVal, iVal, 3, bindVars, icss );
-    if ( status != 0 ) {
-        return status;
-    }
-    iWriteByteLimit = atoll( writeByteLimit );
-    iWriteByteCount = atoll( writeByteCount );
-
-    if ( iWriteByteLimit == 0 ) {
-        return 0;
-    }
-
-    iNewByteCount = iWriteByteCount + iDataSize;
-    snprintf( myWriteByteCount, sizeof myWriteByteCount, "%lld", iNewByteCount );
-    cllBindVars[cllBindVarCount++] = myWriteByteCount;
-    cllBindVars[cllBindVarCount++] = ticketId;
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlTicketUpdateWriteBytes SQL 2 " );
-    }
-    status =  cmlExecuteNoAnswerSql(
-                  "update R_TICKET_MAIN set write_byte_count=? where ticket_id=?", icss );
-    if ( status != 0 ) {
-        return status;
-    }
-#ifndef ORA_ICAT
-    /* as with auditing, do a commit on disconnect if needed */
-    cllCheckPending( "", 2, icss->databaseType );
-#endif
+                           void *icss ) {
     return 0;
 }
 
@@ -1469,7 +431,7 @@ cmlTicketUpdateWriteBytes( const char *ticketStr,
 */
 int cmlCheckDataObjId( const char *dataId, const char *userName,  const char *zoneName,
                        const char *accessLevel, const char *ticketStr, const char *ticketHost,
-                       icatSessionStruct *icss ) {
+                       void *icss ) {
     int status;
     rodsLong_t iVal;
 
@@ -1486,7 +448,7 @@ int cmlCheckDataObjId( const char *dataId, const char *userName,  const char *zo
         if ( logSQL_CML != 0 ) {
             rodsLog( LOG_SQL, "cmlCheckDataObjId SQL 1 " );
         }
-        status = hs_get_int_data_id_by_data_id_and_access(icss, dataId, zoneName, userName, accessLevel, &iVal
+        status = hs_get_int_data_id_by_data_id_and_access(icss, (void *) dataId, (void *) zoneName, (void *) userName, (void *) accessLevel, &iVal
                       );
         if ( iVal == 0 ) {
             return CAT_NO_ACCESS_PERMISSION;
@@ -1495,7 +457,6 @@ int cmlCheckDataObjId( const char *dataId, const char *userName,  const char *zo
     if ( status != 0 ) {
         return CAT_NO_ACCESS_PERMISSION;
     }
-    cmlAudit2( AU_ACCESS_GRANTED, dataId, userName, zoneName, accessLevel, icss );
     return status;
 }
 
@@ -1504,7 +465,7 @@ int cmlCheckDataObjId( const char *dataId, const char *userName,  const char *zo
  * type 'groupadmin' and in some cases a member of the specified group.
  */
 int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
-                              const char *groupName, icatSessionStruct *icss ) {
+                              const char *groupName, void *icss ) {
     int status;
     char sVal[MAX_NAME_LEN];
     rodsLong_t iVal;
@@ -1513,7 +474,7 @@ int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckGroupAdminAccess SQL 1 " );
     }
 
-    status = hs_get_group_admin_user_id(icss, userZone, userName, sVal, MAX_NAME_LEN);
+    status = hs_get_group_admin_user_id(icss, (void *) userZone, (void *) userName, sVal, MAX_NAME_LEN);
     if ( status == CAT_NO_ROWS_FOUND ) {
         return CAT_INSUFFICIENT_PRIVILEGE_LEVEL;
     }
@@ -1535,7 +496,7 @@ int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckGroupAdminAccess SQL 2 " );
     }
 
-    status = hs_get_int_group_id_by_user(icss, sVal, groupName, &iVal);
+    status = hs_get_int_group_id_by_user(icss, sVal, (void *) groupName, &iVal);
     if ( status == CAT_NO_ROWS_FOUND ) {
         return CAT_INSUFFICIENT_PRIVILEGE_LEVEL;
     }
@@ -1549,308 +510,13 @@ int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
  Get the number of users who are members of a user group.
  This is used in some groupadmin access checks.
  */
-int cmlGetGroupMemberCount( const char *groupName, icatSessionStruct *icss ) {
+int cmlGetGroupMemberCount( const char *groupName, void *icss ) {
 
     rodsLong_t iVal;
     int status;
-    status = hs_get_group_member_count(icss, groupName, &iVal);
+    status = hs_get_group_member_count(icss, (void *) groupName, &iVal);
     if ( status == 0 ) {
         status = iVal;
     }
-    return status;
-}
-
-
-
-/*********************************************************************
-The following are the auditing functions, different forms.  cmlAudit1,
-2, 3, 4, and 5 each audit (record activity in the audit table) but
-have different input arguments.
- *********************************************************************/
-
-/*
- Audit - record auditing information, form 1
- */
-int
-cmlAudit1( int actionId, const char *clientUser, const char *zone, const char *targetUser,
-           const char *comment, icatSessionStruct *icss ) {
-    char myTime[50];
-    char actionIdStr[50];
-    int status;
-
-    if ( auditEnabled == 0 ) {
-        return 0;
-    }
-
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlAudit1 SQL 1 " );
-    }
-
-    getNowStr( myTime );
-
-    snprintf( actionIdStr, sizeof actionIdStr, "%d", actionId );
-
-    cllBindVars[0] = targetUser;
-    cllBindVars[1] = zone;
-    cllBindVars[2] = clientUser;
-    cllBindVars[3] = zone;
-    cllBindVars[4] = actionIdStr;
-    cllBindVars[5] = comment;
-    cllBindVars[6] = myTime;
-    cllBindVars[7] = myTime;
-    cllBindVarCount = 8;
-
-    status = cmlExecuteNoAnswerSql(
-                 "insert into R_OBJT_AUDIT (object_id, user_id, action_id, r_comment, create_ts, modify_ts) values ((select user_id from R_USER_MAIN where user_name=? and zone_name=?), (select user_id from R_USER_MAIN where user_name=? and zone_name=?), ?, ?, ?, ?)", icss );
-    if ( status != 0 ) {
-        rodsLog( LOG_NOTICE, "cmlAudit1 insert failure %d", status );
-    }
-#ifdef ORA_ICAT
-#else
-    else {
-        cllCheckPending( "", 2, icss->databaseType );
-        /* Indicate that this was an audit SQL and so should be
-        committed on disconnect if still pending. */
-    }
-#endif
-    return status;
-}
-
-int
-cmlAudit2( int actionId, const char *dataId, const char *userName, const char *zoneName,
-           const char *accessLevel, icatSessionStruct *icss ) {
-    char myTime[50];
-    char actionIdStr[50];
-    int status;
-
-    if ( auditEnabled == 0 ) {
-        return 0;
-    }
-
-    if ( logSQL_CML != 0 ) {
-        rodsLog( LOG_SQL, "cmlAudit2 SQL 1 " );
-    }
-
-    getNowStr( myTime );
-
-    snprintf( actionIdStr, sizeof actionIdStr, "%d", actionId );
-
-    cllBindVars[0] = dataId;
-    cllBindVars[1] = userName;
-    cllBindVars[2] = zoneName;
-    cllBindVars[3] = actionIdStr;
-    cllBindVars[4] = accessLevel;
-    cllBindVars[5] = myTime;
-    cllBindVars[6] = myTime;
-    cllBindVarCount = 7;
-
-    status = cmlExecuteNoAnswerSql(
-                 "insert into R_OBJT_AUDIT (object_id, user_id, action_id, r_comment, create_ts, modify_ts) values (?, (select user_id from R_USER_MAIN where user_name=? and zone_name=?), ?, ?, ?, ?)", icss );
-    if ( status != 0 ) {
-        rodsLog( LOG_NOTICE, "cmlAudit2 insert failure %d", status );
-    }
-#ifdef ORA_ICAT
-#else
-    else {
-        cllCheckPending( "", 2,  icss->databaseType );
-        /* Indicate that this was an audit SQL and so should be
-        committed on disconnect if still pending. */
-    }
-#endif
-
-    return status;
-}
-
-
-int
-cmlAudit3( int actionId, const char *dataId, const char *userName, const char *zoneName,
-           const char *comment, icatSessionStruct *icss ) {
-    char myTime[50];
-    char actionIdStr[50];
-    int status;
-    char myComment[AUDIT_COMMENT_MAX_SIZE + 10];
-
-    if ( auditEnabled == 0 ) {
-        return 0;
-    }
-
-    getNowStr( myTime );
-
-    snprintf( actionIdStr, sizeof actionIdStr, "%d", actionId );
-
-    /* Truncate the comment if necessary (or else SQL will fail)*/
-    myComment[AUDIT_COMMENT_MAX_SIZE - 1] = '\0';
-    strncpy( myComment, comment, AUDIT_COMMENT_MAX_SIZE - 1 );
-
-    if ( zoneName[0] == '\0' ) {
-        /* This no longer seems to occur.  I'm leaving the code in place
-           (just in case) but I'm removing the rodsLog call so the ICAT
-           test suite does not require it to be tested.
-        */
-        /*      if (logSQL_CML!=0) rodsLog(LOG_SQL, "cmlAu---dit3 S--QL 1 "); */
-        cllBindVars[0] = dataId;
-        cllBindVars[1] = userName;
-        cllBindVars[2] = actionIdStr;
-        cllBindVars[3] = myComment;
-        cllBindVars[4] = myTime;
-        cllBindVars[5] = myTime;
-        cllBindVarCount = 6;
-        status = cmlExecuteNoAnswerSql(
-                     "insert into R_OBJT_AUDIT (object_id, user_id, action_id, r_comment, create_ts, modify_ts) values (?, (select user_id from R_USER_MAIN where user_name=? and zone_name=(select zone_name from R_ZONE_MAIN where zone_type_name='local')), ?, ?, ?, ?)", icss );
-    }
-    else {
-        if ( logSQL_CML != 0 ) {
-            rodsLog( LOG_SQL, "cmlAudit3 SQL 2 " );
-        }
-        cllBindVars[0] = dataId;
-        cllBindVars[1] = userName;
-        cllBindVars[2] = zoneName;
-        cllBindVars[3] = actionIdStr;
-        cllBindVars[4] = myComment;
-        cllBindVars[5] = myTime;
-        cllBindVars[6] = myTime;
-        cllBindVarCount = 7;
-        status = cmlExecuteNoAnswerSql(
-                     "insert into R_OBJT_AUDIT (object_id, user_id, action_id, r_comment, create_ts, modify_ts) values (?, (select user_id from R_USER_MAIN where user_name=? and zone_name=?), ?, ?, ?, ?)", icss );
-    }
-
-    if ( status != 0 ) {
-        rodsLog( LOG_NOTICE, "cmlAudit3 insert failure %d", status );
-    }
-#ifdef ORA_ICAT
-#else
-    else {
-        cllCheckPending( "", 2,  icss->databaseType );
-        /* Indicate that this was an audit SQL and so should be
-        committed on disconnect if still pending. */
-    }
-#endif
-
-    return status;
-}
-
-
-int
-cmlAudit4( int actionId, const char *sql, const char *sqlParm, const char *userName,
-           const char *zoneName, const char *comment, icatSessionStruct *icss ) {
-    char myTime[50];
-    char actionIdStr[50];
-    char myComment[AUDIT_COMMENT_MAX_SIZE + 10];
-    char mySQL[MAX_SQL_SIZE];
-    int status;
-    int i;
-
-    if ( auditEnabled == 0 ) {
-        return 0;
-    }
-
-    getNowStr( myTime );
-
-    snprintf( actionIdStr, sizeof actionIdStr, "%d", actionId );
-
-    /* Truncate the comment if necessary (or else SQL will fail)*/
-    myComment[AUDIT_COMMENT_MAX_SIZE - 1] = '\0';
-    strncpy( myComment, comment, AUDIT_COMMENT_MAX_SIZE - 1 );
-
-    if ( zoneName[0] == '\0' ) {
-        /* This no longer seems to occur.  I'm leaving the code in place
-           (just in case) but I'm removing the rodsLog call so the ICAT
-           test suite does not require it to be tested.
-        */
-        /*
-        if (logSQL_CML!=0) rodsLog(LOG_SQL, "cmlA---udit4 S--QL 1 ");
-        */
-        snprintf( mySQL, MAX_SQL_SIZE,
-                  "insert into R_OBJT_AUDIT (object_id, user_id, action_id, r_comment, create_ts, modify_ts) values ((%s), (select user_id from R_USER_MAIN where user_name=? and zone_name=(select zone_name from R_ZONE_MAIN where zone_type_name='local')), ?, ?, ?, ?)",
-                  sql );
-        i = 0;
-        if ( sqlParm[0] != '\0' ) {
-            cllBindVars[i++] = sqlParm;
-        }
-        cllBindVars[i++] = userName;
-        cllBindVars[i++] = actionIdStr;
-        cllBindVars[i++] = myComment;
-        cllBindVars[i++] = myTime;
-        cllBindVars[i++] = myTime;
-        cllBindVarCount = i;
-        status = cmlExecuteNoAnswerSql( mySQL, icss );
-    }
-    else {
-        if ( logSQL_CML != 0 ) {
-            rodsLog( LOG_SQL, "cmlAudit4 SQL 2 " );
-        }
-        snprintf( mySQL, MAX_SQL_SIZE,
-                  "insert into R_OBJT_AUDIT (object_id, user_id, action_id, r_comment, create_ts, modify_ts) values ((%s), (select user_id from R_USER_MAIN where user_name=? and zone_name=?), ?, ?, ?, ?)",
-                  sql );
-        i = 0;
-        if ( sqlParm[0] != '\0' ) {
-            cllBindVars[i++] = sqlParm;
-        }
-        cllBindVars[i++] = userName;
-        cllBindVars[i++] = zoneName;
-        cllBindVars[i++] = actionIdStr;
-        cllBindVars[i++] = myComment;
-        cllBindVars[i++] = myTime;
-        cllBindVars[i++] = myTime;
-        cllBindVarCount = i;
-        status = cmlExecuteNoAnswerSql( mySQL, icss );
-    }
-
-    if ( status != 0 ) {
-        rodsLog( LOG_NOTICE, "cmlAudit4 insert failure %d", status );
-    }
-#ifdef ORA_ICAT
-#else
-    else {
-        cllCheckPending( "", 2,  icss->databaseType );
-        /* Indicate that this was an audit SQL and so should be
-        committed on disconnect if still pending. */
-    }
-#endif
-
-    return status;
-}
-
-
-/*
- Audit - record auditing information
- */
-int
-cmlAudit5( int actionId, const char *objId, const char *userId, const char *comment,
-           icatSessionStruct *icss ) {
-    char myTime[50];
-    char actionIdStr[50];
-    int status;
-
-    if ( auditEnabled == 0 ) {
-        return 0;
-    }
-
-    getNowStr( myTime );
-
-    snprintf( actionIdStr, sizeof actionIdStr, "%d", actionId );
-
-    cllBindVars[0] = objId;
-    cllBindVars[1] = userId;
-    cllBindVars[2] = actionIdStr;
-    cllBindVars[3] = comment;
-    cllBindVars[4] = myTime;
-    cllBindVars[5] = myTime;
-    cllBindVarCount = 6;
-
-    status = cmlExecuteNoAnswerSql(
-                 "insert into R_OBJT_AUDIT (object_id, user_id, action_id, r_comment, create_ts, modify_ts) values (?,?,?,?,?,?)",
-                 icss );
-    if ( status != 0 ) {
-        rodsLog( LOG_NOTICE, "cmlAudit5 insert failure %d", status );
-    }
-#ifdef ORA_ICAT
-#else
-    else {
-        cllCheckPending( "", 2,  icss->databaseType );
-        /* Indicate that this was an audit SQL and so should be
-        committed on disconnect if still pending. */
-    }
-#endif
     return status;
 }

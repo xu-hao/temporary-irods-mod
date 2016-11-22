@@ -27,53 +27,8 @@ set(
   )
 
 set(
-  GHC_INSTALL_DIR
-  ~/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/
-  )
-
-set(
-  STACK_DIR
-  /home/xuh/.stack
-  )
-
-set(
-  PROJECT_STACK_WORK_DIR
-  /home/xuh/git/QueryArrow/.stack-work
-  )
-
-set(
-  SUBPROJECT_STACK_WORK_DIR
-  /home/xuh/git/QueryArrow/QueryArrow-c/.stack-work
-  )
-
-set(
-  TMP_DIR
-  /tmp/ghc
-  )
-
-set(
-  LIB
-  ${PROJECT_STACK_WORK_DIR}/install/x86_64-linux/lts-7.9/8.0.1/lib
-  )
-
-set(
-  INCLUDE
-  ${SUBPROJECT_STACK_WORK_DIR}/dist/x86_64-linux/Cabal-1.24.0.0/build/Client/
-  )
-
-set(
-  STACK_LIB
-  ${STACK_DIR}/snapshots/x86_64-linux/lts-7.9/8.0.1/lib
-  )
-
-set(
-  GHC_LIB
-  ${STACK_DIR}/programs/x86_64-linux/ghc-8.0.1/lib
-  )
-
-set(
   GHC_CXX_FLAGS
-  "-fno-stack-protector -DTABLES_NEXT_TO_CODE -D__GLASGOW_HASKELL__=800 -include ${GHC_LIB}/ghc-8.0.1/include/ghcversion.h"
+  "-fno-stack-protector -DTABLES_NEXT_TO_CODE -D__GLASGOW_HASKELL__=800 -include /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/include/ghcversion.h"
   )
 
 set(

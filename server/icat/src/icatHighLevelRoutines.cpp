@@ -220,7 +220,7 @@ int chlClose() {
 //got larger) so this is a 'glue' that binds them together.  So this
 //is mostly an 'internal' function too.
 int chlGetRcs(
-    icatSessionStruct** _icss ) {
+    void** _icss ) {
     // =-=-=-=-=-=-=-
     // call factory for database object
     irods::database_object_ptr db_obj_ptr;
@@ -255,7 +255,7 @@ int chlGetRcs(
 
     // =-=-=-=-=-=-=-
     // call the operation on the plugin
-    ret = db->call< icatSessionStruct** >( 0,
+    ret = db->call< void** >( 0,
                                            irods::DATABASE_OP_GET_RCS,
                                            ptr,
                                            _icss );

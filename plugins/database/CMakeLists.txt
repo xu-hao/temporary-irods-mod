@@ -30,7 +30,97 @@ set(
   GHC_INSTALL_DIR
   ~/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/
   )
-  
+
+set(
+  STACK_DIR
+  /home/xuh/.stack
+  )
+
+set(
+  PROJECT_STACK_WORK_DIR
+  /home/xuh/git/QueryArrow/.stack-work
+  )
+
+set(
+  SUBPROJECT_STACK_WORK_DIR
+  /home/xuh/git/QueryArrow/QueryArrow-c/.stack-work
+  )
+
+set(
+  TMP_DIR
+  /tmp/ghc
+  )
+
+set(
+  LIB
+  ${PROJECT_STACK_WORK_DIR}/install/x86_64-linux/lts-7.9/8.0.1/lib
+  )
+
+set(
+  INCLUDE
+  ${SUBPROJECT_STACK_WORK_DIR}/dist/x86_64-linux/Cabal-1.24.0.0/build/Client/
+  )
+
+set(
+  STACK_LIB
+  ${STACK_DIR}/snapshots/x86_64-linux/lts-7.9/8.0.1/lib
+  )
+
+set(
+  GHC_LIB
+  ${STACK_DIR}/programs/x86_64-linux/ghc-8.0.1/lib
+  )
+
+set(
+  GHC_CXX_FLAGS
+  "-fno-stack-protector -DTABLES_NEXT_TO_CODE -D__GLASGOW_HASKELL__=800 -include ${GHC_LIB}/ghc-8.0.1/include/ghcversion.h"
+  )
+
+set(
+  GHC_LINKER_FLAGS
+  "--hash-size=31 --reduce-memory-overheads --no-as-needed --gc-sections -u ghczmprim_GHCziTypes_Izh_static_info -u ghczmprim_GHCziTypes_Czh_static_info -u ghczmprim_GHCziTypes_Fzh_static_info -u ghczmprim_GHCziTypes_Dzh_static_info -u base_GHCziPtr_Ptr_static_info -u ghczmprim_GHCziTypes_Wzh_static_info -u base_GHCziInt_I8zh_static_info -u base_GHCziInt_I16zh_static_info -u base_GHCziInt_I32zh_static_info -u base_GHCziInt_I64zh_static_info -u base_GHCziWord_W8zh_static_info -u base_GHCziWord_W16zh_static_info -u base_GHCziWord_W32zh_static_info -u base_GHCziWord_W64zh_static_info -u base_GHCziStable_StablePtr_static_info -u ghczmprim_GHCziTypes_Izh_con_info -u ghczmprim_GHCziTypes_Czh_con_info -u ghczmprim_GHCziTypes_Fzh_con_info -u ghczmprim_GHCziTypes_Dzh_con_info -u base_GHCziPtr_Ptr_con_info -u base_GHCziPtr_FunPtr_con_info -u base_GHCziStable_StablePtr_con_info -u ghczmprim_GHCziTypes_False_closure -u ghczmprim_GHCziTypes_True_closure -u base_GHCziPack_unpackCString_closure -u base_GHCziIOziException_stackOverflow_closure -u base_GHCziIOziException_heapOverflow_closure -u base_ControlziExceptionziBase_nonTermination_closure -u base_GHCziIOziException_blockedIndefinitelyOnMVar_closure -u base_GHCziIOziException_blockedIndefinitelyOnSTM_closure -u base_GHCziIOziException_allocationLimitExceeded_closure -u base_ControlziExceptionziBase_nestedAtomically_closure -u base_GHCziEventziThread_blockedOnBadFD_closure -u base_GHCziWeak_runFinalizzerBatch_closure -u base_GHCziTopHandler_flushStdHandles_closure -u base_GHCziTopHandler_runIO_closure -u base_GHCziTopHandler_runNonIO_closure -u base_GHCziConcziIO_ensureIOManagerIsRunning_closure -u base_GHCziConcziIO_ioManagerCapabilitiesChanged_closure -u base_GHCziConcziSync_runSparks_closure -u base_GHCziConcziSignal_runHandlersPtr_closure"
+  )
+
+set(
+  GHC_LIBRARY
+  HSQueryArrow-c-0.2-1uZWUVOUxMP2miK7T6fJAV-ghc8.0.1
+  HSrts_debug-ghc8.0.1
+)
+
+set(
+  GHC_INCLUDE
+  /home/xuh/git/QueryArrow/QueryArrow-c/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/QueryArrow/C
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/include
+)
+
+set(
+  GHC_LINK_DIR
+  /home/xuh/git/QueryArrow/QueryArrow-c/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/template-haskell-2.11.0.0
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/pretty-1.1.3.3
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/deepseq-1.4.2.0
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/array-0.5.1.1
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/ghc-boot-th-8.0.1
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/base-4.9.0.0
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/integer-gmp-1.0.0.1
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/ghc-prim-0.5.0.0
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/rts
+)
+
+set(
+  CMAKE_CXX_FLAGS
+  "${CMAKE_CXX_FLAGS} ${GHC_CXX_FLAGS}"
+  )
+
+set(
+  CMAKE_EXE_LINKER_FLAGS
+  "${CMAKE_EXE_LINKER_FLAGS} ${GHC_LINKER_FLAGS}"
+  )
+
+link_directories(
+  ${GHC_LINK_DIR}
+)
+
 foreach(PLUGIN ${IRODS_DATABASE_PLUGINS})
   string(TOUPPER ${PLUGIN} PLUGIN_UPPERCASE)
 
@@ -67,7 +157,7 @@ foreach(PLUGIN ${IRODS_DATABASE_PLUGINS})
     ${CMAKE_SOURCE_DIR}/plugins/database/include
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
     ${IRODS_EXTERNALS_FULLPATH_JANSSON}/include
-    ${GHC_INSTALL_DIR}/include
+    ${GHC_INCLUDE}
     )
 
   target_link_libraries(
@@ -79,6 +169,7 @@ foreach(PLUGIN ${IRODS_DATABASE_PLUGINS})
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_regex.so
     ${ODBC_LIBRARY}
+    ${GHC_LIBRARY}
     )
 
   target_compile_definitions(${PLUGIN} PRIVATE ENABLE_RE ${IRODS_DATABASE_PLUGIN_COMPILE_DEFINITIONS_${PLUGIN}} ${IRODS_COMPILE_DEFINITIONS} BOOST_SYSTEM_NO_DEPRECATED)

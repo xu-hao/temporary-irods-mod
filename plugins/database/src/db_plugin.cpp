@@ -48,6 +48,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "Plugin_stub.h"
+#include "PluginGen_stub.h"
 
 #include "irods_lexical_cast.hpp"
 
@@ -1520,9 +1521,13 @@ irods::error db_open_op(
         return ERROR(INVALID_ANY_CAST, "Failed any_cast in the database configuration");
     }
 
+    int argc=1;
+    char* args[]={"dummy"};
+    char** argv=args;
+    hs_init(&argc, &argv);
     // =-=-=-=-=-=-=-
     // call open in mid level
-    int status = hs_connect( &icss );
+    int status = hs_connect( (void *) "/etc/irods/QueryArrow/tdb-plugin-abs.json", &icss );
     if ( 0 != status ) {
         return ERROR(
                    status,
@@ -1591,6 +1596,7 @@ irods::error db_close_op(
     // =-=-=-=-=-=-=-
     // call open in mid level
     int status = hs_disconnect( icss );
+    hs_exit();
     if ( 0 != status ) {
         return ERROR(
                    status,
@@ -1637,7 +1643,61 @@ irods::error db_check_and_get_object_id_op(
 
     }
 
-} // db_check_and_get_object_id_op
+}
+
+irods::error db_get_resc_info_op(
+  irods::plugin_context& _ctx,
+  char ***          zone_info,
+  int *             len) {
+    // =-=-=-=-=-=-=-
+    // check the context
+    irods::error ret = _ctx.valid();
+    if ( !ret.ok() ) {
+      return PASS( ret );
+    }
+
+    // =-=-=-=-=-=-=-
+    // extract the icss property
+    //        icatSessionStruct icss;
+    //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
+    int status = hs_get_all_resc_info(icss, zone_info, len);
+    if ( status < 0 ) {
+      return ERROR( status, "error" );
+
+    }
+    else {
+      return SUCCESS();
+
+    }
+
+  } // db_get_local_zone_op
+
+irods::error db_get_resc_net_op(
+  irods::plugin_context& _ctx,
+  char ***          resc_net,
+  int *             len) {
+    // =-=-=-=-=-=-=-
+    // check the context
+    irods::error ret = _ctx.valid();
+    if ( !ret.ok() ) {
+      return PASS( ret );
+    }
+
+    // =-=-=-=-=-=-=-
+    // extract the icss property
+    //        icatSessionStruct icss;
+    //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
+    int status = hs_get_all_resc_net(icss, resc_net, len);
+    if ( status < 0 ) {
+      return ERROR( status, "error" );
+
+    }
+    else {
+      return SUCCESS();
+
+    }
+
+  } // db_get_local_zone_op
 
 // =-=-=-=-=-=-=-
 // return the local zone
@@ -1658,6 +1718,35 @@ irods::error db_get_local_zone_op(
     ret = getLocalZone( _ctx.prop_map(), icss, ( *_zone ) );
     if ( !ret.ok() ) {
         return PASS( ret );
+
+    }
+    else {
+        return SUCCESS();
+
+    }
+
+} // db_get_local_zone_op
+
+// =-=-=-=-=-=-=-
+// return the local zone
+irods::error db_get_zone_info_op(
+    irods::plugin_context& _ctx,
+    char ***          zone_info,
+    int *             len) {
+    // =-=-=-=-=-=-=-
+    // check the context
+    irods::error ret = _ctx.valid();
+    if ( !ret.ok() ) {
+        return PASS( ret );
+    }
+
+    // =-=-=-=-=-=-=-
+    // extract the icss property
+//        icatSessionStruct icss;
+//        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
+    int status = hs_get_all_zone_info(icss, zone_info, len);
+    if ( status < 0 ) {
+        return ERROR( status, "error" );
 
     }
     else {
@@ -2289,13 +2378,13 @@ irods::error db_reg_data_obj_op(
     }
     status =  hs_create_repl(icss,
       dataIdNum,
+      (void *) resc_id_str.c_str(),
       collIdNum,
       logicalFileName,
       dataReplNum,
       _data_obj_info->version,
       _data_obj_info->dataType,
       dataSizeNum,
-      (void *) resc_id_str.c_str(),
       _data_obj_info->filePath,
       _ctx.comm()->clientUser.userName,
       _ctx.comm()->clientUser.rodsZone,
@@ -3768,7 +3857,7 @@ irods::error db_reg_coll_by_admin_op(
     snprintf( collIdNum, MAX_NAME_LEN, "%d", status );
 
     /* String to get next sequence item for objects */
-    cllNextValueString( "R_ObjectID", nextStr, MAX_NAME_LEN );
+    hs_get_next_id( icss, nextStr, MAX_NAME_LEN );
 
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegCollByAdmin SQL 2" );
@@ -3931,7 +4020,7 @@ irods::error db_reg_coll_op(
 
 
     /* String to get next sequence item for objects */
-    cllNextValueString( "R_ObjectID", nextStr, MAX_NAME_LEN );
+    hs_get_next_id( icss, nextStr, MAX_NAME_LEN );
 
     getNowStr( myTime );
 
@@ -4192,7 +4281,7 @@ irods::error db_reg_zone_op(
     }
 
     /* String to get next sequence item for objects */
-    cllNextValueString( "R_ObjectID", nextStr, MAX_NAME_LEN );
+    hs_get_next_id( icss, nextStr, MAX_NAME_LEN );
 
     getNowStr( myTime );
 
@@ -5138,7 +5227,7 @@ irods::error db_check_auth_op(
 
     {
         /* four strings per password returned */
-        status = hs_get_some_user_password_by_user_zone_and_name(icss, myUserZone, userName2, pwInfoArray.data(), MAX_PASSWORD_LEN, MAX_PASSWORDS * 4 );
+        status = hs_get_some_user_password_by_user_zone_and_name(icss, myUserZone, userName2, pwInfoArray.data(), MAX_PASSWORD_LEN, MAX_PASSWORDS * 4 ) * 4;
     }
 
     if ( status < 4 ) {
@@ -8905,6 +8994,7 @@ _ctx.comm()->clientUser.userName,
 objIdString,
                      &collId);
     }
+    rodsLog( LOG_NOTICE, "status %d", status );
 
     if ( status == 0 ) { /* it is a dataObj and user has access to it */
 
@@ -8928,7 +9018,6 @@ objIdString,
             rodsLog( LOG_SQL, "chlRenameObject SQL 3" );
         }
         {
-            std::vector<std::string> bindVars;
             status = hs_get_int_sub_coll_id_by_name(icss, collIdString, collNameTmp,
                          &otherCollId);
         }
@@ -8970,10 +9059,10 @@ objIdString,
     /* See if it's a collection, and get the parentCollName and
        collName, and check permission at the same time */
 
-    cVal[0] = parentCollName;
-    iVal[0] = MAX_NAME_LEN;
-    cVal[1] = collName;
+    cVal[1] = parentCollName;
     iVal[1] = MAX_NAME_LEN;
+    cVal[0] = collName;
+    iVal[0] = MAX_NAME_LEN;
 
     snprintf( objIdString, MAX_NAME_LEN, "%lld", _obj_id );
     if ( logSQL != 0 ) {
@@ -8983,6 +9072,7 @@ objIdString,
     {
         status = hs_get_some2_coll_if_own_access_by_user_zone_and_name( icss, _ctx.comm()->clientUser.rodsZone,_ctx.comm()->clientUser.userName,objIdString,
                      cVal, iVal, 2 );
+        if (status > 0) status = 0;
     }
     if ( status == 0 ) {
         /* it is a collection and user has access to it */
@@ -8992,7 +9082,7 @@ objIdString,
             rodsLog( LOG_SQL, "chlRenameObject SQL 7" );
         }
         {
-            status = hs_get_int_data_id(icss, parentCollName, (void *) _new_name,
+            status = hs_get_int_data_id_by_name(icss, parentCollName, (void *) _new_name,
                          &otherDataId  );
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
@@ -9148,7 +9238,7 @@ irods::error db_move_object_op(
     // extract the icss property
 //        icatSessionStruct icss;
 //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
-    int status;
+    int status = 0;
     rodsLong_t collId;
     rodsLong_t otherDataId;
     rodsLong_t otherCollId;
@@ -9191,8 +9281,11 @@ irods::error db_move_object_op(
         rodsLog( LOG_SQL, "chlMoveObject SQL 1 " );
     }
     {
-        status = hs_get_some2_coll_if_modify_object_access_by_user_zone_and_name(icss, objIdString, _ctx.comm()->clientUser.rodsZone,_ctx.comm()->clientUser.userName,
+      printf("******************************db_move_object_op 0, %d, %s, %s, %s\n", status, _ctx.comm()->clientUser.rodsZone,_ctx.comm()->clientUser.userName, objIdString);
+        status = hs_get_some2_coll_if_modify_object_access_by_user_zone_and_name(icss, _ctx.comm()->clientUser.rodsZone,_ctx.comm()->clientUser.userName, objIdString,
                      cVal, iVal, 2);
+                     printf("******************************db_move_object_op 1, %d\n", status);
+                     if (status > 0 ) status = 0;
 
     }
     snprintf( collIdString, MAX_NAME_LEN, "%lld", _target_coll_id );
@@ -9201,8 +9294,11 @@ irods::error db_move_object_op(
             rodsLog( LOG_SQL, "chlMoveObject SQL 2" );
         }
         {
+          printf("******************************db_move_object_op 2, %d\n", status);
+
             status = hs_get_int_coll_id_by_coll_id(icss, collIdString,
                          &collId);
+                         printf("******************************db_move_object_op 3, %d\n", status);
         }
         if ( status == 0 ) {
             return  ERROR( CAT_NO_ACCESS_PERMISSION, "permission error" );  /* does exist, must be
@@ -9219,8 +9315,10 @@ irods::error db_move_object_op(
         rodsLog( LOG_SQL, "chlMoveObject SQL 3" );
     }
     {
+      printf("******************************db_move_object_op 4, %d\n", status);
         status = hs_get_data_name_by_id_and_access(icss, objIdString, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName,
                      dataObjName, MAX_NAME_LEN  );
+                     printf("******************************db_move_object_op 5, %d\n", status);
     }
     snprintf( collIdString, MAX_NAME_LEN, "%lld", _target_coll_id );
     if ( status == 0 ) { /* it is a dataObj and user has access to it */
@@ -9287,17 +9385,18 @@ irods::error db_move_object_op(
 
     /* See if it's a collection, and get the parentCollName and
        oldCollName, and check permission at the same time */
-    cVal[0] = parentCollName;
-    iVal[0] = MAX_NAME_LEN;
-    cVal[1] = oldCollName;
+    cVal[1] = parentCollName;
     iVal[1] = MAX_NAME_LEN;
+    cVal[0] = oldCollName;
+    iVal[0] = MAX_NAME_LEN;
 
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlMoveObject SQL 8" );
     }
     {
-        status = hs_get_some2_coll_if_own_access_by_user_zone_and_name(icss, objIdString, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName,
-                     cVal, iVal, 2);
+        status = hs_get_some2_coll_if_own_access_by_user_zone_and_name(icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, objIdString,
+                             cVal, iVal, 2);
+                             if (status > 0) status = 0;
     }
     if ( status == 0 ) {
         /* it is a collection and user has access to it */
@@ -10617,9 +10716,10 @@ irods::error db_get_repl_list_for_leaf_bundles_op(
     not_child_array.pop_back(); // trim last ','
 
 	char **resultValue;
+  int len;
         int status = 0;
             status = hs_get_all_data_by_resc_list(
-				icss, (void *) not_child_array.c_str(), (void *) child_array.c_str(), &resultValue
+				icss, (void *) not_child_array.c_str(), (void *) child_array.c_str(), &resultValue, &len
 			);
 
         if ( status < 0 ) {
@@ -10791,7 +10891,7 @@ irods::error db_get_icss_op(
 
 // =-=-=-=-=-=-=-
 // from general_query.cpp ::
-int chl_gen_query_impl( genQueryInp_t, genQueryOut_t* );
+int chl_gen_query_impl( void *, genQueryInp_t, genQueryOut_t* );
 
 irods::error db_gen_query_op(
     irods::plugin_context& _ctx,
@@ -10826,6 +10926,7 @@ irods::error db_gen_query_op(
 //        icatSessionStruct icss;
 //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
     int status = chl_gen_query_impl(
+                     icss,
                      *_gen_query_inp,
                      _result );
 //         if( status < 0 ) {

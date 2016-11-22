@@ -219,7 +219,7 @@ int chlCheckAndGetObjectID(
     char*,     // name
     char* );   // access
 
-int chlGetRcs( icatSessionStruct** );
+int chlGetRcs( void** );
 
 int chlGetReplListForLeafBundles(
     rodsLong_t                  _count,

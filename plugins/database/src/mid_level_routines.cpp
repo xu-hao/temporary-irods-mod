@@ -24,6 +24,7 @@
 #include <vector>
 #include <string>
 #include "Plugin_stub.h"
+#include "PluginGen_stub.h"
 
 
 extern int logSQL_CML;
@@ -140,7 +141,7 @@ cmlCheckDir( const char *dirName, const char *userName, const char *userZone, co
         rodsLog( LOG_SQL, "cmlCheckDir SQL 1 " );
     }
 
-    status = hs_get_int_coll_id_by_access(icss,(void *) dirName ,(void *) userName ,(void *) userZone ,(void *) accessLevel, &iVal);
+    status = hs_get_int_coll_id_by_access(icss,(void *) dirName, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
     if ( status ) {
         /* There was an error, so do another sql to see which
            of the two likely cases is problem. */
@@ -202,7 +203,7 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
             rodsLog( LOG_SQL, "cmlCheckDirAndGetInheritFlag SQL 2 " );
         }
         status = hs_get_some2_coll_id_and_inheritance_by_access(icss,(void *) dirName,(void *) userZone,(void *) userName,(void *) accessLevel,
-                                        cVal, cValSize, 2);
+                                        cVal, cValSize, 2) * 2;
     }
     if ( status == 2 ) {
         if ( *cVal[0] == '\0' ) {

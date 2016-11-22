@@ -1645,60 +1645,6 @@ irods::error db_check_and_get_object_id_op(
 
 }
 
-irods::error db_get_resc_info_op(
-  irods::plugin_context& _ctx,
-  char ***          zone_info,
-  int *             len) {
-    // =-=-=-=-=-=-=-
-    // check the context
-    irods::error ret = _ctx.valid();
-    if ( !ret.ok() ) {
-      return PASS( ret );
-    }
-
-    // =-=-=-=-=-=-=-
-    // extract the icss property
-    //        icatSessionStruct icss;
-    //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
-    int status = hs_get_all_resc_info(icss, zone_info, len);
-    if ( status < 0 ) {
-      return ERROR( status, "error" );
-
-    }
-    else {
-      return SUCCESS();
-
-    }
-
-  } // db_get_local_zone_op
-
-irods::error db_get_resc_net_op(
-  irods::plugin_context& _ctx,
-  char ***          resc_net,
-  int *             len) {
-    // =-=-=-=-=-=-=-
-    // check the context
-    irods::error ret = _ctx.valid();
-    if ( !ret.ok() ) {
-      return PASS( ret );
-    }
-
-    // =-=-=-=-=-=-=-
-    // extract the icss property
-    //        icatSessionStruct icss;
-    //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
-    int status = hs_get_all_resc_net(icss, resc_net, len);
-    if ( status < 0 ) {
-      return ERROR( status, "error" );
-
-    }
-    else {
-      return SUCCESS();
-
-    }
-
-  } // db_get_local_zone_op
-
 // =-=-=-=-=-=-=-
 // return the local zone
 irods::error db_get_local_zone_op(
@@ -1718,35 +1664,6 @@ irods::error db_get_local_zone_op(
     ret = getLocalZone( _ctx.prop_map(), icss, ( *_zone ) );
     if ( !ret.ok() ) {
         return PASS( ret );
-
-    }
-    else {
-        return SUCCESS();
-
-    }
-
-} // db_get_local_zone_op
-
-// =-=-=-=-=-=-=-
-// return the local zone
-irods::error db_get_zone_info_op(
-    irods::plugin_context& _ctx,
-    char ***          zone_info,
-    int *             len) {
-    // =-=-=-=-=-=-=-
-    // check the context
-    irods::error ret = _ctx.valid();
-    if ( !ret.ok() ) {
-        return PASS( ret );
-    }
-
-    // =-=-=-=-=-=-=-
-    // extract the icss property
-//        icatSessionStruct icss;
-//        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
-    int status = hs_get_all_zone_info(icss, zone_info, len);
-    if ( status < 0 ) {
-        return ERROR( status, "error" );
 
     }
     else {

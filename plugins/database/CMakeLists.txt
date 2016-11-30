@@ -37,29 +37,47 @@ set(
   )
 
 set(
-  GHC_LIBRARY
-  HSQueryArrow-c-0.2-1uZWUVOUxMP2miK7T6fJAV-ghc8.0.1
-  HSrts_debug-ghc8.0.1
-)
-
-set(
-  GHC_INCLUDE
-  /home/xuh/git/QueryArrow/QueryArrow-c/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/QueryArrow/C
-  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/include
+  LIB_PATH_LIST
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c-local/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c-tcp/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c-unixdomainsocket/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c-genquery/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/
 )
 
 set(
   GHC_LINK_DIR
-  /home/xuh/git/QueryArrow/QueryArrow-c/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/
-  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/template-haskell-2.11.0.0
-  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/pretty-1.1.3.3
-  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/deepseq-1.4.2.0
-  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/array-0.5.1.1
-  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/ghc-boot-th-8.0.1
-  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/base-4.9.0.0
-  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/integer-gmp-1.0.0.1
-  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/ghc-prim-0.5.0.0
+  ${LIB_PATH_LIST}
   /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/rts
+)
+
+set(
+  GHC_LIBRARY
+  HSrts-ghc8.0.1
+)
+
+foreach(LIB_PATH ${LIB_PATH_LIST})
+  file(GLOB LIB_LIST RELATIVE "${LIB_PATH}" "${LIB_PATH}/*.so")
+  set(LIB_0 "no_lib")
+  foreach(LIB_I ${LIB_LIST})
+    if("${LIB_PATH}/${LIB_I}" IS_NEWER_THAN "${LIB_PATH}/${LIB_0}")
+      set(LIB_0 ${LIB_I})
+    endif("${LIB_PATH}/${LIB_I}" IS_NEWER_THAN "${LIB_PATH}/${LIB_0}")
+  endforeach(LIB_I)
+  string(LENGTH ${LIB_0} LIB_0_LEN)
+  math(EXPR LIB_0_END "${LIB_0_LEN} - 3")
+  string(SUBSTRING ${LIB_0} 3 ${LIB_0_END} LIB_I)
+  list(APPEND GHC_LIBRARY ${LIB_I})
+endforeach(LIB_PATH)
+
+set(
+  GHC_INCLUDE
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/QueryArrow/FFI/C
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c-local/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/QueryArrow/FFI/C
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c-tcp/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/QueryArrow/FFI/C
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c-unixdomainsocket/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/QueryArrow/FFI/C
+  /home/xuh/git/QueryArrow/QueryArrow-ffi-c-genquery/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0/build/QueryArrow/FFI/C
+  /home/xuh/.stack/programs/x86_64-linux/ghc-8.0.1/lib/ghc-8.0.1/include
 )
 
 set(

@@ -169,7 +169,8 @@ int maxLen(char **out, int n) {
 
 /* General Query */
  int chl_gen_query_impl(
-    void * icss,
+    void* svc,
+    void* icss,
     genQueryInp_t  genQueryInp,
     genQueryOut_t* result ) {
 
@@ -178,7 +179,7 @@ int maxLen(char **out, int n) {
     char **out = NULL;
     int col = 0;
     int row = 0;
-    int status = hs_gen_query(icss, (void *)  qu.c_str(), &out, &col, &row);
+    int status = hs_gen_query(svc, icss, (void *)  qu.c_str(), &out, &col, &row);
     if (status < 0) {
         return status;
     }

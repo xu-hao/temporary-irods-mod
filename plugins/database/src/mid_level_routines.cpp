@@ -32,6 +32,7 @@ extern int logSQL_CML;
 int checkObjIdByTicket( const char *dataId, const char *accessLevel,
                         const char *ticketStr, const char *ticketHost,
                         const char *userName, const char *userZone,
+                        void *svc, 
                         void *icss );
 
 /*
@@ -71,7 +72,7 @@ int cmlDebug( int mode ) {
 
 
 
-int cmlCheckNameToken( const char *nameSpace, const char *tokenName, void *icss ) {
+int cmlCheckNameToken( const char *nameSpace, const char *tokenName, void *svc, void *icss ) {
 
     rodsLong_t iVal;
     int status;
@@ -79,7 +80,7 @@ int cmlCheckNameToken( const char *nameSpace, const char *tokenName, void *icss 
     if ( logSQL_CML != 0 ) {
         rodsLog( LOG_SQL, "cmlCheckNameToken SQL 1 " );
     }
-    status = hs_get_int_token_id(icss, (void *) nameSpace, (void *) tokenName, &iVal);
+    status = hs_get_int_token_id(svc, icss, (void *) nameSpace, (void *) tokenName, &iVal);
     return status;
 
 }
@@ -97,7 +98,7 @@ int cmlTest( void *icss ) {
   Return code is either an iRODS error code (< 0) or the collectionId.
 */
 rodsLong_t
-cmlCheckResc( const char *rescName, const char *userName, const char *userZone, const char *accessLevel,
+cmlCheckResc( const char *rescName, const char *userName, const char *userZone, const char *accessLevel, void *svc,
               void *icss ) {
     int status;
     rodsLong_t iVal;
@@ -106,7 +107,7 @@ cmlCheckResc( const char *rescName, const char *userName, const char *userZone, 
         rodsLog( LOG_SQL, "cmlCheckResc SQL 1 " );
     }
 
-    status = hs_get_int_resc_id_by_access(&icss, (void *) rescName, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
+    status = hs_get_int_resc_id_by_access(svc, &icss, (void *) rescName, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
     if ( status ) {
         /* There was an error, so do another sql to see which
            of the two likely cases is problem. */
@@ -115,7 +116,7 @@ cmlCheckResc( const char *rescName, const char *userName, const char *userZone, 
             rodsLog( LOG_SQL, "cmlCheckResc SQL 2 " );
         }
 
-        status = hs_get_int_resc_id_by_name(icss, (void *) rescName, &iVal);
+        status = hs_get_int_resc_id_by_name(svc, icss, (void *) rescName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_RESOURCE;
         }
@@ -132,7 +133,7 @@ cmlCheckResc( const char *rescName, const char *userName, const char *userZone, 
   Return code is either an iRODS error code (< 0) or the collectionId.
 */
 rodsLong_t
-cmlCheckDir( const char *dirName, const char *userName, const char *userZone, const char *accessLevel,
+cmlCheckDir( const char *dirName, const char *userName, const char *userZone, const char *accessLevel, void *svc,
              void *icss ) {
     int status;
     rodsLong_t iVal;
@@ -141,7 +142,7 @@ cmlCheckDir( const char *dirName, const char *userName, const char *userZone, co
         rodsLog( LOG_SQL, "cmlCheckDir SQL 1 " );
     }
 
-    status = hs_get_int_coll_id_by_access(icss,(void *) dirName, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
+    status = hs_get_int_coll_id_by_access(svc, icss,(void *) dirName, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
     if ( status ) {
         /* There was an error, so do another sql to see which
            of the two likely cases is problem. */
@@ -150,7 +151,7 @@ cmlCheckDir( const char *dirName, const char *userName, const char *userZone, co
             rodsLog( LOG_SQL, "cmlCheckDir SQL 2 " );
         }
 
-        status = hs_get_int_coll_id_by_name(icss, (void *) dirName, &iVal);
+        status = hs_get_int_coll_id_by_name(svc, icss, (void *) dirName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_COLLECTION;
         }
@@ -170,7 +171,7 @@ cmlCheckDir( const char *dirName, const char *userName, const char *userZone, co
 rodsLong_t
 cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const char *userZone,
                               const char *accessLevel, int *inheritFlag,
-                              const char *ticketStr, const char *ticketHost,
+                              const char *ticketStr, const char *ticketHost, void *svc,
                               void *icss ) {
     int status;
     rodsLong_t iVal = 0;
@@ -202,7 +203,7 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
         if ( logSQL_CML != 0 ) {
             rodsLog( LOG_SQL, "cmlCheckDirAndGetInheritFlag SQL 2 " );
         }
-        status = hs_get_some2_coll_id_and_inheritance_by_access(icss,(void *) dirName,(void *) userZone,(void *) userName,(void *) accessLevel,
+        status = hs_get_some2_coll_id_and_inheritance_by_access(svc, icss,(void *) dirName,(void *) userZone,(void *) userName,(void *) accessLevel,
                                         cVal, cValSize, 2) * 2;
     }
     if ( status == 2 ) {
@@ -224,7 +225,7 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
             rodsLog( LOG_SQL, "cmlCheckDirAndGetInheritFlag SQL 3 " );
         }
 
-        status = hs_get_int_coll_id_by_name(icss, (void *) dirName, &iVal);
+        status = hs_get_int_coll_id_by_name(svc, icss, (void *) dirName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_COLLECTION;
         }
@@ -236,7 +237,7 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
      */
     if ( ticketStr != NULL && *ticketStr != '\0' ) {
         status = checkObjIdByTicket( cValStr1, accessLevel, ticketStr,
-                                     ticketHost, userName, userZone,
+                                     ticketHost, userName, userZone, svc,
                                      icss );
         if ( status != 0 ) {
             return status;
@@ -254,6 +255,7 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
 */
 rodsLong_t
 cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
+  void *svc,
                const char *accessLevel, void *icss ) {
     int status;
     rodsLong_t iVal;
@@ -262,7 +264,7 @@ cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckDirId S-Q-L 1 " );
     }
 
-    status = hs_get_int_coll_id_by_coll_id_and_access(icss, (void *) dirId, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
+    status = hs_get_int_coll_id_by_coll_id_and_access(svc, icss, (void *) dirId, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
     if ( status ) {
         /* There was an error, so do another sql to see which
            of the two likely cases is problem. */
@@ -271,7 +273,7 @@ cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
             rodsLog( LOG_SQL, "cmlCheckDirId S-Q-L 2 " );
         }
 
-        status = hs_get_int_coll_id_by_name(      icss, (void *) dirId, &iVal);
+        status = hs_get_int_coll_id_by_name(svc,       icss, (void *) dirId, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_COLLECTION;
         }
@@ -285,7 +287,7 @@ cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
   Check that a collection exists and user owns it
 */
 rodsLong_t
-cmlCheckDirOwn( const char *dirName, const char *userName, const char *userZone,
+cmlCheckDirOwn( const char *dirName, const char *userName, const char *userZone, void *svc,
                 void *icss ) {
     int status;
     rodsLong_t iVal;
@@ -294,7 +296,7 @@ cmlCheckDirOwn( const char *dirName, const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckDirOwn SQL 1 " );
     }
 
-    status = hs_get_int_coll_id_by_own(icss, (void *) dirName, (void *) userZone, (void *) userName,  &iVal);
+    status = hs_get_int_coll_id_by_own(svc, icss, (void *) dirName, (void *) userZone, (void *) userName,  &iVal);
     if ( status < 0 ) {
         return status;
     }
@@ -310,7 +312,7 @@ cmlCheckDirOwn( const char *dirName, const char *userName, const char *userZone,
 rodsLong_t
 cmlCheckDataObjOnly( const char *dirName, const char *dataName,
                      const char *userName, const char *userZone,
-                     const char *accessLevel, void *icss ) {
+                     const char *accessLevel, void *svc, void *icss ) {
     int status;
     rodsLong_t iVal;
 
@@ -318,7 +320,7 @@ cmlCheckDataObjOnly( const char *dirName, const char *dataName,
         rodsLog( LOG_SQL, "cmlCheckDataObjOnly SQL 1 " );
     }
 
-    status = hs_get_int_data_id_by_access(icss,    (void *) dirName, (void *) dataName, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
+    status = hs_get_int_data_id_by_access(svc, icss,    (void *) dirName, (void *) dataName, (void *) userZone, (void *) userName, (void *) accessLevel, &iVal);
 
     if ( status ) {
         /* There was an error, so do another sql to see which
@@ -327,7 +329,7 @@ cmlCheckDataObjOnly( const char *dirName, const char *dataName,
             rodsLog( LOG_SQL, "cmlCheckDataObjOnly SQL 2 " );
         }
 
-        status = hs_get_int_data_id(  icss,      (void *) dirName, (void *) dataName, &iVal);
+        status = hs_get_int_data_id_by_name(svc,   icss,      (void *) dirName, (void *) dataName, &iVal);
         if ( status ) {
             return CAT_UNKNOWN_FILE;
         }
@@ -343,7 +345,7 @@ cmlCheckDataObjOnly( const char *dirName, const char *dataName,
 */
 rodsLong_t
 cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userName,
-                    const char *userZone, void *icss ) {
+                    const char *userZone, void *svc, void *icss ) {
     int status;
     rodsLong_t iVal, collId;
     char collIdStr[MAX_NAME_LEN];
@@ -351,7 +353,7 @@ cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userN
     if ( logSQL_CML != 0 ) {
         rodsLog( LOG_SQL, "cmlCheckDataObjOwn SQL 1 " );
     }
-    status = hs_get_int_coll_id_by_name(icss,(void *) dirName, &iVal);
+    status = hs_get_int_coll_id_by_name(svc, icss,(void *) dirName, &iVal);
     if ( status < 0 ) {
         return status;
     }
@@ -361,7 +363,7 @@ cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userN
     if ( logSQL_CML != 0 ) {
         rodsLog( LOG_SQL, "cmlCheckDataObjOwn SQL 2 " );
     }
-    status = hs_get_int_data_id_by_own(icss,  collIdStr, (void *) dataName, (void *) userZone, (void *) userName, &iVal);
+    status = hs_get_int_data_id_by_own(svc, icss,  collIdStr, (void *) dataName, (void *) userZone, (void *) userName, &iVal);
 
     if ( status ) {
         return status;
@@ -371,7 +373,7 @@ cmlCheckDataObjOwn( const char *dirName, const char *dataName, const char *userN
 
 
 int cmlCheckUserInGroup( const char *userName, const char *userZone,
-                         const char *groupName, void *icss ) {
+                         const char *groupName, void *svc, void *icss ) {
     int status;
     char sVal[MAX_NAME_LEN];
     rodsLong_t iVal;
@@ -380,7 +382,7 @@ int cmlCheckUserInGroup( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckUserInGroup SQL 1 " );
     }
 
-    status = hs_get_non_group_user_id(icss,(void *) userZone,(void *) userName,sVal, MAX_NAME_LEN);
+    status = hs_get_non_group_user_id(svc, icss,(void *) userZone,(void *) userName,sVal, MAX_NAME_LEN);
     if ( status == CAT_NO_ROWS_FOUND ) {
         return CAT_INVALID_USER;
     }
@@ -392,7 +394,7 @@ int cmlCheckUserInGroup( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckUserInGroup SQL 2 " );
     }
 
-    status = hs_get_int_group_id_by_user(icss, sVal, (void *) groupName,&iVal);
+    status = hs_get_int_group_id_by_user(svc, icss, sVal, (void *) groupName,&iVal);
     if ( status ) {
         return status;
     }
@@ -404,6 +406,7 @@ int cmlCheckUserInGroup( const char *userName, const char *userZone,
 int
 cmlCheckTicketRestrictions( const char *ticketId, const char *ticketHost,
                             const char *userName, const char *userZone,
+                            void *svc,
                             void *icss ) {
     return 0;
 }
@@ -412,6 +415,7 @@ cmlCheckTicketRestrictions( const char *ticketId, const char *ticketHost,
 int checkObjIdByTicket( const char *dataId, const char *accessLevel,
                         const char *ticketStr, const char *ticketHost,
                         const char *userName, const char *userZone,
+                        void *svc,
                         void *icss ) {
     return 0;
 }
@@ -419,6 +423,7 @@ int checkObjIdByTicket( const char *dataId, const char *accessLevel,
 int
 cmlTicketUpdateWriteBytes( const char *ticketStr,
                            const char *dataSize, const char *objectId,
+                           void *svc,
                            void *icss ) {
     return 0;
 }
@@ -431,7 +436,7 @@ cmlTicketUpdateWriteBytes( const char *ticketStr,
   TicketHost is an optional host (the connected client IP) for ticket checks.
 */
 int cmlCheckDataObjId( const char *dataId, const char *userName,  const char *zoneName,
-                       const char *accessLevel, const char *ticketStr, const char *ticketHost,
+                       const char *accessLevel, const char *ticketStr, const char *ticketHost, void *svc,
                        void *icss ) {
     int status;
     rodsLong_t iVal;
@@ -439,7 +444,7 @@ int cmlCheckDataObjId( const char *dataId, const char *userName,  const char *zo
     iVal = 0;
     if ( ticketStr != NULL && *ticketStr != '\0' ) {
         status = checkObjIdByTicket( dataId, accessLevel, ticketStr,
-                                     ticketHost, userName, zoneName,
+                                     ticketHost, userName, zoneName, svc,
                                      icss );
         if ( status != 0 ) {
             return status;
@@ -449,7 +454,7 @@ int cmlCheckDataObjId( const char *dataId, const char *userName,  const char *zo
         if ( logSQL_CML != 0 ) {
             rodsLog( LOG_SQL, "cmlCheckDataObjId SQL 1 " );
         }
-        status = hs_get_int_data_id_by_data_id_and_access(icss, (void *) dataId, (void *) zoneName, (void *) userName, (void *) accessLevel, &iVal
+        status = hs_get_int_data_id_by_data_id_and_access(svc, icss, (void *) dataId, (void *) zoneName, (void *) userName, (void *) accessLevel, &iVal
                       );
         if ( iVal == 0 ) {
             return CAT_NO_ACCESS_PERMISSION;
@@ -466,7 +471,7 @@ int cmlCheckDataObjId( const char *dataId, const char *userName,  const char *zo
  * type 'groupadmin' and in some cases a member of the specified group.
  */
 int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
-                              const char *groupName, void *icss ) {
+                              const char *groupName, void *svc, void *icss ) {
     int status;
     char sVal[MAX_NAME_LEN];
     rodsLong_t iVal;
@@ -475,7 +480,7 @@ int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckGroupAdminAccess SQL 1 " );
     }
 
-    status = hs_get_group_admin_user_id(icss, (void *) userZone, (void *) userName, sVal, MAX_NAME_LEN);
+    status = hs_get_group_admin_user_id(svc, icss, (void *) userZone, (void *) userName, sVal, MAX_NAME_LEN);
     if ( status == CAT_NO_ROWS_FOUND ) {
         return CAT_INSUFFICIENT_PRIVILEGE_LEVEL;
     }
@@ -497,7 +502,7 @@ int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
         rodsLog( LOG_SQL, "cmlCheckGroupAdminAccess SQL 2 " );
     }
 
-    status = hs_get_int_group_id_by_user(icss, sVal, (void *) groupName, &iVal);
+    status = hs_get_int_group_id_by_user(svc, icss, sVal, (void *) groupName, &iVal);
     if ( status == CAT_NO_ROWS_FOUND ) {
         return CAT_INSUFFICIENT_PRIVILEGE_LEVEL;
     }
@@ -511,11 +516,11 @@ int cmlCheckGroupAdminAccess( const char *userName, const char *userZone,
  Get the number of users who are members of a user group.
  This is used in some groupadmin access checks.
  */
-int cmlGetGroupMemberCount( const char *groupName, void *icss ) {
+int cmlGetGroupMemberCount( const char *groupName, void *svc, void *icss ) {
 
     rodsLong_t iVal;
     int status;
-    status = hs_get_group_member_count(icss, (void *) groupName, &iVal);
+    status = hs_get_group_member_count(svc, icss, (void *) groupName, &iVal);
     if ( status == 0 ) {
         status = iVal;
     }

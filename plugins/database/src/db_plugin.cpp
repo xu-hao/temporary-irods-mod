@@ -49,6 +49,9 @@
 
 #include "Plugin_stub.h"
 #include "PluginGen_stub.h"
+#include "Local_stub.h"
+#include "TCP_stub.h"
+#include "UnixDomainSocket_stub.h"
 
 #include "irods_lexical_cast.hpp"
 
@@ -96,6 +99,7 @@ char irods_pam_password_default_time[ NAME_LEN ] = { "1209600" };
 
 size_t log_sql_flg = 0;
 void* icss; // JMC :: only for testing!!!
+void* svc;
 int icss_status = 0;
 extern int logSQL;
 
@@ -193,7 +197,7 @@ int _rollback( const char *functionName ) {
     // =-=-=-=-=-=-=-
     // This type of rollback is needed for Postgres since the low-level
     // now does an automatic 'begin' to create a sql block */
-    int status =  hs_rollback( icss );
+    int status =  hs_rollback(svc,  icss );
     if ( status == 0 ) {
         rodsLog( LOG_NOTICE,
                  "%s cmlExecuteNoAnswerSql(rollback) succeeded", functionName );
@@ -224,7 +228,7 @@ irods::error getLocalZone(
         char local_zone[ MAX_NAME_LEN ];
         int status;
         status =
-            hs_get_local_zone(_icss, local_zone, MAX_NAME_LEN);
+            hs_get_local_zone(svc, _icss, local_zone, MAX_NAME_LEN);
 
         if ( status != 0 ) {
             _rollback( "getLocalZone" );
@@ -275,7 +279,7 @@ int get_object_count_of_resource_by_name(
         return ret.code();
     }
 
-    int status = hs_get_num_data_by_resc(_icss, (void *) resc_id_str.c_str(),
+    int status = hs_get_num_data_by_resc(svc, _icss, (void *) resc_id_str.c_str(),
                      &_count);
 
     return status;
@@ -304,7 +308,7 @@ irods::error determine_user_has_modify_metadata_access(
     // get the number of data object to which this will apply
     rodsLong_t num_data_objects = -1;
     {
-        status = hs_get_num_data_by_name(
+        status = hs_get_num_data_by_name(svc,
 					  icss,
 					  (void *) _collection.c_str(),
 					  (void *) _data_name.c_str(),
@@ -332,7 +336,7 @@ irods::error determine_user_has_modify_metadata_access(
     rodsLong_t access_needed = -1;
     {
         int tokenid;
-        int status = hs_get_int_token_id(icss, (void *) "access_type", (void *) "modify metadata", &tokenid);
+        int status = hs_get_int_token_id(svc, icss, (void *) "access_type", (void *) "modify metadata", &tokenid);
         if( status < 0 ) {
             return ERROR(
                        status,
@@ -344,7 +348,7 @@ irods::error determine_user_has_modify_metadata_access(
     // of "ACCESS_VIEW_ONE" and "ACCESS_VIEW_TWO"
     rodsLong_t access_permission = -1;
     {
-        status = hs_get_int_access_permission_use_wildcard(icss, (void *) _user_name.c_str(), (void *) _zone.c_str(), (void *) _collection.c_str(), (void *) _data_name.c_str(), &access_permission);
+        status = hs_get_int_access_permission_use_wildcard(svc, icss, (void *) _user_name.c_str(), (void *) _zone.c_str(), (void *) _collection.c_str(), (void *) _data_name.c_str(), &access_permission);
         if ( status == CAT_NO_ROWS_FOUND ) {
             _rollback( "chlAddAVUMetadataWild" );
             return ERROR(
@@ -363,7 +367,7 @@ irods::error determine_user_has_modify_metadata_access(
     // reproduce the count of access permission entries in "ACCESS_VIEW_TWO"
     rodsLong_t access_permission_count = -1;
     {
-        status = hs_get_int_num_access_permission_use_wildcard(icss, (void *) _user_name.c_str(), (void *) _zone.c_str(), (void *) _collection.c_str(), (void *) _data_name.c_str(), &access_permission_count);
+        status = hs_get_int_num_access_permission_use_wildcard(svc, icss, (void *) _user_name.c_str(), (void *) _zone.c_str(), (void *) _collection.c_str(), (void *) _data_name.c_str(), &access_permission_count);
         if( 0 != status ) {
             _rollback( "chlAddAVUMetadataWild" );
             return ERROR(
@@ -403,7 +407,7 @@ void removeMetaMapAndAVU( char *dataObjNumber ) {
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "removeMetaMapAndAVU SQL 1 " );
     }
-    status = hs_delete_metamap_by_obj_id(icss, dataObjNumber);
+    status = hs_delete_metamap_by_obj_id(svc, icss, dataObjNumber);
 
     /* Note, the status will be CAT_SUCCESS_BUT_WITH_NO_INFO (not 0) if
        there were no rows deleted from R_OBJT_METAMAP, in which case there
@@ -423,7 +427,7 @@ static int removeAVUs() {
         rodsLog( LOG_SQL, "removeAVUs SQL 1 " );
     }
 
-    const int status =  hs_delete_avus( icss );
+    const int status =  hs_delete_avus(svc,  icss );
     rodsLog( LOG_DEBUG, "removeAVUs status=%d\n", status );
 
     return status;
@@ -495,7 +499,7 @@ irods::error _childIsValid(
     logger.log();
     parent[0] = '\0';
     {
-        status = hs_get_resc_parent_by_zone_and_name(icss, (void *) zone.c_str(), (void *) resc_name.c_str(), parent, MAX_NAME_LEN);
+        status = hs_get_resc_parent_by_zone_and_name(svc, icss, (void *) zone.c_str(), (void *) resc_name.c_str(), parent, MAX_NAME_LEN);
     }
     if ( status != 0 ) {
         if ( status == CAT_NO_ROWS_FOUND ) {
@@ -532,7 +536,7 @@ irods::error _updateChildParent(
     cllBindVarCount = 0;
     logger.log();
 
-    int status = hs_create_resc_parent_ts(
+    int status = hs_create_resc_parent_ts(svc,
 								icss,
 								(void *) _child_resc_id.c_str(),
 								(void *) _parent_resc_id.c_str(),
@@ -606,7 +610,7 @@ _rescHasParentOrChild( char* rescId ) {
     parent[0] = '\0';
     children[0] = '\0';
     {
-        status = hs_get_resc_parent(
+        status = hs_get_resc_parent(svc,
 					 icss,
                      (void *) rescId,
                      parent, MAX_NAME_LEN);
@@ -626,7 +630,7 @@ _rescHasParentOrChild( char* rescId ) {
         return true;
     }
     {
-        status = hs_get_resc_child(
+        status = hs_get_resc_child(svc,
 						icss,
 						rescId,
                      	children, MAX_NAME_LEN);
@@ -706,7 +710,7 @@ static int _delColl( rsComm_t *rsComm, collInfo_t *collInfo ) {
     status = cmlCheckDir( logicalParentDirName,
                           rsComm->clientUser.userName,
                           rsComm->clientUser.rodsZone,
-                          ACCESS_MODIFY_OBJECT,
+                          ACCESS_MODIFY_OBJECT, svc,
                           icss );
     if ( status < 0 ) {
         char errMsg[105];
@@ -729,7 +733,7 @@ static int _delColl( rsComm_t *rsComm, collInfo_t *collInfo ) {
     status = cmlCheckDir( collInfo->collName,
                           rsComm->clientUser.userName,
                           rsComm->clientUser.rodsZone,
-                          ACCESS_DELETE_OBJECT,
+                          ACCESS_DELETE_OBJECT, svc,
                           icss );
     if ( status < 0 ) {
         return status;
@@ -742,7 +746,7 @@ static int _delColl( rsComm_t *rsComm, collInfo_t *collInfo ) {
     }
     {
         char coll[MAX_NAME_LEN];
-        status = hs_get_coll_child_by_name(icss, collInfo->collName, coll, MAX_NAME_LEN);
+        status = hs_get_coll_child_by_name(svc, icss, collInfo->collName, coll, MAX_NAME_LEN);
     }
     if ( status != CAT_NO_ROWS_FOUND ) {
         return CAT_COLLECTION_NOT_EMPTY;
@@ -755,7 +759,7 @@ static int _delColl( rsComm_t *rsComm, collInfo_t *collInfo ) {
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "_delColl SQL 4" );
     }
-    status = hs_delete_coll_by_name(icss, collInfo->collName);
+    status = hs_delete_coll_by_name(svc, icss, collInfo->collName);
     if ( status != 0 ) { /* error, odd one as everything checked above */
         rodsLog( LOG_NOTICE,
                  "_delColl cmlExecuteNoAnswerSql delete failure %d",
@@ -768,7 +772,7 @@ static int _delColl( rsComm_t *rsComm, collInfo_t *collInfo ) {
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "_delColl SQL 5" );
     }
-    status =  hs_delete_access_by_obj_id(icss, collIdNum);
+    status =  hs_delete_access_by_obj_id(svc, icss, collIdNum);
     if ( status != 0 ) { /* error, odd one as everything checked above */
         rodsLog( LOG_NOTICE,
                  "_delColl cmlExecuteNoAnswerSql delete access failure %d",
@@ -793,7 +797,7 @@ static int _modRescInHierarchies( const std::string& old_resc, const std::string
 
     // =-=-=-=-=-=-=-
     // SQL update
-    status = hs_create_data_resc_hier( icss, (void *) sep, (void *) old_resc.c_str(), (void *) new_resc.c_str());
+    status = hs_create_data_resc_hier(svc,  icss, (void *) sep, (void *) old_resc.c_str(), (void *) new_resc.c_str());
 
     // =-=-=-=-=-=-=-
     // Log error. Rollback is done in calling function
@@ -928,7 +932,7 @@ int decodePw( rsComm_t *rsComm, const char *in, char *out ) {
         rodsLog( LOG_SQL, "decodePw - SQL 1 " );
     }
     {
-        status = hs_get_password_by_user_zone_and_name(icss,
+        status = hs_get_password_by_user_zone_and_name(svc, icss,
 					 rsComm->clientUser.rodsZone,
 					 rsComm->clientUser.userName,
                      password, MAX_PASSWORD_LEN);
@@ -1064,7 +1068,7 @@ rodsLong_t checkAndGetObjectId(
         status = cmlCheckDataObjOnly( logicalParentDirName, logicalEndName,
                                       rsComm->clientUser.userName,
                                       rsComm->clientUser.rodsZone,
-                                      access, icss );
+                                      access, svc, icss );
         if ( status < 0 ) {
             _rollback( "checkAndGetObjectId" );
             return status;
@@ -1081,7 +1085,7 @@ rodsLong_t checkAndGetObjectId(
         status = cmlCheckDir( name,
                               rsComm->clientUser.userName,
                               rsComm->clientUser.rodsZone,
-                              access, icss );
+                              access, svc, icss );
         if ( status < 0 ) {
             char errMsg[105];
             if ( status == CAT_UNKNOWN_COLLECTION ) {
@@ -1110,7 +1114,7 @@ rodsLong_t checkAndGetObjectId(
             rodsLog( LOG_SQL, "checkAndGetObjectId SQL 3" );
         }
         {
-            status = hs_get_int_resc_id(icss,
+            status = hs_get_int_resc_id(svc, icss,
                          (void *) zone.c_str(), (void *) name,
                          &objId);
         }
@@ -1146,7 +1150,7 @@ rodsLong_t checkAndGetObjectId(
             rodsLog( LOG_SQL, "checkAndGetObjectId SQL 4" );
         }
         {
-			status = hs_get_int_user_id(icss,
+			status = hs_get_int_user_id(svc, icss,
                          userZone, userName,
                          &objId);
         }
@@ -1180,7 +1184,7 @@ findAVU( const char *attribute, const char *value, const char *units ) {
             rodsLog( LOG_SQL, "findAVU SQL 1" );    // JMC - backport 4836
         }
         {
-			status = hs_get_int_meta_id(icss, (void *) attribute, (void *) value, (void *) units,
+			status = hs_get_int_meta_id(svc, icss, (void *) attribute, (void *) value, (void *) units,
                          &iVal);
         }
     }
@@ -1189,7 +1193,7 @@ findAVU( const char *attribute, const char *value, const char *units ) {
             rodsLog( LOG_SQL, "findAVU SQL 2" );
         }
         {
-            status = hs_get_int_meta_id_by_attribute_and_value(icss,
+            status = hs_get_int_meta_id_by_attribute_and_value(svc, icss,
 							(void *) attribute, (void *) value,
 	                        &iVal);
         }
@@ -1221,7 +1225,7 @@ findOrInsertAVU( const char *attribute, const char *value, const char *units ) {
         rodsLog( LOG_SQL, "findOrInsertAVU SQL 1" );
     }
 // =-=-=-=-=-=-=-
-    status = hs_get_int_next_id( icss, &seqNum );
+    status = hs_get_int_next_id(svc,  icss, &seqNum );
     if ( status < 0 ) {
         rodsLog( LOG_NOTICE, "findOrInsertAVU cmlGetNextSeqVal failure %d",
                  status );
@@ -1237,7 +1241,7 @@ findOrInsertAVU( const char *attribute, const char *value, const char *units ) {
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "findOrInsertAVU SQL 2" );    // JMC - backport 4836
     }
-    status =  hs_create_meta(icss, (void *) nextStr, (void *) attribute, (void *) value, (void *) units, (void *) myTime, (void *) myTime);
+    status =  hs_create_meta(svc, icss, (void *) nextStr, (void *) attribute, (void *) value, (void *) units, (void *) myTime, (void *) myTime);
     if ( status < 0 ) {
         rodsLog( LOG_NOTICE, "findOrInsertAVU insert failure %d", status );
         return status;
@@ -1269,7 +1273,7 @@ int _modInheritance( int inheritFlag, int recursiveFlag, const char *collIdStr, 
             rodsLog( LOG_SQL, "_modInheritance SQL 1" );
         }
 
-        status =  hs_create_coll_inheritance_ts(icss, (void *) collIdStr, (void *) newValue, (void *) myTime);
+        status =  hs_create_coll_inheritance_ts(svc, icss, (void *) collIdStr, (void *) newValue, (void *) myTime);
     }
     else {
         /* Recursive mode */
@@ -1278,14 +1282,14 @@ int _modInheritance( int inheritFlag, int recursiveFlag, const char *collIdStr, 
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "_modInheritance SQL 2" );
         }
-        status =  hs_create_coll_inheritance_by_name(icss, (void *) pathName, (void *) pathStart.c_str(), (void *) newValue, (void *) myTime);
+        status =  hs_create_coll_inheritance_by_name(svc, icss, (void *) pathName, (void *) pathStart.c_str(), (void *) newValue, (void *) myTime);
     }
     if ( status != 0 ) {
         _rollback( "_modInheritance" );
         return status;
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     return status;
 }
 
@@ -1330,7 +1334,7 @@ icatGetTicketUserId( irods::plugin_property_map& _prop_map, const char *userName
         rodsLog( LOG_SQL, "icatGetTicketUserId SQL 1 " );
     }
     {
-        status = hs_get_non_group_user_id(icss, zoneToUse, userName2, userId, NAME_LEN);
+        status = hs_get_non_group_user_id(svc, icss, zoneToUse, userName2, userId, NAME_LEN);
     }
     if ( status != 0 ) {
         if ( status == CAT_NO_ROWS_FOUND ) {
@@ -1370,7 +1374,7 @@ icatGetTicketGroupId( irods::plugin_property_map& _prop_map, const char *groupNa
         rodsLog( LOG_SQL, "icatGetTicketGroupId SQL 1 " );
     }
     {
-        status = hs_get_group_id(icss, zoneToUse, groupName2,
+        status = hs_get_group_id(svc, icss, zoneToUse, groupName2,
                      groupId, NAME_LEN);
     }
     if ( status != 0 ) {
@@ -1527,7 +1531,16 @@ irods::error db_open_op(
     hs_init(&argc, &argv);
     // =-=-=-=-=-=-=-
     // call open in mid level
-    int status = hs_connect( (void *) "/etc/irods/QueryArrow/tdb-plugin-abs.json", &icss );
+    int status = hs_local(&svc);
+    // int status = hs_unix_domain_socket((void *)"/etc/irods/QueryArrow/tdb-plugin-abs.json", &svc);
+    if ( 0 != status ) {
+        return ERROR(
+                   status,
+                   "failed to obtain db service" );
+    }
+    char config [] = "/etc/irods/QueryArrow/tdb-plugin-abs.json";
+    // char config [] = "/tmp/QueryArrow";
+    status = hs_connect(svc, config, &icss );
     if ( 0 != status ) {
         return ERROR(
                    status,
@@ -1595,7 +1608,7 @@ irods::error db_close_op(
 
     // =-=-=-=-=-=-=-
     // call open in mid level
-    int status = hs_disconnect( icss );
+    int status = hs_disconnect(svc,  icss );
     hs_exit();
     if ( 0 != status ) {
         return ERROR(
@@ -1853,7 +1866,7 @@ irods::error db_mod_data_obj_meta_op(
             /* If the datatype is being updated, check that it is valid */
             if ( i == dataTypeIndex ) {
                 status = cmlCheckNameToken( "data_type",
-                                            theVal, icss );
+                                            theVal, svc, icss );
                 if ( status != 0 ) {
                     std::stringstream msg;
                     msg << __FUNCTION__;
@@ -1895,7 +1908,7 @@ irods::error db_mod_data_obj_meta_op(
             rodsLog( LOG_SQL, "chlModDataObjMeta SQL 1 " );
         }
         {
-            status = hs_get_int_coll_id_by_name(icss, logicalDirName, &iVal );
+            status = hs_get_int_coll_id_by_name(svc, icss, logicalDirName, &iVal );
         }
 
         if ( status != 0 ) {
@@ -1914,7 +1927,7 @@ irods::error db_mod_data_obj_meta_op(
             rodsLog( LOG_SQL, "chlModDataObjMeta SQL 2" );
         }
         {
-            status = hs_get_int_data_id(icss, objIdString, logicalFileName,&iVal );
+            status = hs_get_int_data_id(svc, icss, objIdString, logicalFileName,&iVal );
         }
         if ( status != 0 ) {
             std::stringstream msg;
@@ -1944,7 +1957,7 @@ irods::error db_mod_data_obj_meta_op(
         if ( doingDataSize == 1 && strlen( mySessionTicket ) > 0 ) {
             status = cmlTicketUpdateWriteBytes( mySessionTicket,
                                                 dataSizeString,
-                                                objIdString, icss );
+                                                objIdString, svc, icss );
             if ( status != 0 ) {
                 return ERROR(
                            status,
@@ -1958,7 +1971,7 @@ irods::error db_mod_data_obj_meta_op(
                      _ctx.comm()->clientUser.rodsZone,
                      neededAccess,
                      mySessionTicket,
-                     mySessionClientAddr,
+                     mySessionClientAddr, svc,
                      icss );
 
         if ( status != 0 ) {
@@ -1979,7 +1992,7 @@ irods::error db_mod_data_obj_meta_op(
                     iVal = cmlCheckDir( theVal,
                                         _ctx.comm()->clientUser.userName,
                                         _ctx.comm()->clientUser.rodsZone,
-                                        ACCESS_OWN,
+                                        ACCESS_OWN, svc,
                                         icss );
                 }
                 if ( iVal > 0 ) {
@@ -2058,7 +2071,7 @@ irods::error db_mod_data_obj_meta_op(
         rodsLong_t resc_id = 0;
         std::string resc_hier;
         {
-            status = hs_get_int_repl_resc_id(icss, (void *) id_stream.str().c_str(), (void *) repl_stream.str().c_str(),
+            status = hs_get_int_repl_resc_id(svc, icss, (void *) id_stream.str().c_str(), (void *) repl_stream.str().c_str(),
                          &resc_id  );
         }
         if ( status != 0 ) {
@@ -2080,7 +2093,7 @@ irods::error db_mod_data_obj_meta_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModDataObjMeta SQL 4" );
         }
-        status = hs_modify_data(icss ,
+        status = hs_modify_data(svc, icss ,
                      &( updateCols[0] ),
                      &( updateVals[0] ),
                      whereColsAndConds,
@@ -2099,7 +2112,7 @@ irods::error db_mod_data_obj_meta_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModDataObjMeta SQL 5" );
         }
-        status = hs_modify_data(icss,
+        status = hs_modify_data(svc, icss,
                      &( updateCols[0] ),
                      &( updateVals[0] ),
                      whereColsAndConds,
@@ -2119,7 +2132,7 @@ irods::error db_mod_data_obj_meta_op(
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlModDataObjMeta SQL 6" );
             }
-            status2 = hs_modify_data( icss, &( updateCols[0] ), &( updateVals[0] ),
+            status2 = hs_modify_data(svc,  icss, &( updateCols[0] ), &( updateVals[0] ),
                                             whereColsAndConds, whereValues, 1,
                                             numConditions );
 
@@ -2147,7 +2160,7 @@ irods::error db_mod_data_obj_meta_op(
     }
 
     if ( !( _data_obj_info->flags & NO_COMMIT_FLAG ) ) {
-        status =  hs_commit( icss );
+        status =  hs_commit(svc,  icss );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlModDataObjMeta cmlExecuteNoAnswerSql commit failure %d",
@@ -2223,7 +2236,7 @@ irods::error db_reg_data_obj_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegDataObj SQL 1 " );
     }
-    status = hs_get_int_next_id( icss, &seqNum );
+    status = hs_get_int_next_id(svc,  icss, &seqNum );
     if ( status < 0 ) {
         rodsLog( LOG_NOTICE, "chlRegDataObj cmlGetNextSeqVal failure %d",
                  status );
@@ -2245,7 +2258,7 @@ irods::error db_reg_data_obj_op(
                                          ACCESS_MODIFY_OBJECT,
                                          &inheritFlag,
                                          mySessionTicket,
-                                         mySessionClientAddr,
+                                         mySessionClientAddr, svc,
                                          icss );
     if ( iVal < 0 ) {
         if ( iVal == CAT_UNKNOWN_COLLECTION ) {
@@ -2267,7 +2280,7 @@ irods::error db_reg_data_obj_op(
         rodsLog( LOG_SQL, "chlRegDataObj SQL 4" );
     }
     {
-        status = hs_get_int_coll_id_by_name(icss, _data_obj_info->objPath,
+        status = hs_get_int_coll_id_by_name(svc, icss, _data_obj_info->objPath,
                      &iVal );
     }
     if ( status == 0 ) {
@@ -2278,7 +2291,7 @@ irods::error db_reg_data_obj_op(
         rodsLog( LOG_SQL, "chlRegDataObj SQL 5" );
     }
     status = cmlCheckNameToken( "data_type",
-                                _data_obj_info->dataType, icss );
+                                _data_obj_info->dataType, svc, icss );
     if ( status != 0 ) {
         return ERROR( CAT_INVALID_DATA_TYPE, "invalid data type" );
     }
@@ -2293,7 +2306,7 @@ irods::error db_reg_data_obj_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegDataObj SQL 6" );
     }
-    status =  hs_create_repl(icss,
+    status =  hs_create_repl(svc, icss,
       dataIdNum,
       (void *) resc_id_str.c_str(),
       collIdNum,
@@ -2333,7 +2346,7 @@ irods::error db_reg_data_obj_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlRegDataObj SQL 7" );
         }
-        status = hs_create_access_inherit_coll(icss, dataIdNum, collIdNum, myTime, myTime);
+        status = hs_create_access_inherit_coll(svc, icss, dataIdNum, collIdNum, myTime, myTime);
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlRegDataObj cmlExecuteNoAnswerSql insert access failure %d",
@@ -2346,7 +2359,7 @@ irods::error db_reg_data_obj_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlRegDataObj SQL 8" );
         }
-        status = hs_create_access_by_user_zone_and_name(icss, dataIdNum, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, (void *) ACCESS_OWN, myTime, myTime);
+        status = hs_create_access_by_user_zone_and_name(svc, icss, dataIdNum, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, (void *) ACCESS_OWN, myTime, myTime);
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlRegDataObj cmlExecuteNoAnswerSql insert access failure %d",
@@ -2358,7 +2371,7 @@ irods::error db_reg_data_obj_op(
 
 
     if ( !( _data_obj_info->flags & NO_COMMIT_FLAG ) ) {
-        status =  hs_commit( icss );
+        status =  hs_commit(svc,  icss );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlRegDataObj cmlExecuteNoAnswerSql commit failure %d",
@@ -2508,7 +2521,7 @@ irods::error db_reg_replica_op(
         status = cmlCheckDataObjOnly( logicalDirName, logicalFileName,
                                       _ctx.comm()->clientUser.userName,
                                       _ctx.comm()->clientUser.rodsZone,
-                                      ACCESS_READ_OBJECT, icss );
+                                      ACCESS_READ_OBJECT, svc, icss );
         if ( status < 0 ) {
             _rollback( "chlRegReplica" );
             return ERROR( status, "cmlCheckDataObjOnly failed" );
@@ -2521,7 +2534,7 @@ irods::error db_reg_replica_op(
         rodsLog( LOG_SQL, "chlRegReplica SQL 2" );
     }
     {
-        status = hs_get_int_max_repl_num(icss, objIdString,
+        status = hs_get_int_max_repl_num(svc, icss, objIdString,
                      &iVal );
     }
 
@@ -2538,7 +2551,7 @@ irods::error db_reg_replica_op(
         rodsLog( LOG_SQL, "chlRegReplica SQL 3" );
     }
     {
-        status = hs_get_some_repl2_by_repl_num(icss, objIdString, replNumString, cVal, 30, nColumns);
+        status = hs_get_some_repl2_by_repl_num(svc, icss, objIdString, replNumString, cVal, 30, nColumns);
     }
     if ( status < 0 ) {
         _rollback( "chlRegReplica" );
@@ -2569,7 +2582,7 @@ irods::error db_reg_replica_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegReplica SQL 4" );
     }
-    status = hs_array_create_repl(icss, cVal, nColumns);
+    status = hs_array_create_repl(svc, icss, cVal, nColumns);
     if ( status < 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRegReplica cmlExecuteNoAnswerSql(insert) failure %d",
@@ -2585,7 +2598,7 @@ irods::error db_reg_replica_op(
         return PASS( ret );
     }
 
-    status =  hs_commit(icss);
+    status =  hs_commit(svc, icss);
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRegReplica cmlExecuteNoAnswerSql commit failure %d",
@@ -2683,7 +2696,7 @@ irods::error db_unreg_replica_op(
         status = cmlCheckDataObjOnly( logicalDirName, logicalFileName,
                                       _ctx.comm()->clientUser.userName,
                                       _ctx.comm()->clientUser.rodsZone,
-                                      ACCESS_DELETE_OBJECT, icss );
+                                      ACCESS_DELETE_OBJECT, svc, icss );
         if ( status < 0 ) {
             _rollback( "chlUnregDataObj" );
             return ERROR( status, "cmlCheckDataObjOnly failed" ); /* convert long to int */
@@ -2723,7 +2736,7 @@ irods::error db_unreg_replica_op(
                     rodsLog( LOG_SQL, "chlUnregDataObj SQL 2" );
                 }
                 {
-                    status = hs_get_diff_repl_num(icss, dataObjNumber, replNumber,
+                    status = hs_get_diff_repl_num(svc, icss, dataObjNumber, replNumber,
                                  cVal, sizeof cVal);
                 }
                 if ( status != 0 ) {
@@ -2748,7 +2761,7 @@ irods::error db_unreg_replica_op(
         if ( _data_obj_info->replNum >= 0 ) {
             snprintf( replNumber, sizeof replNumber, "%d", _data_obj_info->replNum );
             {
-                status = hs_get_int_repl_resc_id(icss, dataObjNumber,replNumber, &resc_id );
+                status = hs_get_int_repl_resc_id(svc, icss, dataObjNumber,replNumber, &resc_id );
             }
             if ( status != 0 ) {
                 return ERROR( status, "cmlGetStringValueFromSql failed" );
@@ -2756,7 +2769,7 @@ irods::error db_unreg_replica_op(
         }
         else {
             {
-                status = hs_get_int_resc_id_by_data_id(icss, dataObjNumber, &resc_id);
+                status = hs_get_int_resc_id_by_data_id(svc, icss, dataObjNumber, &resc_id);
             }
             if ( status != 0 ) {
                 return ERROR( status, "cmlGetStringValueFromSql failed" );
@@ -2773,13 +2786,13 @@ irods::error db_unreg_replica_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlUnregDataObj SQL 4" );
         }
-		status =  hs_delete_repl_by_name(icss, logicalDirName, logicalFileName, replNumber);
+		status =  hs_delete_repl_by_name(svc, icss, logicalDirName, logicalFileName, replNumber);
     }
     else {
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlUnregDataObj SQL 5" );
         }
-		status =  hs_delete_data_by_name(icss, logicalDirName, logicalFileName);
+		status =  hs_delete_data_by_name(svc, icss, logicalDirName, logicalFileName);
     }
 
     if ( status != 0 ) {
@@ -2807,7 +2820,7 @@ irods::error db_unreg_replica_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlUnregDataObj SQL 3" );
         }
-        status = hs_delete_access_by_obj_id(icss, dataObjNumber);
+        status = hs_delete_access_by_obj_id(svc, icss, dataObjNumber);
         if ( status == 0 ) {
             removeMetaMapAndAVU( dataObjNumber ); /* remove AVU metadata, if any */
         }
@@ -2815,7 +2828,7 @@ irods::error db_unreg_replica_op(
 
 
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlUnregDataObj cmlExecuteNoAnswerSql commit failure %d",
@@ -3018,7 +3031,7 @@ irods::error db_add_child_resc_op(
         return PASS(ret);
     }
 
-    status = hs_commit(icss);
+    status = hs_commit(svc, icss);
     if(status != 0) {
         return ERROR(
                    status,
@@ -3113,7 +3126,7 @@ irods::error db_reg_resc_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegResc SQL 1 " );
     }
-    status = hs_get_int_next_id( icss, &seqNum );
+    status = hs_get_int_next_id(svc,  icss, &seqNum );
     if ( status < 0 ) {
         rodsLog( LOG_NOTICE, "chlRegResc cmlGetNextSeqVal failure %d",
                  status );
@@ -3155,7 +3168,7 @@ irods::error db_reg_resc_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegResc SQL 4" );
     }
-    status = hs_create_resc(icss,
+    status = hs_create_resc(svc, icss,
                   idNum,(void *) resc_input[irods::RESOURCE_NAME].c_str(),( char* )zone.c_str(),(void *) resc_input[irods::RESOURCE_TYPE].c_str(),(void *) resc_input[irods::RESOURCE_CLASS].c_str(),(void *) resc_input[irods::RESOURCE_LOCATION].c_str(),(void *) resc_input[irods::RESOURCE_PATH].c_str(),myTime,myTime,(void *) resc_input[irods::RESOURCE_CHILDREN].c_str(),(void *) resc_input[irods::RESOURCE_CONTEXT].c_str(),(void *) resc_input[irods::RESOURCE_PARENT].c_str()
                    );
 
@@ -3167,7 +3180,7 @@ irods::error db_reg_resc_op(
         return ERROR( status, "cmlExectuteNoAnswerSql(insert) failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRegResc cmlExecuteNoAnswerSql commit failure %d", status );
@@ -3252,7 +3265,7 @@ irods::error db_del_child_resc_op(
         return PASS(ret);
     }
 
-    status = hs_commit( icss );
+    status = hs_commit(svc,  icss );
     if(status != 0) {
         return ERROR(
                    status,
@@ -3364,7 +3377,7 @@ irods::error db_del_resc_op(
         rodsLog( LOG_SQL, "chlDelResc SQL 2 " );
     }
     {
-        status = hs_get_resc_id_by_name(icss,
+        status = hs_get_resc_id_by_name(svc, icss,
                      (void *) _resc_name, rescId, MAX_NAME_LEN );
     }
     if ( status != 0 ) {
@@ -3392,7 +3405,7 @@ irods::error db_del_resc_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelResc SQL 3" );
     }
-    status = hs_delete_resc_by_name(icss, (void *) _resc_name);
+    status = hs_delete_resc_by_name(svc, icss, (void *) _resc_name);
     if ( status != 0 ) {
         if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
             char errMsg[105];
@@ -3415,7 +3428,7 @@ irods::error db_del_resc_op(
         return CODE( status );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlDelResc cmlExecuteNoAnswerSql commit failure %d",
@@ -3454,7 +3467,7 @@ irods::error db_rollback_op(
         rodsLog( LOG_SQL, "chlRollback - SQL 1 " );
     }
 
-    int status =  hs_rollback( icss );
+    int status =  hs_rollback(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRollback cmlExecuteNoAnswerSql failure %d",
@@ -3493,7 +3506,7 @@ irods::error db_commit_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlCommit - SQL 1 " );
     }
-    int status =  hs_commit( icss );
+    int status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlCommit cmlExecuteNoAnswerSql failure %d",
@@ -3587,7 +3600,7 @@ irods::error db_del_user_re_op(
         rodsLog( LOG_SQL, "chlDelUserRE SQL 1 " );
     }
     {
-        status = hs_get_user_id(icss, userName2, zoneToUse,
+        status = hs_get_user_id(svc, icss, userName2, zoneToUse,
                      iValStr, 200);
     }
     if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ||
@@ -3603,7 +3616,7 @@ irods::error db_del_user_re_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelUserRE SQL 2" );
     }
-    status = hs_delete_user_by_zone_and_name(icss, zoneToUse, userName2
+    status = hs_delete_user_by_zone_and_name(svc, icss, zoneToUse, userName2
                   );
     if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         return ERROR( CAT_INVALID_USER, "invalid user" );
@@ -3616,7 +3629,7 @@ irods::error db_del_user_re_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelUserRE SQL 3" );
     }
-    status = hs_delete_user_password_by_user(icss, iValStr);
+    status = hs_delete_user_password_by_user(svc, icss, iValStr);
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         char errMsg[MAX_NAME_LEN + 40];
         rodsLog( LOG_NOTICE,
@@ -3633,7 +3646,7 @@ irods::error db_del_user_re_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelUserRE SQL 4" );
     }
-    status = hs_delete_user_group(icss, iValStr, iValStr);
+    status = hs_delete_user_group(svc, icss, iValStr, iValStr);
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         char errMsg[MAX_NAME_LEN + 40];
         rodsLog( LOG_NOTICE,
@@ -3649,7 +3662,7 @@ irods::error db_del_user_re_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelUserRE SQL 4" );
     }
-    status = hs_delete_user_auth(icss, iValStr
+    status = hs_delete_user_auth(svc, icss, iValStr
                   );
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         char errMsg[MAX_NAME_LEN + 40];
@@ -3732,7 +3745,7 @@ irods::error db_reg_coll_by_admin_op(
         status2  = cmlCheckGroupAdminAccess(
                        _ctx.comm()->clientUser.userName,
                        _ctx.comm()->clientUser.rodsZone,
-                       "", icss );
+                       "", svc, icss );
         if ( status2 != 0 ) {
             return ERROR( status2, "no group admin access" );
         }
@@ -3755,7 +3768,7 @@ irods::error db_reg_coll_by_admin_op(
         rodsLog( LOG_SQL, "chlRegCollByAdmin SQL 1 " );
     }
     {
-        status = hs_get_int_coll_id_by_name(icss, logicalParentDirName,
+        status = hs_get_int_coll_id_by_name(svc, icss, logicalParentDirName,
                      &iVal);
     }
     if ( status < 0 ) {
@@ -3774,7 +3787,7 @@ irods::error db_reg_coll_by_admin_op(
     snprintf( collIdNum, MAX_NAME_LEN, "%d", status );
 
     /* String to get next sequence item for objects */
-    hs_get_next_id( icss, nextStr, MAX_NAME_LEN );
+    hs_get_next_id(svc,  icss, nextStr, MAX_NAME_LEN );
 
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegCollByAdmin SQL 2" );
@@ -3799,7 +3812,7 @@ irods::error db_reg_coll_by_admin_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegCollByAdmin SQL 3" );
     }
-    status =  hs_create_coll( icss, nextStr, logicalParentDirName,_coll_info->collName,userName2,
+    status =  hs_create_coll(svc,  icss, nextStr, logicalParentDirName,_coll_info->collName,userName2,
 	strlen( _coll_info->collOwnerZone ) > 0 ? _coll_info->collOwnerZone : zoneName,
     _coll_info->collType, _coll_info->collInfo1, _coll_info->collInfo2, myTime, myTime
                                       );
@@ -3823,7 +3836,7 @@ irods::error db_reg_coll_by_admin_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegCollByAdmin SQL 4" );
     }
-    status =  hs_create_access_by_user_zone_and_name(icss, nextStr, zoneName, userName2, (void *) ACCESS_OWN, myTime, myTime);
+    status =  hs_create_access_by_user_zone_and_name(svc, icss, nextStr, zoneName, userName2, (void *) ACCESS_OWN, myTime, myTime);
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRegCollByAdmin cmlExecuteNoAnswerSql(insert access) failure %d",
@@ -3908,7 +3921,7 @@ irods::error db_reg_coll_op(
                                            _ctx.comm()->clientUser.userName,
                                            _ctx.comm()->clientUser.rodsZone,
                                            ACCESS_MODIFY_OBJECT, &inheritFlag,
-                                           mySessionTicket, mySessionClientAddr, icss );
+                                           mySessionTicket, mySessionClientAddr, svc, icss );
     if ( status < 0 ) {
         char errMsg[105];
         if ( status == CAT_UNKNOWN_COLLECTION ) {
@@ -3927,7 +3940,7 @@ irods::error db_reg_coll_op(
         rodsLog( LOG_SQL, "chlRegColl SQL 2" );
     }
     {
-        status = hs_get_int_data_id(icss, collIdNum, logicalEndName,
+        status = hs_get_int_data_id(svc, icss, collIdNum, logicalEndName,
                      &iVal);
     }
 
@@ -3937,14 +3950,14 @@ irods::error db_reg_coll_op(
 
 
     /* String to get next sequence item for objects */
-    hs_get_next_id( icss, nextStr, MAX_NAME_LEN );
+    hs_get_next_id(svc,  icss, nextStr, MAX_NAME_LEN );
 
     getNowStr( myTime );
 
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegColl SQL 3" );
     }
-    status =  hs_create_coll( icss,  nextStr,  logicalParentDirName,_coll_info->collName,_ctx.comm()->clientUser.userName,_ctx.comm()->clientUser.rodsZone,_coll_info->collType,_coll_info->collInfo1,_coll_info->collInfo2,myTime,myTime
+    status =  hs_create_coll(svc,  icss,  nextStr,  logicalParentDirName,_coll_info->collName,_ctx.comm()->clientUser.userName,_ctx.comm()->clientUser.rodsZone,_coll_info->collType,_coll_info->collInfo1,_coll_info->collInfo2,myTime,myTime
                                       );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -3956,7 +3969,7 @@ irods::error db_reg_coll_op(
     if ( inheritFlag ) {
         /* If inherit is set (sticky bit), then add access rows for this
            collection that match those of the parent collection */
-        status =  hs_create_access_inherit_coll(icss, nextStr, myTime, myTime, collIdNum );
+        status =  hs_create_access_inherit_coll(svc, icss, nextStr, myTime, myTime, collIdNum );
 
         if ( status == 0 ) {
             if ( logSQL != 0 ) {
@@ -3964,7 +3977,7 @@ irods::error db_reg_coll_op(
             }
 
             if ( status > 0 ) {
-                status =  hs_update_coll_inheritance_ts(icss, nextStr, (void *) "1", myTime);
+                status =  hs_update_coll_inheritance_ts(svc, icss, nextStr, (void *) "1", myTime);
             }
 
         }
@@ -3973,7 +3986,7 @@ irods::error db_reg_coll_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlRegColl SQL 6" );
         }
-        status =  hs_create_access_by_user_zone_and_name( icss, nextStr, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, (void *) ACCESS_OWN, myTime, myTime );
+        status =  hs_create_access_by_user_zone_and_name(svc,  icss, nextStr, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, (void *) ACCESS_OWN, myTime, myTime );
     }
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -3983,7 +3996,7 @@ irods::error db_reg_coll_op(
         return ERROR( status, "cmlExecuteNoAnswerSql(insert access) failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRegColl cmlExecuteNoAnswerSql commit failure %d",
@@ -4046,7 +4059,7 @@ irods::error db_mod_coll_op(
     /* Check that collection exists and user has write permission */
     iVal = cmlCheckDir( _coll_info->collName,  _ctx.comm()->clientUser.userName,
                         _ctx.comm()->clientUser.rodsZone,
-                        ACCESS_MODIFY_OBJECT, icss );
+                        ACCESS_MODIFY_OBJECT, svc, icss );
 
     if ( iVal < 0 ) {
         if ( iVal == CAT_UNKNOWN_COLLECTION ) {
@@ -4111,7 +4124,7 @@ irods::error db_mod_coll_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModColl SQL 1" );
     }
-    status =  hs_modify_coll( icss,updateCols, updateVals, count, _coll_info->collName
+    status =  hs_modify_coll(svc,  icss,updateCols, updateVals, count, _coll_info->collName
                                       );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -4198,7 +4211,7 @@ irods::error db_reg_zone_op(
     }
 
     /* String to get next sequence item for objects */
-    hs_get_next_id( icss, nextStr, MAX_NAME_LEN );
+    hs_get_next_id(svc,  icss, nextStr, MAX_NAME_LEN );
 
     getNowStr( myTime );
 
@@ -4206,7 +4219,7 @@ irods::error db_reg_zone_op(
         rodsLog( LOG_SQL, "chlRegZone SQL 1 " );
     }
 
-    status =  hs_create_zone(icss, nextStr, (void *) _zone_name, (void *) "remote", (void *) _zone_conn_info, (void *) _zone_comment, myTime, myTime);
+    status =  hs_create_zone(svc, icss, nextStr, (void *) _zone_name, (void *) "remote", (void *) _zone_conn_info, (void *) _zone_comment, myTime, myTime);
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRegZone cmlExecuteNoAnswerSql(insert) failure %d", status );
@@ -4215,7 +4228,7 @@ irods::error db_reg_zone_op(
     }
 
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRegZone cmlExecuteNoAnswerSql commit failure %d",
@@ -4296,7 +4309,7 @@ irods::error db_mod_zone_op(
         rodsLog( LOG_SQL, "chlModZone SQL 1 " );
     }
     {
-        status = hs_get_zone_id(icss, (void *) _zone_name,
+        status = hs_get_zone_id(svc, icss, (void *) _zone_name,
                      zoneId, MAX_NAME_LEN  );
     }
     if ( status != 0 ) {
@@ -4312,7 +4325,7 @@ irods::error db_mod_zone_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModZone SQL 3" );
         }
-        status =  hs_create_zone_comment_ts(icss,zoneId,myTime,(void *) _option_value);
+        status =  hs_create_zone_comment_ts(svc, icss,zoneId,myTime,(void *) _option_value);
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlModZone cmlExecuteNoAnswerSql update failure %d",
@@ -4325,7 +4338,7 @@ irods::error db_mod_zone_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModZone SQL 5" );
         }
-        status =  hs_create_zone_conn_string_ts(icss,zoneId,myTime,(void *) _option_value);
+        status =  hs_create_zone_conn_string_ts(svc, icss,zoneId,myTime,(void *) _option_value);
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlModZone cmlExecuteNoAnswerSql update failure %d",
@@ -4357,7 +4370,7 @@ irods::error db_mod_zone_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModZone SQL 5" );
         }
-        status =  hs_create_zone_name_ts(icss,zoneId,myTime,(void *) _option_value);
+        status =  hs_create_zone_name_ts(svc, icss,zoneId,myTime,(void *) _option_value);
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlModZone cmlExecuteNoAnswerSql update failure %d",
@@ -4370,7 +4383,7 @@ irods::error db_mod_zone_op(
         return ERROR( CAT_INVALID_ARGUMENT, "invalid option" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlModZone cmlExecuteNoAnswerSql commit failure %d",
@@ -4430,7 +4443,7 @@ irods::error db_rename_coll_op(
     status1 = cmlCheckDir( _old_coll,
                            _ctx.comm()->clientUser.userName,
                            _ctx.comm()->clientUser.rodsZone,
-                           ACCESS_OWN,
+                           ACCESS_OWN, svc,
                            icss );
 
     if ( status1 < 0 ) {
@@ -4582,7 +4595,7 @@ irods::error db_rename_local_zone_op(
         rodsLog( LOG_SQL, "chlRenameLocalZone SQL 2 " );
     }
     {
-        status = hs_get_zone_id(icss, (void *) _new_zone,
+        status = hs_get_zone_id(svc, icss, (void *) _new_zone,
                      zoneId, MAX_NAME_LEN);
     }
     if ( status != CAT_NO_ROWS_FOUND ) {
@@ -4595,7 +4608,7 @@ irods::error db_rename_local_zone_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRenameLocalZone SQL 3 " );
     }
-    status =  hs_create_coll_owner_zone_by_zone_name(icss,(void *) _old_zone,(void *) _new_zone,myTime);
+    status =  hs_create_coll_owner_zone_by_zone_name(svc, icss,(void *) _old_zone,(void *) _new_zone,myTime);
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRenameLocalZone cmlExecuteNoAnswerSql update failure %d",
@@ -4607,7 +4620,7 @@ irods::error db_rename_local_zone_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRenameLocalZone SQL 4 " );
     }
-    status =  hs_create_data_owner_zone_by_zone_name(icss,(void *) _old_zone, (void *) _new_zone, myTime );
+    status =  hs_create_data_owner_zone_by_zone_name(svc, icss,(void *) _old_zone, (void *) _new_zone, myTime );
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         rodsLog( LOG_NOTICE,
                  "chlRenameLocalZone cmlExecuteNoAnswerSql update failure %d",
@@ -4619,7 +4632,7 @@ irods::error db_rename_local_zone_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRenameLocalZone SQL 5 " );
     }
-    status =  hs_create_resc_zone_by_zone_name(icss, (void *) _old_zone, (void *) _new_zone, myTime );
+    status =  hs_create_resc_zone_by_zone_name(svc, icss, (void *) _old_zone, (void *) _new_zone, myTime );
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         rodsLog( LOG_NOTICE,
                  "chlRenameLocalZone cmlExecuteNoAnswerSql update failure %d",
@@ -4631,7 +4644,7 @@ irods::error db_rename_local_zone_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRenameLocalZone SQL 6 " );
     }
-    status =  hs_create_rule_owner_zone_by_zone_name(icss,(void *) _old_zone, (void *) _new_zone, myTime);
+    status =  hs_create_rule_owner_zone_by_zone_name(svc, icss,(void *) _old_zone, (void *) _new_zone, myTime);
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         rodsLog( LOG_NOTICE,
                  "chlRenameLocalZone cmlExecuteNoAnswerSql update failure %d",
@@ -4643,7 +4656,7 @@ irods::error db_rename_local_zone_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRenameLocalZone SQL 7 " );
     }
-    status =  hs_create_user_zone_by_zone_name( icss,  (void *) _old_zone,(void *) _new_zone,myTime);
+    status =  hs_create_user_zone_by_zone_name(svc,  icss,  (void *) _old_zone,(void *) _new_zone,myTime);
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         rodsLog( LOG_NOTICE,
                  "chlRenameLocalZone cmlExecuteNoAnswerSql update failure %d",
@@ -4655,7 +4668,7 @@ irods::error db_rename_local_zone_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRenameLocalZone SQL 8 " );
     }
-    status =  hs_create_zone_name_by_zone_name(   icss, (void *) _old_zone, (void *) _new_zone, myTime );
+    status =  hs_create_zone_name_by_zone_name(svc,    icss, (void *) _old_zone, (void *) _new_zone, myTime );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRenameLocalZone cmlExecuteNoAnswerSql update failure %d",
@@ -4724,7 +4737,7 @@ irods::error db_del_zone_op(
     }
 
     {
-        status = hs_get_zone_type_by_name(icss,(void *) _zone_name,
+        status = hs_get_zone_type_by_name(svc, icss,(void *) _zone_name,
                      zoneType, MAX_NAME_LEN);
     }
     if ( status != 0 ) {
@@ -4743,7 +4756,7 @@ irods::error db_del_zone_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelZone 2" );
     }
-    status =  hs_delete_zone_by_name(icss, (void *) _zone_name
+    status =  hs_delete_zone_by_name(svc, icss, (void *) _zone_name
                    );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -4752,7 +4765,7 @@ irods::error db_del_zone_op(
         return ERROR( status, "cmlExecuteNoAnswerSql delete failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlDelZone cmlExecuteNoAnswerSql commit failure %d",
@@ -4764,17 +4777,344 @@ irods::error db_del_zone_op(
 
 } // db_del_zone_op
 
+struct control {
+    char **out;
+    int index;
+    int n;
+    int rows;
+    control() : out(NULL), index(0), n(0), rows(0) {}
+    ~control() {
+      if(out != NULL) {
+        for(int i=0;i<n;i++) {
+          free(out[i]);
+        }
+        free(out);
+      }
+    }
+};
+
+std::vector<control *> controls;
+int next_control() {
+  size_t i;
+  for(i =0;i<controls.size();i++) {
+    if(controls[i] == NULL) {
+      controls[i] = new control();
+      return i + 1;
+    }
+  }
+  controls.push_back(new control());
+  return controls.size();
+}
+
+void release_control(int i) {
+  delete controls[i-1];
+  controls[i-1] = NULL;
+}
+
 // =-=-=-=-=-=-=-
 // modify the zone
 irods::error db_simple_query_op_vector(
     irods::plugin_context& _ctx,
     const char*                  _sql,
-    std::vector<std::string> _bindVars,
+    std::vector<const char *> _bindVars,
     int                    _format,
     int*                   _control,
     char*                  _out_buf,
     int                    _max_out_buf ) {
-    return SUCCESS();
+      // =-=-=-=-=-=-=-
+      // check the context
+      irods::error ret = _ctx.valid();
+      if ( !ret.ok() ) {
+          return PASS( ret );
+      }
+
+      // =-=-=-=-=-=-=-
+      // get a postgres object from the context
+      /*irods::postgres_object_ptr pg;
+      ret = make_db_ptr( _ctx.fco(), pg );
+      if ( !ret.ok() ) {
+          return PASS( ret );
+      }*/
+
+      // =-=-=-=-=-=-=-
+      // extract the icss property
+  //        icatSessionStruct icss;
+  //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
+      int status, nCols, nRows, i;
+      int rowSize;
+      int rows;
+      int OK;
+
+      char *allowedSQL[] = {
+          "select token_name from R_TOKN_MAIN where token_namespace = 'token_namespace'",
+          "select token_name from R_TOKN_MAIN where token_namespace = ?",
+          "select * from R_TOKN_MAIN where token_namespace = ? and token_name like ?",
+          "select resc_name from R_RESC_MAIN",
+          "select * from R_RESC_MAIN where resc_name=?",
+          "select zone_name from R_ZONE_MAIN",
+          "select * from R_ZONE_MAIN where zone_name=?",
+          "select user_name from R_USER_MAIN where user_type_name='rodsgroup'",
+          "select user_name||'#'||zone_name from R_USER_MAIN, R_USER_GROUP where R_USER_GROUP.user_id=R_USER_MAIN.user_id and R_USER_GROUP.group_user_id=(select user_id from R_USER_MAIN where user_name=?)",
+          "select * from R_DATA_MAIN where data_id=?",
+          "select data_name, data_id, data_repl_num from R_DATA_MAIN where coll_id =(select coll_id from R_COLL_MAIN where coll_name=?)",
+          "select coll_name from R_COLL_MAIN where parent_coll_name=?",
+          "select * from R_USER_MAIN where user_name=?",
+          "select user_name||'#'||zone_name from R_USER_MAIN where user_type_name != 'rodsgroup'",
+          "select R_RESC_GROUP.resc_group_name, R_RESC_GROUP.resc_id, resc_name, R_RESC_GROUP.create_ts, R_RESC_GROUP.modify_ts from R_RESC_MAIN, R_RESC_GROUP where R_RESC_MAIN.resc_id = R_RESC_GROUP.resc_id and resc_group_name=?",
+          "select distinct resc_group_name from R_RESC_GROUP",
+          "select coll_id from R_COLL_MAIN where coll_name = ?",
+          "select * from R_USER_MAIN where user_name=? and zone_name=?",
+          "select user_name from R_USER_MAIN where zone_name=? and user_type_name != 'rodsgroup'",
+          "select zone_name from R_ZONE_MAIN where zone_type_name=?",
+          "select user_name, user_auth_name from R_USER_AUTH, R_USER_MAIN where R_USER_AUTH.user_id = R_USER_MAIN.user_id and R_USER_MAIN.user_name=?",
+          "select user_name, user_auth_name from R_USER_AUTH, R_USER_MAIN where R_USER_AUTH.user_id = R_USER_MAIN.user_id and R_USER_MAIN.user_name=? and R_USER_MAIN.zone_name=?",
+          "select user_name, user_auth_name from R_USER_AUTH, R_USER_MAIN where R_USER_AUTH.user_id = R_USER_MAIN.user_id",
+          "select user_name, user_auth_name from R_USER_AUTH, R_USER_MAIN where R_USER_AUTH.user_id = R_USER_MAIN.user_id and R_USER_AUTH.user_auth_name=?",
+          "select user_name, R_USER_MAIN.zone_name, resc_name, quota_limit, quota_over, R_QUOTA_MAIN.modify_ts from R_QUOTA_MAIN, R_USER_MAIN, R_RESC_MAIN where R_USER_MAIN.user_id = R_QUOTA_MAIN.user_id and R_RESC_MAIN.resc_id = R_QUOTA_MAIN.resc_id",
+          "select user_name, R_USER_MAIN.zone_name, resc_name, quota_limit, quota_over, R_QUOTA_MAIN.modify_ts from R_QUOTA_MAIN, R_USER_MAIN, R_RESC_MAIN where R_USER_MAIN.user_id = R_QUOTA_MAIN.user_id and R_RESC_MAIN.resc_id = R_QUOTA_MAIN.resc_id and user_name=? and R_USER_MAIN.zone_name=?",
+          "select user_name, R_USER_MAIN.zone_name, quota_limit, quota_over, R_QUOTA_MAIN.modify_ts from R_QUOTA_MAIN, R_USER_MAIN where R_USER_MAIN.user_id = R_QUOTA_MAIN.user_id and R_QUOTA_MAIN.resc_id = 0",
+          "select user_name, R_USER_MAIN.zone_name, quota_limit, quota_over, R_QUOTA_MAIN.modify_ts from R_QUOTA_MAIN, R_USER_MAIN where R_USER_MAIN.user_id = R_QUOTA_MAIN.user_id and R_QUOTA_MAIN.resc_id = 0 and user_name=? and R_USER_MAIN.zone_name=?",
+          ""
+      };
+      std::vector<const char *> resultColName[] = {
+          {"token_name"},
+          {"token_name"},
+          {"token_namespace","token_id", "token_name", "token_value", "token_value2", "token_value3", "r_comment", "create_ts", "modify_ts"},
+          {"resc_name"},
+          {"resc_id", "resc_name", "zone_name", "resc_type_name", "resc_class_name", "resc_net", "resc_def_path", "free_space", "free_space_ts", "resc_info", "r_comment", "resc_status", "create_ts", "modify_ts", "resc_children", "resc_context", "resc_parent", "resc_objcount", "resc_parent_context"},
+          {"zone_name"},
+          {"zone_id", "zone_name", "zone_type_name", "zone_conn_string", "r_comment", "create_ts", "modify_ts"},
+          {"user_name"},
+          {"user_name||'#'||zone_name"},
+          {"data_id", "coll_id", "data_name", "data_repl_num", "data_version", "data_type_name", "data_size", "resc_group_name", "resc_name", "data_path", "data_owner_name", "data_owner_zone", "data_is_dirty", "data_status", "data_checksum", "data_expiry_ts", "data_map_id", "data_mode", "r_comment", "create_ts", "modify_ts", "resc_hier", "resc_id"},
+          {"data_name, data_id", "data_repl_num"},
+          {"coll_name"},
+          {"user_id", "user_name", "user_type_name", "zone_name", "user_info", "r_comment", "create_ts", "modify_ts"},
+          {"user_name||'#'||zone_name"},
+        {},
+        {},
+          {"coll_id"},
+          {"user_id", "user_name", "user_type_name", "zone_name", "user_info", "r_comment", "create_ts", "modify_ts"},
+          {"user_name"},
+          {"zone_name"},
+          {"user_name", "user_auth_name"},
+          {"user_name", "user_auth_name"},
+          {"user_name", "user_auth_name"},
+          {"user_name", "user_auth_name"},
+        {},
+        {},
+        {},
+        {}
+      };
+      typedef long (*funptr)(void *, void *, void *, int, void *, void *);
+      funptr qu[] = {
+          &hs_get_all2_simple_query_0,
+          &hs_get_all2_simple_query_1,
+          &hs_get_all2_simple_query_2,
+          &hs_get_all2_simple_query_3,
+          &hs_get_all2_simple_query_4,
+          &hs_get_all2_simple_query_5,
+          &hs_get_all2_simple_query_6,
+          &hs_get_all2_simple_query_7,
+          &hs_get_all2_simple_query_8,
+          &hs_get_all2_simple_query_9,
+          &hs_get_all2_simple_query_10,
+          &hs_get_all2_simple_query_11,
+          &hs_get_all2_simple_query_12,
+          &hs_get_all2_simple_query_13,
+          NULL,
+          NULL,
+          &hs_get_all2_simple_query_16,
+          &hs_get_all2_simple_query_17,
+          &hs_get_all2_simple_query_18,
+          &hs_get_all2_simple_query_19,
+          &hs_get_all2_simple_query_20,
+          &hs_get_all2_simple_query_21,
+          &hs_get_all2_simple_query_22,
+          &hs_get_all2_simple_query_23,
+          NULL,
+          NULL,
+          NULL,
+          NULL,
+      };
+
+      //rodsLog( LOG_NOTICE, "JMC :: sql - %s", sql );
+      if ( logSQL != 0 ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery" );
+      }
+
+      if ( _ctx.comm()->clientUser.authInfo.authFlag < LOCAL_PRIV_USER_AUTH ) {
+          return ERROR( CAT_INSUFFICIENT_PRIVILEGE_LEVEL, "insufficient privilege" );
+      }
+      if ( _ctx.comm()->proxyUser.authInfo.authFlag < LOCAL_PRIV_USER_AUTH ) {
+          return ERROR( CAT_INSUFFICIENT_PRIVILEGE_LEVEL, "insufficient privilege" );
+      }
+
+      /* check that the input sql is one of the allowed forms */
+      OK = 0;
+      for ( i = 0;; i++ ) {
+          if ( strlen( allowedSQL[i] ) < 1 ) {
+              break;
+          }
+          if ( strcasecmp( allowedSQL[i], _sql ) == 0 ) {
+              OK = 1;
+              break;
+          }
+      }
+
+      if ( OK == 0 ) {
+          return ERROR( CAT_INVALID_ARGUMENT, "query not found" );
+      }
+
+      /* done with multiple log calls so that each form will be checked
+         via checkIcatLog.pl */
+      if ( i == 0 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 1 " );
+      }
+      if ( i == 1 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 2" );
+      }
+      if ( i == 2 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 3" );
+      }
+      if ( i == 3 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 4" );
+      }
+      if ( i == 4 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 5" );
+      }
+      if ( i == 5 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 6" );
+      }
+      if ( i == 6 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 7" );
+      }
+      if ( i == 7 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 8" );
+      }
+      if ( i == 8 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 9" );
+      }
+      if ( i == 9 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 10" );
+      }
+      if ( i == 10 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 11" );
+      }
+      if ( i == 11 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 12" );
+      }
+      if ( i == 12 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 13" );
+      }
+      if ( i == 13 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 14" );
+      }
+      //if (i==14 && logSQL) rodsLog(LOG_SQL, "chlSimpleQuery S Q L 15");
+      //if (i==15 && logSQL) rodsLog(LOG_SQL, "chlSimpleQuery S Q L 16");
+      //if (i==16 && logSQL) rodsLog(LOG_SQL, "chlSimpleQuery S Q L 17");
+      if ( i == 17 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 18" );
+      }
+      if ( i == 18 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 19" );
+      }
+      if ( i == 19 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 20" );
+      }
+      if ( i == 20 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 21" );
+      }
+      if ( i == 21 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 22" );
+      }
+      if ( i == 22 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 23" );
+      }
+      if ( i == 23 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 24" );
+      }
+      if ( i == 24 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 25" );
+      }
+      if ( i == 25 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 26" );
+      }
+      if ( i == 26 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 27" );
+      }
+      if ( i == 27 && logSQL ) {
+          rodsLog( LOG_SQL, "chlSimpleQuery SQL 28" );
+      }
+
+      _out_buf[0] = '\0';
+      rowSize = 0;
+      rows = 0;
+      control *c;
+      if(*_control == 0) {
+          *_control = next_control();
+          c = controls[*_control - 1];
+          c->index = i;
+          status = qu[c->index](svc, icss, _bindVars.data(), _bindVars.size(), &c->out, &c->n);
+          if ( status < 0 ) {
+            if ( status != CAT_NO_ROWS_FOUND ) {
+              rodsLog( LOG_NOTICE,
+                "chlSimpleQuery cmlGetFirstRowFromSqlBV failure %d",
+                status );
+              }
+              return ERROR( status, "cmlGetFirstRowFromSqlBV failure" );
+            }
+      } else {
+        c = controls[*_control - 1];
+      }
+
+      nCols = resultColName[c->index].size();
+      nRows = c->n / nCols;
+
+      if ( c->rows == 0 && _format == 3 ) {
+          for ( i = 0; i < nCols ; i++ ) {
+              rstrcat( _out_buf, resultColName[c->index][i], _max_out_buf );
+              if ( i != nCols - 1 ) {
+                  rstrcat( _out_buf, " ", _max_out_buf );
+              }
+          }
+      }
+
+      for (;c->rows < nRows;) {
+          char **row = c->out + (c->rows++ * nCols);
+          for ( i = 0; i < nCols ; i++ ) {
+              if ( _format == 1 || _format == 3) {
+                  if ( strlen( row[i] ) == 0 ) {
+                      rstrcat( _out_buf, "- ", _max_out_buf );
+                  }
+                  else {
+                      rstrcat( _out_buf, row[i],
+                               _max_out_buf );
+                      if ( i != nCols - 1 ) {
+                          /* add a space except for the last column */
+                          rstrcat( _out_buf, " ", _max_out_buf );
+                      }
+                  }
+              }
+              if ( _format == 2 ) {
+                  rstrcat( _out_buf, resultColName[c->index][i], _max_out_buf );
+                  rstrcat( _out_buf, ": ", _max_out_buf );
+                  rstrcat( _out_buf, row[i], _max_out_buf );
+                  rstrcat( _out_buf, "\n", _max_out_buf );
+              }
+          }
+          rstrcat( _out_buf, "\n", _max_out_buf );
+          if ( rowSize == 0 ) {
+              rowSize = strlen( _out_buf );
+          }
+          if ( ( int ) strlen( _out_buf ) + rowSize + 20 > _max_out_buf ) {
+              return CODE( 0 ); /* success so far, but more rows available */
+          }
+      }
+
+      release_control(*_control);
+      *_control = 0;
+      return SUCCESS();
 
 } // db_simple_query_op
 
@@ -4790,7 +5130,7 @@ irods::error db_simple_query_op(
     char*                  _out_buf,
     int                    _max_out_buf ) {
 
-    std::vector<std::string> bindVars;
+    std::vector<const char *> bindVars;
     if ( _arg1 != NULL && _arg1[0] != '\0' ) {
         bindVars.push_back( _arg1 );
         if ( _arg2 != NULL && _arg2[0] != '\0' ) {
@@ -4874,7 +5214,7 @@ irods::error db_del_coll_by_admin_op(
         rodsLog( LOG_SQL, "chlDelCollByAdmin SQL 1 " );
     }
     {
-        status = hs_get_int_coll_child_by_name(icss, _coll_info->collName, &iVal );
+        status = hs_get_int_coll_child_by_name(svc, icss, _coll_info->collName, &iVal );
     }
 
     if ( status != CAT_NO_ROWS_FOUND ) {
@@ -4893,7 +5233,7 @@ irods::error db_del_coll_by_admin_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelCollByAdmin SQL 2" );
     }
-    status =  hs_delete_access_by_coll_name(icss, _coll_info->collName
+    status =  hs_delete_access_by_coll_name(svc, icss, _coll_info->collName
                    );
     if ( status != 0 ) {
         /* error, but let it fall thru to below, probably doesn't exist */
@@ -4908,7 +5248,7 @@ irods::error db_del_coll_by_admin_op(
         rodsLog( LOG_SQL, "chlDelCollByAdmin SQL 3 " );
     }
     {
-        status = hs_get_int_coll_id_by_name(icss, _coll_info->collName,
+        status = hs_get_int_coll_id_by_name(svc, icss, _coll_info->collName,
                      &iVal );
     }
 
@@ -4931,7 +5271,7 @@ irods::error db_del_coll_by_admin_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelCollByAdmin SQL 4" );
     }
-    status =  hs_delete_coll_by_name(icss, _coll_info->collName
+    status =  hs_delete_coll_by_name(svc, icss, _coll_info->collName
                                       );
 
     if ( status != 0 ) {
@@ -4992,7 +5332,7 @@ irods::error db_del_coll_op(
         return ERROR( status, "_delColl failed" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlDelColl cmlExecuteNoAnswerSql commit failure %d",
@@ -5144,7 +5484,7 @@ irods::error db_check_auth_op(
 
     {
         /* four strings per password returned */
-        status = hs_get_some_user_password_by_user_zone_and_name(icss, myUserZone, userName2, pwInfoArray.data(), MAX_PASSWORD_LEN, MAX_PASSWORDS * 4 ) * 4;
+        status = hs_get_some_user_password_by_user_zone_and_name(svc, icss, myUserZone, userName2, pwInfoArray.data(), MAX_PASSWORD_LEN, MAX_PASSWORDS * 4 ) * 4;
     }
 
     if ( status < 4 ) {
@@ -5166,7 +5506,7 @@ irods::error db_check_auth_op(
     if ( nPasswords == MAX_PASSWORDS ) {
         {
             // There are more than MAX_PASSWORDS in the database take the extra time to get them all.
-            status = hs_get_num_password_by_user_name( icss, userName2, &MAX_PASSWORDS);
+            status = hs_get_num_password_by_user_name(svc,  icss, userName2, &MAX_PASSWORDS);
         }
         if ( status < 0 ) {
             rodsLog( LOG_ERROR, "cmlGetIntegerValueFromSql failed in db_check_auth_op with status %d", status );
@@ -5176,7 +5516,7 @@ irods::error db_check_auth_op(
 
         {
             /* four strings per password returned */
-            status = hs_get_some_user_password_by_user_zone_and_name(icss, myUserZone, userName2, pwInfoArray.data(), MAX_PASSWORD_LEN, MAX_PASSWORDS * 4);
+            status = hs_get_some_user_password_by_user_zone_and_name(svc, icss, myUserZone, userName2, pwInfoArray.data(), MAX_PASSWORD_LEN, MAX_PASSWORDS * 4);
         }
         if ( status < 0 ) {
             rodsLog( LOG_ERROR, "cmlGetMultiRowStringValuesFromSql failed in db_check_auth_op with status %d", status );
@@ -5265,7 +5605,7 @@ irods::error db_check_auth_op(
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlCheckAuth SQL 2" );
             }
-            status = hs_delete_user_password_by_user_zone_and_name_and_create_ts(icss, userName2, myUserZone, lastPw, goodPwTs);
+            status = hs_delete_user_password_by_user_zone_and_name_and_create_ts(svc, icss, userName2, myUserZone, lastPw, goodPwTs);
             memset( goodPw, 0, sizeof( goodPw ) );
             memset( lastPw, 0, sizeof( lastPw ) );
             if ( status != 0 ) {
@@ -5274,7 +5614,7 @@ irods::error db_check_auth_op(
                          status );
                 return ERROR( status, "delete expired password failure" );
             }
-            status =  hs_commit( icss );
+            status =  hs_commit(svc,  icss );
             if ( status != 0 ) {
                 rodsLog( LOG_NOTICE,
                          "chlCheckAuth cmlExecuteNoAnswerSql commit failure %d",
@@ -5323,7 +5663,7 @@ irods::error db_check_auth_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlCheckAuth SQL 2" );
         }
-        status =  hs_delete_user_password_by_password(icss, goodPw);
+        status =  hs_delete_user_password_by_password(svc, icss, goodPw);
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlCheckAuth cmlExecuteNoAnswerSql delete failure %d",
@@ -5344,7 +5684,7 @@ irods::error db_check_auth_op(
         snprintf( expireStrCreate, sizeof expireStrCreate, "%011d",
                   ( int )pwExpireMaxCreateTime );
 
-        status =  hs_delete_user_password_by_expiry_ts_and_create_ts(icss, expireStr, expireStrCreate
+        status =  hs_delete_user_password_by_expiry_ts_and_create_ts(svc, icss, expireStr, expireStrCreate
                        );
         if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
             rodsLog( LOG_NOTICE,
@@ -5362,7 +5702,7 @@ irods::error db_check_auth_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlCheckAuth SQL 4" );
         }
-        status =  hs_commit( icss );
+        status =  hs_commit(svc,  icss );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlCheckAuth cmlExecuteNoAnswerSql commit failure %d",
@@ -5382,7 +5722,7 @@ checkLevel:
         rodsLog( LOG_SQL, "chlCheckAuth SQL 5" );
     }
     {
-        status = hs_get_user_type_by_zone_and_name(icss, myUserZone, userName2,
+        status = hs_get_user_type_by_zone_and_name(svc, icss, myUserZone, userName2,
                      userType, MAX_NAME_LEN );
     }
     if ( status != 0 ) {
@@ -5426,7 +5766,7 @@ checkLevel:
                     rodsLog( LOG_SQL, "chlCheckAuth SQL 6" );
                 }
                 {
-                    status = hs_get_user_type_by_zone_and_name(icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName,
+                    status = hs_get_user_type_by_zone_and_name(svc, icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName,
                                  userType, MAX_NAME_LEN);
                 }
                 if ( status != 0 ) {
@@ -5529,7 +5869,7 @@ irods::error db_make_temp_pw_op(
 
     {
 	snprintf(tSQL, MAX_SQL_SIZE, "%d", temp_password_time);
-        status = hs_get_password_by_user_zone_and_name_and_diff_expiry_ts(icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, tSQL,
+        status = hs_get_password_by_user_zone_and_name_and_diff_expiry_ts(svc, icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, tSQL,
 					   						password, MAX_PASSWORD_LEN);
     }
     if ( status != 0 ) {
@@ -5579,7 +5919,7 @@ irods::error db_make_temp_pw_op(
     sprintf( myTimeExp, "%d", temp_password_time );  /* seconds from create time
                                                       when it will expire */
 
-    status =  hs_create_user_password_by_user_zone_and_name( icss,   _ctx.comm()->clientUser.rodsZone, useOtherUser == 1 ? (void *) _other_user : _ctx.comm()->clientUser.userName, newPw, myTimeExp, myTime, myTime
+    status =  hs_create_user_password_by_user_zone_and_name(svc,  icss,   _ctx.comm()->clientUser.rodsZone, useOtherUser == 1 ? (void *) _other_user : _ctx.comm()->clientUser.userName, newPw, myTimeExp, myTime, myTime
                    );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -5589,7 +5929,7 @@ irods::error db_make_temp_pw_op(
         return ERROR( status, "insert failed" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlMakeTempPw cmlExecuteNoAnswerSql commit failure %d",
@@ -5670,7 +6010,7 @@ irods::error db_make_limited_pw_op(
 
     {
         snprintf(tSQL,MAX_SQL_SIZE,"%d",temp_password_time);
-        status = hs_get_password_by_user_zone_and_name_and_diff_expiry_ts( icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, tSQL,
+        status = hs_get_password_by_user_zone_and_name_and_diff_expiry_ts(svc,  icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, tSQL,
 					   						password, MAX_PASSWORD_LEN );
     }
     if ( status != 0 ) {
@@ -5729,7 +6069,7 @@ irods::error db_make_limited_pw_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlMakeLimitedPw SQL 2" );
     }
-    status =  hs_create_user_password_by_user_zone_and_name(icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, newPw, expTime, myTime, myTime);
+    status =  hs_create_user_password_by_user_zone_and_name(svc, icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, newPw, expTime, myTime, myTime);
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlMakeLimitedPw cmlExecuteNoAnswerSql insert failure %d",
@@ -5742,9 +6082,9 @@ irods::error db_make_limited_pw_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlMakeLimitedPw SQL 3" );
     }
-    status =  hs_delete_user_password_by_expiry_ts_and_modify_ts(icss,irods_pam_password_min_time,irods_pam_password_max_time,myTime );
+    status =  hs_delete_user_password_by_expiry_ts_and_modify_ts(svc, icss,irods_pam_password_min_time,irods_pam_password_max_time,myTime );
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlMakeLimitedPw cmlExecuteNoAnswerSql commit failure %d",
@@ -5840,7 +6180,7 @@ irods::error db_update_pam_password_op(
         rodsLog( LOG_SQL, "chlUpdateIrodsPamPassword SQL 1" );
     }
     {
-        status = hs_get_user_id(icss, (void *) zone.c_str(), (void *) _user_name,
+        status = hs_get_user_id(svc, icss, (void *) zone.c_str(), (void *) _user_name,
                      selUserId, MAX_NAME_LEN );
     }
     if ( status == CAT_NO_ROWS_FOUND ) {
@@ -5854,14 +6194,14 @@ irods::error db_update_pam_password_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlUpdateIrodsPamPassword SQL 2" );
     }
-    status =  hs_delete_user_password_by_expiry_ts_and_modify_ts(icss,irods_pam_password_min_time,irods_pam_password_max_time,myTime );
+    status =  hs_delete_user_password_by_expiry_ts_and_modify_ts(svc, icss,irods_pam_password_min_time,irods_pam_password_max_time,myTime );
     if ( logSQL != 0 ) rodsLog( LOG_SQL, "chlUpdateIrodsPamPassword SQL 3" );
     cVal[0] = passwordInIcat;
     iVal[0] = MAX_PASSWORD_LEN;
     cVal[1] = passwordModifyTime;
     iVal[1] = sizeof( passwordModifyTime );
     {
-        status = hs_get_some2_user_password_by_user_and_expiry_ts(icss,selUserId,irods_pam_password_min_time,irods_pam_password_max_time,cVal, iVal, 2 );
+        status = hs_get_some2_user_password_by_user_and_expiry_ts(svc, icss,selUserId,irods_pam_password_min_time,irods_pam_password_max_time,cVal, iVal, 2 );
     }
 
     if ( status == 0 ) {
@@ -5869,12 +6209,12 @@ irods::error db_update_pam_password_op(
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlUpdateIrodsPamPassword SQL 4" );
             }
-            status =  hs_create_password_expiry_ts(icss, selUserId, passwordInIcat, expTime, myTime);
+            status =  hs_create_password_expiry_ts(svc, icss, selUserId, passwordInIcat, expTime, myTime);
             if ( status ) {
                 return ERROR( status, "password update error" );
             }
 
-            status =  hs_commit( icss );
+            status =  hs_commit(svc,  icss );
             if ( status != 0 ) {
                 rodsLog( LOG_NOTICE,
                          "chlUpdateIrodsPamPassword cmlExecuteNoAnswerSql commit failure %d",
@@ -5927,11 +6267,11 @@ irods::error db_update_pam_password_op(
     }
 
     if ( logSQL != 0 ) rodsLog( LOG_SQL, "chlUpdateIrodsPamPassword SQL 5" );
-    status =  hs_create_user_password(icss, selUserId, randomPwEncoded, expTime, myTime, myTime
+    status =  hs_create_user_password(svc, icss, selUserId, randomPwEncoded, expTime, myTime, myTime
                                       );
     if ( status ) return ERROR( status, "insert failure" );
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlUpdateIrodsPamPassword cmlExecuteNoAnswerSql commit failure %d",
@@ -6037,7 +6377,7 @@ irods::error db_mod_user_op(
             status2  = cmlCheckGroupAdminAccess(
                            _ctx.comm()->clientUser.userName,
                            _ctx.comm()->clientUser.rodsZone,
-                           "", icss );
+                           "", svc, icss );
             if ( status2 != 0 ) {
                 return ERROR( status2, "cmlCheckGroupAdminAccess failed" );
             }
@@ -6067,7 +6407,7 @@ irods::error db_mod_user_op(
 
     if ( strcmp( _option, "type" ) == 0 ||
             strcmp( _option, "user_type_name" ) == 0 ) {
-        status = hs_create_user_type_by_name_and_user_type_token(icss, zoneName, userName2, (void *) _new_value, myTime);
+        status = hs_create_user_type_by_name_and_user_type_token(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
         opType = 1;
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 2" );
@@ -6075,17 +6415,17 @@ irods::error db_mod_user_op(
     }
     if ( strcmp( _option, "zone" ) == 0 ||
             strcmp( _option, "zone_name" ) == 0 ) {
-        status = hs_create_user_zone_name_by_zone_and_name(icss, zoneName, userName2, (void *) _new_value, myTime);
+        status = hs_create_user_zone_name_by_zone_and_name(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
     }
     if ( strcmp( _option, "addAuth" ) == 0 ) {
         opType = 4;
-        status = hs_create_user_auth_by_user_zone_and_name(icss, zoneName, userName2, (void *) _new_value, myTime);
+        status = hs_create_user_auth_by_user_zone_and_name(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 4" );
         }
     }
     if ( strcmp( _option, "rmAuth" ) == 0 ) {
-        status = hs_delete_user_auth_by_user_name(icss, zoneName, userName2, (void *) _new_value);
+        status = hs_delete_user_auth_by_user_name(svc, icss, zoneName, userName2, (void *) _new_value);
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 5" );
         }
@@ -6093,7 +6433,7 @@ irods::error db_mod_user_op(
     }
 
     if ( strncmp( _option, "rmPamPw", 9 ) == 0 ) {
-		status = hs_delete_user_password_by_user_zone_and_name_and_expiry_ts(icss,
+		status = hs_delete_user_password_by_user_zone_and_name_and_expiry_ts(svc, icss,
  zoneName,
 userName2,
 irods_pam_password_min_time, irods_pam_password_max_time);
@@ -6104,14 +6444,14 @@ irods_pam_password_min_time, irods_pam_password_max_time);
 
     if ( strcmp( _option, "info" ) == 0 ||
             strcmp( _option, "user_info" ) == 0 ) {
-        status = hs_create_user_info_by_zone_and_name(icss, zoneName, userName2, (void *) _new_value, myTime);
+        status = hs_create_user_info_by_zone_and_name(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 6" );
         }
     }
     if ( strcmp( _option, "comment" ) == 0 ||
             strcmp( _option, "r_comment" ) == 0 ) {
-        status = hs_create_user_comment_by_zone_and_name(icss, zoneName, userName2, (void *) _new_value, myTime);
+        status = hs_create_user_comment_by_zone_and_name(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 7" );
         }
@@ -6140,7 +6480,7 @@ irods_pam_password_min_time, irods_pam_password_max_time);
             rodsLog( LOG_SQL, "chlModUser SQL 8" );
         }
         {
-            i = hs_get_user_id_with_password(icss,zoneName,userName2,
+            i = hs_get_user_id_with_password(svc, icss,zoneName,userName2,
                     userIdStr, MAX_NAME_LEN );
         }
         if ( i != 0 && i != CAT_NO_ROWS_FOUND ) {
@@ -6151,14 +6491,14 @@ irods_pam_password_min_time, irods_pam_password_max_time);
                 /* Group admin can only set the initial password, not update */
                 return ERROR( CAT_INSUFFICIENT_PRIVILEGE_LEVEL, "insufficient privilege level" );
             }
-			status = hs_create_user_password_by_user(icss, userIdStr, decoded, myTime);
+			status = hs_create_user_password_by_user(svc, icss, userIdStr, decoded, myTime);
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlModUser SQL 9" );
             }
         }
         else {
             opType = 4;
-			status = hs_create_user_password_by_user_zone_and_name(icss, zoneName, userName2, decoded, (void *) "9999-12-31-23.59.01", myTime, myTime);
+			status = hs_create_user_password_by_user_zone_and_name(svc, icss, zoneName, userName2, decoded, (void *) "9999-12-31-23.59.01", myTime, myTime);
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlModUser SQL 10" );
             }
@@ -6178,7 +6518,7 @@ irods_pam_password_min_time, irods_pam_password_max_time);
                 rodsLog( LOG_SQL, "chlModUser SQL 11" );
             }
             {
-                status2 = hs_get_int_token_id(icss, (void *) "user_type", (void *) _new_value,
+                status2 = hs_get_int_token_id(svc, icss, (void *) "user_type", (void *) _new_value,
                               &iVal );
             }
             if ( status2 != 0 ) {
@@ -6200,7 +6540,7 @@ irods_pam_password_min_time, irods_pam_password_max_time);
                 rodsLog( LOG_SQL, "chlModUser SQL 12" );
             }
             {
-                status2 = hs_get_int_user_id(icss, zoneName,userName2,
+                status2 = hs_get_int_user_id(svc, icss, zoneName,userName2,
                               &iVal );
             }
             if ( status2 != 0 ) {
@@ -6215,7 +6555,7 @@ irods_pam_password_min_time, irods_pam_password_max_time);
         return ERROR( status, "get user_id failed" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlModUser cmlExecuteNoAnswerSql commit failure %d",
@@ -6289,7 +6629,7 @@ irods::error db_mod_group_op(
         int status2;
         status2  = cmlCheckGroupAdminAccess(
                        _ctx.comm()->clientUser.userName,
-                       _ctx.comm()->clientUser.rodsZone, _group_name, icss );
+                       _ctx.comm()->clientUser.rodsZone, _group_name, svc, icss );
         if ( status2 != 0 ) {
             /* User is not a groupadmin that is a member of this group. */
             /* But if we're doing an 'add' and they are a groupadmin
@@ -6297,9 +6637,9 @@ irods::error db_mod_group_op(
             if ( strcmp( _option, "add" ) == 0 ) {
                 int status3 =  cmlCheckGroupAdminAccess(
                                    _ctx.comm()->clientUser.userName,
-                                   _ctx.comm()->clientUser.rodsZone, "", icss );
+                                   _ctx.comm()->clientUser.rodsZone, "", svc, icss );
                 if ( status3 == 0 ) {
-                    int status4 = cmlGetGroupMemberCount( _group_name, icss );
+                    int status4 = cmlGetGroupMemberCount( _group_name, svc, icss );
                     if ( status4 == 0 ) { /* call succeeded and the total is 0 */
                         status2 = 0;    /* reset the error to success to allow it */
                     }
@@ -6337,7 +6677,7 @@ irods::error db_mod_group_op(
         rodsLog( LOG_SQL, "chlModGroup SQL 1 " );
     }
     {
-        status = hs_get_non_group_user_id(icss, zoneToUse, userName2,
+        status = hs_get_non_group_user_id(svc, icss, zoneToUse, userName2,
                      userId, MAX_NAME_LEN);
     }
     if ( status != 0 ) {
@@ -6353,7 +6693,7 @@ irods::error db_mod_group_op(
         rodsLog( LOG_SQL, "chlModGroup SQL 2" );
     }
     {
-        status = hs_get_group_id(icss, (void *) zone.c_str(),(void *) _group_name,
+        status = hs_get_group_id(svc, icss, (void *) zone.c_str(),(void *) _group_name,
                      groupId, MAX_NAME_LEN);
     }
     if ( status != 0 ) {
@@ -6368,7 +6708,7 @@ irods::error db_mod_group_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModGroup SQL 3" );
         }
-        status =  hs_delete_user_group(icss, groupId, userId);
+        status =  hs_delete_user_group(svc, icss, groupId, userId);
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlModGroup cmlExecuteNoAnswerSql delete failure %d",
@@ -6384,7 +6724,7 @@ irods::error db_mod_group_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModGroup SQL 4" );
         }
-        status =  hs_create_user_group(icss, groupId, userId, myTime, myTime);
+        status =  hs_create_user_group(svc, icss, groupId, userId, myTime, myTime);
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlModGroup cmlExecuteNoAnswerSql add failure %d",
@@ -6399,7 +6739,7 @@ irods::error db_mod_group_op(
         return ERROR( CAT_INVALID_ARGUMENT, "invalid option" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlModGroup cmlExecuteNoAnswerSql commit failure %d",
@@ -6495,7 +6835,7 @@ irods::error db_mod_resc_op(
         rodsLog( LOG_SQL, "chlModResc SQL 1 " );
     }
     {
-        status = hs_get_resc_id(icss, (void *) zone.c_str(),(void *) _resc_name,
+        status = hs_get_resc_id(svc, icss, (void *) zone.c_str(),(void *) _resc_name,
                      rescId, MAX_NAME_LEN);
     }
     if ( status != 0 ) {
@@ -6513,7 +6853,7 @@ irods::error db_mod_resc_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModResc SQL 3" );
         }
-        status =  hs_create_resc_comment_ts(icss,rescId,(void *) _option_value, myTime
+        status =  hs_create_resc_comment_ts(svc, icss,rescId,(void *) _option_value, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -6536,7 +6876,7 @@ irods::error db_mod_resc_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModResc SQL 2" );
         }
-        status =  hs_create_resc_info_ts(icss,rescId,(void *) _option_value, myTime
+        status =  hs_create_resc_info_ts(svc, icss,rescId,(void *) _option_value, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -6563,7 +6903,7 @@ irods::error db_mod_resc_op(
             rodsLog( LOG_SQL, "chlModResc SQL 4" );
         }
         if ( inType == 0 ) {
-			status =  hs_create_resc_free_space_ts(rescId,(void *) _option_value, myTime, myTime,
+			status =  hs_create_resc_free_space_ts(svc, rescId,(void *) _option_value, myTime, myTime,
 	                      icss );
 		}
         if ( inType == 1 ) {
@@ -6591,7 +6931,7 @@ irods::error db_mod_resc_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModResc SQL 5" );
         }
-        status =  hs_create_resc_net_ts(icss, rescId,(void *) _option_value, myTime
+        status =  hs_create_resc_net_ts(svc, icss, rescId,(void *) _option_value, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -6611,7 +6951,7 @@ irods::error db_mod_resc_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModResc SQL 7" );
         }
-        status =  hs_create_resc_type_name_ts(icss,rescId,(void *) _option_value, myTime
+        status =  hs_create_resc_type_name_ts(svc, icss,rescId,(void *) _option_value, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -6628,7 +6968,7 @@ irods::error db_mod_resc_op(
             rodsLog( LOG_SQL, "chlModResc SQL 10" );
         }
         {
-            status = hs_get_resc_def_path(icss, rescId,
+            status = hs_get_resc_def_path(svc, icss, rescId,
                          rescPath, MAX_NAME_LEN );
         }
         if ( status != 0 ) {
@@ -6643,7 +6983,7 @@ irods::error db_mod_resc_op(
             rodsLog( LOG_SQL, "chlModResc SQL 11" );
         }
 
-        status =  hs_create_resc_def_path_ts(icss,rescId,(void *) _option_value, myTime
+        status =  hs_create_resc_def_path_ts(svc, icss,rescId,(void *) _option_value, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -6659,7 +6999,7 @@ irods::error db_mod_resc_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModResc SQL 12" );
         }
-        status =  hs_create_resc_status_ts(icss, rescId,(void *) _option_value, myTime
+        status =  hs_create_resc_status_ts(svc, icss, rescId,(void *) _option_value, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -6676,7 +7016,7 @@ irods::error db_mod_resc_op(
             rodsLog( LOG_SQL, "chlModResc SQL 13" );
         }
         /*    If the new name is not unique, this will return an error */
-        status =  hs_create_resc_name_ts(icss, rescId,(void *) _option_value, myTime
+        status =  hs_create_resc_name_ts(svc, icss, rescId,(void *) _option_value, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -6694,7 +7034,7 @@ irods::error db_mod_resc_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModResc SQL 15" );
         }
-        status =  hs_create_server_load_resc_name_by_resc_name(icss, (void *) _resc_name, (void *) _option_value
+        status =  hs_create_server_load_resc_name_by_resc_name(svc, icss, (void *) _resc_name, (void *) _option_value
                        );
         if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
             status = 0;
@@ -6710,7 +7050,7 @@ irods::error db_mod_resc_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModResc SQL 16" );
         }
-        status =  hs_create_server_load_digest_resc_name_by_resc_name(icss, (void *) _resc_name, (void *) _option_value);
+        status =  hs_create_server_load_digest_resc_name_by_resc_name(svc, icss, (void *) _resc_name, (void *) _option_value);
         if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
             status = 0;
         }
@@ -6727,7 +7067,7 @@ irods::error db_mod_resc_op(
     } // if name
 
     if ( strcmp( _option, "context" ) == 0 ) {
-        status =  hs_create_resc_context_ts(icss, rescId, (void *) _option_value, myTime
+        status =  hs_create_resc_context_ts(svc, icss, rescId, (void *) _option_value, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -6743,7 +7083,7 @@ irods::error db_mod_resc_op(
         return ERROR( CAT_INVALID_ARGUMENT, "invalid option" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlModResc cmlExecuteNoAnswerSql commit failure %d",
@@ -6852,7 +7192,7 @@ irods::error db_mod_resc_data_paths_op(
         rodsLog( LOG_SQL, "chlModRescDataPaths SQL 1 " );
     }
     {
-        status = hs_get_resc_id(icss, (void *) zone.c_str(), (void *) _resc_name,
+        status = hs_get_resc_id(svc, icss, (void *) zone.c_str(), (void *) _resc_name,
                      rescId, MAX_NAME_LEN );
     }
     if ( status != 0 ) {
@@ -6884,13 +7224,13 @@ irods::error db_mod_resc_data_paths_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModRescDataPaths SQL 2" );
         }
-        status =  hs_create_data_path_by_user_zone_and_name_and_resc_name(icss,zoneToUse,userName2,(void *) _resc_name,(void *) _old_path,(void *) _new_path );
+        status =  hs_create_data_path_by_user_zone_and_name_and_resc_name(svc, icss,zoneToUse,userName2,(void *) _resc_name,(void *) _old_path,(void *) _new_path );
     }
     else {
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModRescDataPaths SQL 3" );
         }
-        status =  hs_create_data_path(icss,(void *) _resc_name,(void *) _old_path,(void *) _new_path );
+        status =  hs_create_data_path(svc, icss,(void *) _resc_name,(void *) _old_path,(void *) _new_path );
     }
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -6900,7 +7240,7 @@ irods::error db_mod_resc_data_paths_op(
         return ERROR( status, "failed to update path" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlModResc cmlExecuteNoAnswerSql commit failure %d",
@@ -6978,7 +7318,7 @@ irods::error db_mod_resc_freespace_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModRescFreeSpace SQL 1 " );
     }
-    status =  hs_create_resc_free_space_by_name(icss,(void *) _resc_name,updateValueStr, myTime
+    status =  hs_create_resc_free_space_by_name(svc, icss,(void *) _resc_name,updateValueStr, myTime
                    );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -7062,7 +7402,7 @@ irods::error db_reg_user_re_op(
         status2  = cmlCheckGroupAdminAccess(
                        _ctx.comm()->clientUser.userName,
                        _ctx.comm()->clientUser.rodsZone,
-                       "",
+                       "", svc,
                        icss );
         if ( status2 != 0 ) {
             return ERROR( status2, "invalid group admin access" );
@@ -7082,7 +7422,7 @@ irods::error db_reg_user_re_op(
             rodsLog( LOG_SQL, "chlRegUserRE SQL 1 " );
         }
         {
-            status = hs_get_token_name_by_namespace_and_name(icss, (void *) "user_type", _user_info->userType,
+            status = hs_get_token_name_by_namespace_and_name(svc, icss, (void *) "user_type", _user_info->userType,
                          userTypeTokenName, MAX_NAME_LEN );
         }
         if ( status == 0 ) {
@@ -7127,7 +7467,7 @@ irods::error db_reg_user_re_op(
             rodsLog( LOG_SQL, "chlRegUserRE SQL 5 " );
         }
         {
-            status = hs_get_zone_id(icss, userZone,
+            status = hs_get_zone_id(svc, icss, userZone,
                          zoneId, MAX_NAME_LEN );
         }
         if ( status != 0 ) {
@@ -7146,7 +7486,7 @@ irods::error db_reg_user_re_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegUserRE SQL 2" );
     }
-    status = hs_get_next_id( icss, seqStr, MAX_NAME_LEN);
+    status = hs_get_next_id(svc,  icss, seqStr, MAX_NAME_LEN);
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE, "chlRegUserRE cmlGetNextSeqStr failure %d",
                  status );
@@ -7159,7 +7499,7 @@ irods::error db_reg_user_re_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegUserRE SQL 3" );
     }
-    status =  hs_create_user(icss, seqStr, userName2, userTypeTokenName, userZone, myTime, myTime
+    status =  hs_create_user(svc, icss, seqStr, userName2, userTypeTokenName, userZone, myTime, myTime
                    );
 
     if ( status != 0 ) {
@@ -7181,7 +7521,7 @@ irods::error db_reg_user_re_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegUserRE SQL 4" );
     }
-    status =  hs_create_user_group(icss, seqStr, seqStr, myTime, myTime
+    status =  hs_create_user_group(svc, icss, seqStr, seqStr, myTime, myTime
                    );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -7293,7 +7633,7 @@ irods::error db_set_avu_metadata_op(
      */
 
     {
-        status = hs_get_some_meta_id_by_attribute_and_obj_id(icss,(void *) _attribute, objIdStr,
+        status = hs_get_some_meta_id_by_attribute_and_obj_id(svc, icss,(void *) _attribute, objIdStr,
 						                 metaIdStr, MAX_NAME_LEN, 2);
     }
 
@@ -7361,7 +7701,7 @@ irods::error db_set_avu_metadata_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlSetAVUMetadata SQL 5" );
     }
-    status = hs_create_meta_value_and_units_ts(icss,metaIdStr,(void *) _new_value, (void *) _new_unit, myTime
+    status = hs_create_meta_value_and_units_ts(svc, icss,metaIdStr,(void *) _new_value, (void *) _new_unit, myTime
                                      );
 
     if ( status != 0 ) {
@@ -7372,7 +7712,7 @@ irods::error db_set_avu_metadata_op(
         return ERROR( status, "set avu failed" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlSetAVUMetadata cmlExecuteNoAnswerSql commit failure %d",
@@ -7458,7 +7798,7 @@ irods::error db_add_avu_metadata_wild_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlAddAVUMetadataWild SQL 8" );
     }
-    status =  hs_create_metamap_by_name(icss, collection, objectName,seqNumStr,  myTime, myTime
+    status =  hs_create_metamap_by_name(svc, icss, collection, objectName,seqNumStr,  myTime, myTime
                    );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -7470,7 +7810,7 @@ irods::error db_add_avu_metadata_wild_op(
 
 
     /* Commit */
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlAddAVUMetadataWild cmlExecuteNoAnswerSql commit failure %d",
@@ -7582,7 +7922,7 @@ irods::error db_add_avu_metadata_op(
                 rodsLog( LOG_SQL, "chlAddAVUMetadata SQL 1 " );
             }
             {
-                status = hs_get_int_data_id(icss, logicalParentDirName,logicalEndName,
+                status = hs_get_int_data_id_by_name(svc, icss, logicalParentDirName,logicalEndName,
                              &iVal);
             }
             if ( status == 0 ) {
@@ -7596,7 +7936,7 @@ irods::error db_add_avu_metadata_op(
             status = cmlCheckDataObjOnly( logicalParentDirName, logicalEndName,
                                           _ctx.comm()->clientUser.userName,
                                           _ctx.comm()->clientUser.rodsZone,
-                                          ACCESS_CREATE_METADATA, icss );
+                                          ACCESS_CREATE_METADATA, svc, icss );
         }
         if ( status < 0 ) {
             _rollback( "chlAddAVUMetadata" );
@@ -7611,7 +7951,7 @@ irods::error db_add_avu_metadata_op(
                 rodsLog( LOG_SQL, "chlAddAVUMetadata SQL 3" );
             }
             {
-                status = hs_get_int_coll_id_by_name(icss,(void *) _name,
+                status = hs_get_int_coll_id_by_name(svc, icss,(void *) _name,
                              &iVal);
             }
             if ( status == 0 ) {
@@ -7627,7 +7967,7 @@ irods::error db_add_avu_metadata_op(
             status = cmlCheckDir( _name,
                                   _ctx.comm()->clientUser.userName,
                                   _ctx.comm()->clientUser.rodsZone,
-                                  ACCESS_CREATE_METADATA, icss );
+                                  ACCESS_CREATE_METADATA, svc, icss );
         }
         if ( status < 0 ) {
             char errMsg[105];
@@ -7661,7 +8001,7 @@ irods::error db_add_avu_metadata_op(
             rodsLog( LOG_SQL, "chlAddAVUMetadata SQL 5" );
         }
         {
-            status = hs_get_int_resc_id(icss,(void *) zone.c_str(), (void *)_name,
+            status = hs_get_int_resc_id(svc, icss,(void *) zone.c_str(), (void *)_name,
                          &objId  );
         }
         if ( status != 0 ) {
@@ -7696,7 +8036,7 @@ irods::error db_add_avu_metadata_op(
             rodsLog( LOG_SQL, "chlAddAVUMetadata SQL 6" );
         }
         {
-            status = hs_get_int_user_id(icss, userZone, userName,
+            status = hs_get_int_user_id(svc, icss, userZone, userName,
                          &objId);
         }
         if ( status != 0 ) {
@@ -7724,7 +8064,7 @@ irods::error db_add_avu_metadata_op(
             rodsLog( LOG_SQL, "chlAddAVUMetadata SQL 7" );
         }
         {
-            status = hs_get_int_resc_group_id(icss, (void *) _name,
+            status = hs_get_int_resc_group_id(svc, icss, (void *) _name,
                          &objId);
         }
         if ( status != 0 ) {
@@ -7752,7 +8092,7 @@ irods::error db_add_avu_metadata_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlAddAVUMetadata SQL 7" );
     }
-    status =  hs_create_metamap(icss, objIdStr, seqNumStr, myTime, myTime
+    status =  hs_create_metamap(svc, icss, objIdStr, seqNumStr, myTime, myTime
                    );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -7762,7 +8102,7 @@ irods::error db_add_avu_metadata_op(
         return ERROR( status, "insert failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlAddAVUMetadata cmlExecuteNoAnswerSql commit failure %d",
@@ -7998,7 +8338,7 @@ irods::error db_del_avu_metadata_op(
         status = cmlCheckDataObjOnly( logicalParentDirName, logicalEndName,
                                       _ctx.comm()->clientUser.userName,
                                       _ctx.comm()->clientUser.rodsZone,
-                                      ACCESS_DELETE_METADATA, icss );
+                                      ACCESS_DELETE_METADATA, svc, icss );
         if ( status < 0 ) {
             if ( _nocommit != 1 ) {
                 _rollback( "chlDeleteAVUMetadata" );
@@ -8017,7 +8357,7 @@ irods::error db_del_avu_metadata_op(
         status = cmlCheckDir( _name,
                               _ctx.comm()->clientUser.userName,
                               _ctx.comm()->clientUser.rodsZone,
-                              ACCESS_DELETE_METADATA, icss );
+                              ACCESS_DELETE_METADATA, svc, icss );
         if ( status < 0 ) {
             char errMsg[105];
             if ( status == CAT_UNKNOWN_COLLECTION ) {
@@ -8046,7 +8386,7 @@ irods::error db_del_avu_metadata_op(
             rodsLog( LOG_SQL, "chlDeleteAVUMetadata SQL 3" );
         }
         {
-            status = hs_get_int_resc_id(icss, (void *) zone.c_str(),(void *) _name,
+            status = hs_get_int_resc_id(svc, icss, (void *) zone.c_str(),(void *) _name,
                          &objId  );
         }
         if ( status != 0 ) {
@@ -8083,7 +8423,7 @@ irods::error db_del_avu_metadata_op(
             rodsLog( LOG_SQL, "chlDeleteAVUMetadata SQL 4" );
         }
         {
-   status = hs_get_int_user_id(icss, userZone,userName,
+   status = hs_get_int_user_id(svc, icss, userZone,userName,
                          &objId  );
         }
         if ( status != 0 ) {
@@ -8113,7 +8453,7 @@ irods::error db_del_avu_metadata_op(
             rodsLog( LOG_SQL, "chlDeleteAVUMetadata SQL 5" );
         }
         {
-            status = hs_get_int_resc_group_id(icss, (void *) _name,
+            status = hs_get_int_resc_group_id(svc, icss, (void *) _name,
                          &objId);
         }
         if ( status != 0 ) {
@@ -8134,7 +8474,7 @@ irods::error db_del_avu_metadata_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlDeleteAVUMetadata SQL 9" );
         }
-        status =  hs_delete_metamap_by_attribute_and_obj_id(icss, (void *) _attribute /* attribute is really id */, objIdStr
+        status =  hs_delete_metamap_by_attribute_and_obj_id(svc, icss, (void *) _attribute /* attribute is really id */, objIdStr
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -8148,7 +8488,7 @@ irods::error db_del_avu_metadata_op(
         }
 
         if ( _nocommit != 1 ) {
-            status =  hs_commit( icss );
+            status =  hs_commit(svc,  icss );
             if ( status != 0 ) {
                 rodsLog( LOG_NOTICE,
                          "chlDeleteAVUMetadata cmlExecuteNoAnswerSql commit failure %d",
@@ -8172,14 +8512,14 @@ irods::error db_del_avu_metadata_op(
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlDeleteAVUMetadata SQL 5" );
             }
-            status =  hs_delete_metamap_allow_null_units_use_wildcards(icss, (void *) _attribute, (void *) _value, (void *) _unit,objIdStr
+            status =  hs_delete_metamap_allow_null_units_use_wildcards(svc, icss, (void *) _attribute, (void *) _value, (void *) _unit,objIdStr
                            );
         }
         else {
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlDeleteAVUMetadata SQL 6" );
             }
-            status =  hs_delete_metamap_allow_null_units(icss, (void *) _attribute, (void *) _value, (void *) _unit,objIdStr
+            status =  hs_delete_metamap_allow_null_units(svc, icss, (void *) _attribute, (void *) _value, (void *) _unit,objIdStr
                            );
         }
     }
@@ -8188,14 +8528,14 @@ irods::error db_del_avu_metadata_op(
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlDeleteAVUMetadata SQL 7" );
             }
-            status =  hs_delete_metamap_use_wildcards(icss, (void *) _attribute, (void *) _value, (void *) _unit,objIdStr
+            status =  hs_delete_metamap_use_wildcards(svc, icss, (void *) _attribute, (void *) _value, (void *) _unit,objIdStr
                            );
         }
         else {
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlDeleteAVUMetadata SQL 8" );
             }
-            status =  hs_delete_metamap_by_avu_and_obj_id(icss, (void *) _attribute, (void *) _value, (void *) _unit, objIdStr);
+            status =  hs_delete_metamap_by_avu_and_obj_id(svc, icss, (void *) _attribute, (void *) _value, (void *) _unit, objIdStr);
         }
     }
     if ( status != 0 ) {
@@ -8209,7 +8549,7 @@ irods::error db_del_avu_metadata_op(
     }
 
     if ( _nocommit != 1 ) {
-        status =  hs_commit( icss );
+        status =  hs_commit(svc,  icss );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlDeleteAVUMetadata cmlExecuteNoAnswerSql commit failure %d",
@@ -8284,7 +8624,7 @@ irods::error db_copy_avu_metadata_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlCopyAVUMetadata SQL 3" );
     }
-    status =  hs_create_meta_map_by_obj_id(objIdStr2, objIdStr1, myTime, myTime,
+    status =  hs_create_meta_map_by_obj_id(svc, objIdStr2, objIdStr1, myTime, myTime,
                   icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -8294,7 +8634,7 @@ irods::error db_copy_avu_metadata_op(
         return ERROR( status, "insert failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlCopyAVUMetadata cmlExecuteNoAnswerSql commit failure %d",
@@ -8372,7 +8712,7 @@ irods::error db_mod_access_control_resc_op(
             rodsLog( LOG_SQL, "chlModAccessControlResc SQL 1" );
         }
         {
-            status = hs_get_int_resc_id_by_name(icss, (void *) _resc_name,
+            status = hs_get_int_resc_id_by_name(svc, icss, (void *) _resc_name,
 							&iVal);
         }
         if ( status == CAT_NO_ROWS_FOUND ) {
@@ -8387,7 +8727,7 @@ irods::error db_mod_access_control_resc_op(
         status = cmlCheckResc( _resc_name,
                                _ctx.comm()->clientUser.userName,
                                _ctx.comm()->clientUser.rodsZone,
-                               ACCESS_OWN,
+                               ACCESS_OWN, svc,
                                icss );
         if ( status < 0 ) {
             return ERROR( status, "cmlCheckResc error" );
@@ -8412,7 +8752,7 @@ irods::error db_mod_access_control_resc_op(
         rodsLog( LOG_SQL, "chlModAccessControlResc SQL 2" );
     }
     {
-        status = hs_get_int_user_id(icss, (void *) myZone,(void *) _user_name,
+        status = hs_get_int_user_id(svc, icss, (void *) myZone,(void *) _user_name,
                      &userId  );
     }
     if ( status != 0 ) {
@@ -8428,7 +8768,7 @@ irods::error db_mod_access_control_resc_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModAccessControlResc SQL 3" );
     }
-    status =  hs_delete_access_by_obj_id_and_user(icss, rescIdStr,userIdStr
+    status =  hs_delete_access_by_obj_id_and_user(svc, icss, rescIdStr,userIdStr
                    );
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         return ERROR( status, "delete failure" );
@@ -8440,7 +8780,7 @@ irods::error db_mod_access_control_resc_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModAccessControlResc SQL 4" );
         }
-        status =  hs_create_access_by_access_type_token(icss, rescIdStr, userIdStr, myAccessLev, myTime, myTime
+        status =  hs_create_access_by_access_type_token(svc, icss, rescIdStr, userIdStr, myAccessLev, myTime, myTime
                        );
         if ( status != 0 ) {
             _rollback( "chlModAccessControlResc" );
@@ -8448,7 +8788,7 @@ irods::error db_mod_access_control_resc_op(
         }
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status < 0 ) {
         return ERROR( status, "commit failure" );
     }
@@ -8542,7 +8882,7 @@ irods::error db_mod_access_control_op(
         }
         {
             rodsLong_t iVal = 0;
-            status1 = hs_get_int_coll_id_by_name(icss, (void *) _path_name,
+            status1 = hs_get_int_coll_id_by_name(svc, icss, (void *) _path_name,
                           &iVal );
             if ( status1 == CAT_NO_ROWS_FOUND ) {
                 status1 = CAT_UNKNOWN_COLLECTION;
@@ -8561,7 +8901,7 @@ irods::error db_mod_access_control_op(
         status1 = cmlCheckDir( _path_name,
                                _ctx.comm()->clientUser.userName,
                                _ctx.comm()->clientUser.rodsZone,
-                               ACCESS_OWN,
+                               ACCESS_OWN, svc,
                                icss );
     }
     char collIdStr[MAX_NAME_LEN];
@@ -8594,7 +8934,7 @@ irods::error db_mod_access_control_op(
             }
             {
                 rodsLong_t iVal = 0;
-                status2 = hs_get_int_data_id(icss, logicalParentDirName,logicalEndName,
+                status2 = hs_get_int_data_id_by_name(svc, icss, logicalParentDirName,logicalEndName,
                               &iVal  );
                 if ( status2 == CAT_NO_ROWS_FOUND ) {
                     status2 = CAT_UNKNOWN_FILE;
@@ -8613,7 +8953,7 @@ irods::error db_mod_access_control_op(
             status2 = cmlCheckDataObjOnly( logicalParentDirName, logicalEndName,
                                            _ctx.comm()->clientUser.userName,
                                            _ctx.comm()->clientUser.rodsZone,
-                                           ACCESS_OWN, icss );
+                                           ACCESS_OWN, svc, icss );
         }
         if ( status2 > 0 ) {
             objId = status2;
@@ -8635,7 +8975,7 @@ irods::error db_mod_access_control_op(
                 }
                 int status = cmlCheckDirOwn( _path_name,
                                              _ctx.comm()->clientUser.userName,
-                                             _ctx.comm()->clientUser.rodsZone,
+                                             _ctx.comm()->clientUser.rodsZone, svc,
                                              icss );
                 if ( status < 0 ) {
                     return ERROR( status1, "cmlCheckDirOwn failed" );
@@ -8651,7 +8991,7 @@ irods::error db_mod_access_control_op(
                     }
                     int status = cmlCheckDataObjOwn( logicalParentDirName, logicalEndName,
                                                      _ctx.comm()->clientUser.userName,
-                                                     _ctx.comm()->clientUser.rodsZone,
+                                                     _ctx.comm()->clientUser.rodsZone, svc,
                                                      icss );
                     if ( status < 0 ) {
                         _rollback( "chlModAccessControl" );
@@ -8686,7 +9026,7 @@ irods::error db_mod_access_control_op(
         rodsLog( LOG_SQL, "chlModAccessControl SQL 3" );
     }
     {
-        int status = hs_get_int_user_id(icss, (void *) myZone,(void *) _user_name,
+        int status = hs_get_int_user_id(svc, icss, (void *) myZone,(void *) _user_name,
                          &userId  );
         if ( status != 0 ) {
             if ( status == CAT_NO_ROWS_FOUND ) {
@@ -8712,7 +9052,7 @@ irods::error db_mod_access_control_op(
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlModAccessControl SQL 4" );
             }
-            int status = hs_delete_access_by_obj_id_and_user(icss, objIdStr,userIdStr
+            int status = hs_delete_access_by_obj_id_and_user(svc, icss, objIdStr,userIdStr
                               );
             if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
                 return ERROR( status, "delete failure" );
@@ -8723,7 +9063,7 @@ irods::error db_mod_access_control_op(
                 if ( logSQL != 0 ) {
                     rodsLog( LOG_SQL, "chlModAccessControl SQL 5" );
                 }
-                int status = hs_create_access_by_access_type_token(icss, objIdStr, userIdStr, myAccessLev, myTime, myTime
+                int status = hs_create_access_by_access_type_token(svc, icss, objIdStr, userIdStr, myAccessLev, myTime, myTime
                                   );
                 if ( status != 0 ) {
                     _rollback( "chlModAccessControl" );
@@ -8731,7 +9071,7 @@ irods::error db_mod_access_control_op(
                 }
             }
 
-            status =  hs_commit( icss );
+            status =  hs_commit(svc,  icss );
             return ERROR( status, "commit failiure" );
         }
 
@@ -8739,14 +9079,14 @@ irods::error db_mod_access_control_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModAccessControl SQL 6" );
         }
-        int status =  hs_delete_access_by_obj_id_and_user(icss, collIdStr,userIdStr
+        int status =  hs_delete_access_by_obj_id_and_user(svc, icss, collIdStr,userIdStr
                            );
         if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
             _rollback( "chlModAccessControl" );
             return ERROR( status, "delete failure" );
         }
         if ( rmFlag ) { /* just removing */
-            status =  hs_commit( icss );
+            status =  hs_commit(svc,  icss );
             return ERROR( status, "commit failure" );
         }
 
@@ -8755,14 +9095,14 @@ irods::error db_mod_access_control_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModAccessControl SQL 7" );
         }
-        status =  hs_create_access_by_access_type_token(icss, collIdStr, userIdStr, myAccessLev, myTime, myTime
+        status =  hs_create_access_by_access_type_token(svc, icss, collIdStr, userIdStr, myAccessLev, myTime, myTime
                        );
 
         if ( status != 0 ) {
             _rollback( "chlModAccessControl" );
             return ERROR( status, "insert failure" );
         }
-        status =  hs_commit( icss );
+        status =  hs_commit(svc,  icss );
         return ERROR( status, "commit failure" );
     }
 
@@ -8787,7 +9127,7 @@ irods::error db_mod_access_control_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModAccessControl SQL 8" );
     }
-    status = hs_delete_data_access_by_user_recursive(icss, userIdStr, (void *) _path_name);
+    status = hs_delete_data_access_by_user_recursive(svc, icss, userIdStr, (void *) _path_name);
 
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         _rollback( "chlModAccessControl" );
@@ -8797,14 +9137,14 @@ irods::error db_mod_access_control_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModAccessControl SQL 9" );
     }
-    status = hs_delete_coll_access_by_user_recursive(icss, userIdStr, (void *) _path_name);
+    status = hs_delete_coll_access_by_user_recursive(svc, icss, userIdStr, (void *) _path_name);
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         _rollback( "chlModAccessControl" );
         return ERROR( status, "delete failure" );
     }
     if ( rmFlag ) { /* just removing */
 
-        status =  hs_commit( icss );
+        status =  hs_commit(svc,  icss );
         return ERROR( status, "commit failure" );
     }
 
@@ -8813,7 +9153,7 @@ irods::error db_mod_access_control_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModAccessControl SQL 10" );
     }
-    status = hs_create_data_access_by_user_recursive(icss, userIdStr, (void *) _path_name, myAccessLev, myTime, myTime);
+    status = hs_create_data_access_by_user_recursive(svc, icss, userIdStr, (void *) _path_name, myAccessLev, myTime, myTime);
     if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         status = 0;    /* no files, OK */
     }
@@ -8827,13 +9167,13 @@ irods::error db_mod_access_control_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModAccessControl SQL 11" );
     }
-    status =  hs_create_coll_access_by_user_recursive(userIdStr, (void *) _path_name, myAccessLev, myTime, myTime, icss );
+    status =  hs_create_coll_access_by_user_recursive(svc, userIdStr, (void *) _path_name, myAccessLev, myTime, myTime, icss );
     if ( status != 0 ) {
         _rollback( "chlModAccessControl" );
         return ERROR( status, "insert failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status < 0 ) {
         return ERROR( status, "commit failed" );
     }
@@ -8905,7 +9245,7 @@ irods::error db_rename_object_op(
     }
 
     {
-        status = hs_get_int_coll_id_if_own_access_by_user_zone_and_name(icss,
+        status = hs_get_int_coll_id_if_own_access_by_user_zone_and_name(svc, icss,
 _ctx.comm()->clientUser.rodsZone,
 _ctx.comm()->clientUser.userName,
 objIdString,
@@ -8921,7 +9261,7 @@ objIdString,
             rodsLog( LOG_SQL, "chlRenameObject SQL 2" );
         }
         {
-            status = hs_get_int_data_id(icss, collIdString, (void *) _new_name,
+            status = hs_get_int_data_id(svc, icss, collIdString, (void *) _new_name,
                          &otherDataId);
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
@@ -8935,7 +9275,7 @@ objIdString,
             rodsLog( LOG_SQL, "chlRenameObject SQL 3" );
         }
         {
-            status = hs_get_int_sub_coll_id_by_name(icss, collIdString, collNameTmp,
+            status = hs_get_int_sub_coll_id_by_name(svc, icss, collIdString, collNameTmp,
                          &otherCollId);
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
@@ -8947,7 +9287,7 @@ objIdString,
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlRenameObject SQL 4" );
         }
-        status =  hs_create_data_name(icss,objIdString,(void *) _new_name
+        status =  hs_create_data_name(svc, icss,objIdString,(void *) _new_name
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -8960,7 +9300,7 @@ objIdString,
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlRenameObject SQL 5" );
         }
-        status =  hs_create_coll_modify_ts(icss, collIdString, myTime
+        status =  hs_create_coll_modify_ts(svc, icss, collIdString, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -8987,7 +9327,7 @@ objIdString,
     }
 
     {
-        status = hs_get_some2_coll_if_own_access_by_user_zone_and_name( icss, _ctx.comm()->clientUser.rodsZone,_ctx.comm()->clientUser.userName,objIdString,
+        status = hs_get_some2_coll_if_own_access_by_user_zone_and_name(svc,  icss, _ctx.comm()->clientUser.rodsZone,_ctx.comm()->clientUser.userName,objIdString,
                      cVal, iVal, 2 );
         if (status > 0) status = 0;
     }
@@ -8999,7 +9339,7 @@ objIdString,
             rodsLog( LOG_SQL, "chlRenameObject SQL 7" );
         }
         {
-            status = hs_get_int_data_id_by_name(icss, parentCollName, (void *) _new_name,
+            status = hs_get_int_data_id_by_name(svc, icss, parentCollName, (void *) _new_name,
                          &otherDataId  );
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
@@ -9013,7 +9353,7 @@ objIdString,
             rodsLog( LOG_SQL, "chlRenameObject SQL 8" );
         }
         {
-            status = hs_get_int_coll_id_by_name(icss, collNameTmp,
+            status = hs_get_int_coll_id_by_name(svc, icss, collNameTmp,
                          &otherCollId);
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
@@ -9053,7 +9393,7 @@ objIdString,
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlRenameObject SQL 9" );
         }
-        status =  hs_create_coll_name_recursive(icss, collName, slashNewName);
+        status =  hs_create_coll_name_recursive(svc, icss, collName, slashNewName);
         if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
             rodsLog( LOG_NOTICE,
                      "chlRenameObject cmlExecuteNoAnswerSql update failure %d",
@@ -9066,7 +9406,7 @@ objIdString,
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlRenameObject SQL 10" );
         }
-        status =  hs_create_coll_parent_coll_name_recursive(icss, collName, slashNewName);
+        status =  hs_create_coll_parent_coll_name_recursive(svc, icss, collName, slashNewName);
         if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
             rodsLog( LOG_NOTICE,
                      "chlRenameObject cmlExecuteNoAnswerSql update failure %d",
@@ -9084,7 +9424,7 @@ objIdString,
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlRenameObject SQL 11" );
         }
-        status =  hs_create_coll_name_ts(icss,  objIdString, collNameTmp, myTime
+        status =  hs_create_coll_name_ts(svc, icss,  objIdString, collNameTmp, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -9107,7 +9447,7 @@ objIdString,
         rodsLog( LOG_SQL, "chlRenameObject SQL 12" );
     }
     {
-        status = hs_get_int_coll_id_by_data(icss, objIdString,
+        status = hs_get_int_coll_id_by_data(svc, icss, objIdString,
                      &otherDataId );
     }
     if ( status == 0 ) {
@@ -9120,7 +9460,7 @@ objIdString,
         rodsLog( LOG_SQL, "chlRenameObject SQL 12" );
     }
     {
-        status = hs_get_int_coll_id_by_coll(icss, collIdString,
+        status = hs_get_int_coll_id_by_coll(svc, icss, collIdString,
                      &otherDataId );
     }
     if ( status == 0 ) {
@@ -9199,7 +9539,7 @@ irods::error db_move_object_op(
     }
     {
       printf("******************************db_move_object_op 0, %d, %s, %s, %s\n", status, _ctx.comm()->clientUser.rodsZone,_ctx.comm()->clientUser.userName, objIdString);
-        status = hs_get_some2_coll_if_modify_object_access_by_user_zone_and_name(icss, _ctx.comm()->clientUser.rodsZone,_ctx.comm()->clientUser.userName, objIdString,
+        status = hs_get_some2_coll_if_modify_object_access_by_user_zone_and_name(svc, icss, _ctx.comm()->clientUser.rodsZone,_ctx.comm()->clientUser.userName, objIdString,
                      cVal, iVal, 2);
                      printf("******************************db_move_object_op 1, %d\n", status);
                      if (status > 0 ) status = 0;
@@ -9213,7 +9553,7 @@ irods::error db_move_object_op(
         {
           printf("******************************db_move_object_op 2, %d\n", status);
 
-            status = hs_get_int_coll_id_by_coll_id(icss, collIdString,
+            status = hs_get_int_coll_id_by_coll_id(svc, icss, collIdString,
                          &collId);
                          printf("******************************db_move_object_op 3, %d\n", status);
         }
@@ -9233,7 +9573,7 @@ irods::error db_move_object_op(
     }
     {
       printf("******************************db_move_object_op 4, %d\n", status);
-        status = hs_get_data_name_by_id_and_access(icss, objIdString, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName,
+        status = hs_get_data_name_by_id_and_access(svc, icss, objIdString, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName,
                      dataObjName, MAX_NAME_LEN  );
                      printf("******************************db_move_object_op 5, %d\n", status);
     }
@@ -9246,7 +9586,7 @@ irods::error db_move_object_op(
             rodsLog( LOG_SQL, "chlMoveObject SQL 4" );
         }
         {
-            status = hs_get_int_data_id(icss, collIdString, dataObjName,
+            status = hs_get_int_data_id(svc, icss, collIdString, dataObjName,
                          &otherDataId  );
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
@@ -9261,7 +9601,7 @@ irods::error db_move_object_op(
             rodsLog( LOG_SQL, "chlMoveObject SQL 5" );
         }
         {
-            status = hs_get_int_sub_coll_id_by_name(icss, collIdString, nameTmp,
+            status = hs_get_int_sub_coll_id_by_name(svc, icss, collIdString, nameTmp,
                          &otherCollId);
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
@@ -9273,7 +9613,7 @@ irods::error db_move_object_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlMoveObject SQL 6" );
         }
-        status =  hs_create_data_coll_id_ts(icss, objIdString,collIdString, myTime
+        status =  hs_create_data_coll_id_ts(svc, icss, objIdString,collIdString, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -9287,7 +9627,7 @@ irods::error db_move_object_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlMoveObject SQL 7" );
         }
-        status =  hs_create_coll_modify_ts(icss, collIdString,myTime
+        status =  hs_create_coll_modify_ts(svc, icss, collIdString,myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -9311,7 +9651,7 @@ irods::error db_move_object_op(
         rodsLog( LOG_SQL, "chlMoveObject SQL 8" );
     }
     {
-        status = hs_get_some2_coll_if_own_access_by_user_zone_and_name(icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, objIdString,
+        status = hs_get_some2_coll_if_own_access_by_user_zone_and_name(svc, icss, _ctx.comm()->clientUser.rodsZone, _ctx.comm()->clientUser.userName, objIdString,
                              cVal, iVal, 2);
                              if (status > 0) status = 0;
     }
@@ -9344,7 +9684,7 @@ irods::error db_move_object_op(
         }
         status = cmlCheckDir( parentCollName,  _ctx.comm()->clientUser.userName,
                               _ctx.comm()->clientUser.rodsZone,
-                              ACCESS_MODIFY_OBJECT, icss );
+                              ACCESS_MODIFY_OBJECT, svc, icss );
         if ( status < 0 ) {
             return ERROR( status, "cmlCheckDir failed" );
         }
@@ -9356,7 +9696,7 @@ irods::error db_move_object_op(
             rodsLog( LOG_SQL, "chlMoveObject SQL 10" );
         }
         {
-            status = hs_get_int_data_id(icss, collIdString,endCollName, &otherDataId);
+            status = hs_get_int_data_id(svc, icss, collIdString,endCollName, &otherDataId);
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
             return ERROR( CAT_NAME_EXISTS_AS_DATAOBJ, "select data_id failed" );
@@ -9372,7 +9712,7 @@ irods::error db_move_object_op(
             rodsLog( LOG_SQL, "chlMoveObject SQL 11" );
         }
         {
-            status = hs_get_int_coll_id_by_name(icss, newCollName, &otherCollId);
+            status = hs_get_int_coll_id_by_name(svc, icss, newCollName, &otherCollId);
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
             return ERROR( CAT_NAME_EXISTS_AS_COLLECTION, "select coll_id failed" );
@@ -9397,7 +9737,7 @@ irods::error db_move_object_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlMoveObject SQL 12" );
         }
-        status =  hs_create_coll_name(icss, objIdString, newCollName, targetCollName, myTime
+        status =  hs_create_coll_name(svc, icss, objIdString, newCollName, targetCollName, myTime
                        );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -9419,7 +9759,7 @@ irods::error db_move_object_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlMoveObject SQL 13" );
         }
-        status =  hs_create_coll_name_recursive(icss, oldCollName, newCollName);
+        status =  hs_create_coll_name_recursive(svc, icss, oldCollName, newCollName);
         if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
             status = 0;
         }
@@ -9442,7 +9782,7 @@ irods::error db_move_object_op(
         rodsLog( LOG_SQL, "chlMoveObject SQL 14" );
     }
     {
-        status = hs_get_int_coll_id_by_data(icss, objIdString,
+        status = hs_get_int_coll_id_by_data(svc, icss, objIdString,
                      &otherDataId  );
     }
     if ( status == 0 ) {
@@ -9454,7 +9794,7 @@ irods::error db_move_object_op(
         rodsLog( LOG_SQL, "chlMoveObject SQL 15" );
     }
     {
-        status = hs_get_int_coll_id_by_coll(icss, objIdString,
+        status = hs_get_int_coll_id_by_coll(svc, icss, objIdString,
                      &otherDataId );
     }
     if ( status == 0 ) {
@@ -9520,7 +9860,7 @@ irods::error db_reg_token_op(
         rodsLog( LOG_SQL, "chlRegToken SQL 1 " );
     }
     {
-        status = hs_get_int_token_id(icss, (void *) "token_namespace", (void *) _name_space,
+        status = hs_get_int_token_id(svc, icss, (void *) "token_namespace", (void *) _name_space,
                      &objId);
     }
     if ( status != 0 ) {
@@ -9535,7 +9875,7 @@ irods::error db_reg_token_op(
         rodsLog( LOG_SQL, "chlRegToken SQL 2" );
     }
     {
-        status = hs_get_int_token_id(icss, (void *) _name_space, (void *) _name,
+        status = hs_get_int_token_id(svc, icss, (void *) _name_space, (void *) _name,
                      &objId);
     }
     if ( status == 0 ) {
@@ -9566,7 +9906,7 @@ irods::error db_reg_token_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegToken SQL 3" );
     }
-    status = hs_get_int_next_id( icss, &seqNum );
+    status = hs_get_int_next_id(svc,  icss, &seqNum );
     if ( status < 0 ) {
         rodsLog( LOG_NOTICE, "chlRegToken cmlGetNextSeqVal failure %d",
                  status );
@@ -9578,14 +9918,14 @@ irods::error db_reg_token_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegToken SQL 4" );
     }
-    status =  hs_create_token(icss, seqNumStr, (void *) _name_space, (void *) _name, (void *) myValue1, (void *) myValue2, (void *) myValue3, (void *) myComment, myTime, myTime
+    status =  hs_create_token(svc, icss, seqNumStr, (void *) _name_space, (void *) _name, (void *) myValue1, (void *) myValue2, (void *) myValue3, (void *) myComment, myTime, myTime
                    );
     if ( status != 0 ) {
         _rollback( "chlRegToken" );
         return ERROR( status, "insert failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status < 0 ) {
         return ERROR( status, "commit error" );
     }
@@ -9641,7 +9981,7 @@ irods::error db_del_token_op(
         rodsLog( LOG_SQL, "chlDelToken SQL 1 " );
     }
     {
-        status = hs_get_int_token_id(icss, (void *) _name_space, (void *) _name,
+        status = hs_get_int_token_id(svc, icss, (void *) _name_space, (void *) _name,
                      &objId);
     }
     if ( status != 0 ) {
@@ -9655,14 +9995,14 @@ irods::error db_del_token_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelToken SQL 2" );
     }
-    status =  hs_delete_token_by_namespace_and_name(icss, (void *) _name_space, (void *) _name
+    status =  hs_delete_token_by_namespace_and_name(svc, icss, (void *) _name_space, (void *) _name
                    );
     if ( status != 0 ) {
         _rollback( "chlDelToken" );
         return ERROR( status, "delete failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status < 0 ) {
         return ERROR( status, "commit failed" );
     }
@@ -9724,7 +10064,7 @@ irods::error db_reg_server_load_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegServerLoad SQL 1" );
     }
-    status =  hs_create_server_load(icss,(void *) _host_name,(void *) _resc_name,(void *) _cpu_used,(void *) _mem_used,(void *) _swap_used,(void *) _run_q_load,(void *) _disk_space,(void *) _net_input,(void *) _net_output,myTime
+    status =  hs_create_server_load(svc, icss,(void *) _host_name,(void *) _resc_name,(void *) _cpu_used,(void *) _mem_used,(void *) _swap_used,(void *) _run_q_load,(void *) _disk_space,(void *) _net_input,(void *) _net_output,myTime
                    );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
@@ -9733,7 +10073,7 @@ irods::error db_reg_server_load_op(
         return ERROR( status, "cmlExecuteNoAnswerSql failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRegServerLoad cmlExecuteNoAnswerSql commit failure %d",
@@ -9796,13 +10136,13 @@ irods::error db_purge_server_load_op(
         rodsLog( LOG_SQL, "chlPurgeServerLoad SQL 1" );
     }
 
-    status =  hs_delete_server_load_by_create_ts(icss, thenStr);
+    status =  hs_delete_server_load_by_create_ts(svc, icss, thenStr);
     if ( status != 0 ) {
         _rollback( "chlPurgeServerLoad" );
         return ERROR( status, "delete failed" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status < 0 ) {
         return ERROR( status, "commit failed" );
     }
@@ -9857,7 +10197,7 @@ irods::error db_reg_server_load_digest_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegServerLoadDigest SQL 1" );
     }
-    status =  hs_create_server_load_digest(icss,
+    status =  hs_create_server_load_digest(svc, icss,
 (void *) _resc_name,
 (void *) _load_factor,
 myTime
@@ -9869,7 +10209,7 @@ myTime
         return ERROR( status, "cmlExecuteNoAnswerSql failure" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status != 0 ) {
         rodsLog( LOG_NOTICE,
                  "chlRegServerLoadDigest cmlExecuteNoAnswerSql commit failure %d",
@@ -9931,13 +10271,13 @@ irods::error db_purge_server_load_digest_op(
         rodsLog( LOG_SQL, "chlPurgeServerLoadDigest SQL 1" );
     }
 
-    status =  hs_delete_server_load_digest_by_create_ts(icss,thenStr );
+    status =  hs_delete_server_load_digest_by_create_ts(svc, icss,thenStr );
     if ( status != 0 ) {
         _rollback( "chlPurgeServerLoadDigest" );
         return ERROR( status, "delete failed" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status < 0 ) {
         return ERROR( status, "commit failed" );
     }
@@ -9987,7 +10327,7 @@ irods::error db_calc_usage_and_quota_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlCalcUsageAndQuota SQL 1" );
     }
-    status =  hs_delete_quota_usage_by_modify_ts(icss, myTime);
+    status =  hs_delete_quota_usage_by_modify_ts(svc, icss, myTime);
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         _rollback( "chlCalcUsageAndQuota" );
         return ERROR( status, "delete failed" );
@@ -9997,7 +10337,7 @@ irods::error db_calc_usage_and_quota_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlCalcUsageAndQuota SQL 2" );
     }
-    status =  hs_create_quota_usage(icss, myTime
+    status =  hs_create_quota_usage(svc, icss, myTime
                    );
     if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         status = 0;    /* no files, OK */
@@ -10014,7 +10354,7 @@ irods::error db_calc_usage_and_quota_op(
         return ERROR( status, "setOverQuota failed" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status < 0 ) {
         return ERROR( status, "commit failed" );
     }
@@ -10083,7 +10423,7 @@ irods::error db_set_quota_op(
             rodsLog( LOG_SQL, "chlSetQuota SQL 1" );
         }
         {
-            status = hs_get_int_resc_id(icss, (void *) zone.c_str(),(void *)_resc_name,
+            status = hs_get_int_resc_id(svc, icss, (void *) zone.c_str(),(void *)_resc_name,
                          &rescId);
         }
         if ( status != 0 ) {
@@ -10110,7 +10450,7 @@ irods::error db_set_quota_op(
             rodsLog( LOG_SQL, "chlSetQuota SQL 2" );
         }
         {
-            status = hs_get_int_user_id(icss, userZone,userName,
+            status = hs_get_int_user_id(svc, icss, userZone,userName,
                          &userId);
         }
         if ( status != 0 ) {
@@ -10127,7 +10467,7 @@ irods::error db_set_quota_op(
             rodsLog( LOG_SQL, "chlSetQuota SQL 3" );
         }
         {
-            status = hs_get_int_group_id(icss, userZone, userName,
+            status = hs_get_int_group_id(svc, icss, userZone, userName,
                          &userId);
         }
         if ( status != 0 ) {
@@ -10146,7 +10486,7 @@ irods::error db_set_quota_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlSetQuota SQL 4" );
     }
-    status =  hs_delete_quota_by_user_id_and_resc_id(icss, userIdStr, rescIdStr
+    status =  hs_delete_quota_by_user_id_and_resc_id(svc, icss, userIdStr, rescIdStr
                    );
     if ( status != 0 ) {
         rodsLog( LOG_DEBUG,
@@ -10158,7 +10498,7 @@ irods::error db_set_quota_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlSetQuota SQL 5" );
         }
-        status =  hs_create_quota(userIdStr, rescIdStr, (void *) _limit, myTime,
+        status =  hs_create_quota(svc, userIdStr, rescIdStr, (void *) _limit, myTime,
                       icss );
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
@@ -10178,7 +10518,7 @@ irods::error db_set_quota_op(
         return ERROR( status, "setOverQuota failed" );
     }
 
-    status =  hs_commit( icss );
+    status =  hs_commit(svc,  icss );
     if ( status < 0 ) {
         return ERROR( status, "commit failure" );
     }
@@ -10232,7 +10572,7 @@ irods::error db_check_quota_op(
     }
 
 char* resultValue[4];
-    status = hs_get_quota_by_user_name_and_resc_name(icss, (void *) _user_name, (void *) _resc_name,
+    status = hs_get_quota_by_user_name_and_resc_name(svc, icss, (void *) _user_name, (void *) _resc_name,
  resultValue, 4);
 
     if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
@@ -10291,7 +10631,7 @@ irods::error db_del_unused_avus_op(
 
     if ( remove_status == CAT_SUCCESS_BUT_WITH_NO_INFO
             || remove_status == 0 ) {
-        commit_status = hs_commit( icss );
+        commit_status = hs_commit(svc,  icss );
     }
     else {
         return ERROR( remove_status, "removeAVUs failed" );
@@ -10459,7 +10799,7 @@ irods::error db_substitute_resource_hierarchies_op(
 
     // =-=-=-=-=-=-=-
     // Update r_data_main
-    status = hs_create_data_resc_hier_recursive(icss, (void *) irods::hierarchy_parser::delimiter().c_str(), ( char* )_old_hier,( char* )_new_hier);
+    status = hs_create_data_resc_hier_recursive(svc, icss, (void *) irods::hierarchy_parser::delimiter().c_str(), ( char* )_old_hier,( char* )_new_hier);
 
     // Nothing was modified
     if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
@@ -10515,7 +10855,7 @@ irods::error db_get_distinct_data_obj_count_on_resource_op(
 //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
     // =-=-=-=-=-=-=-
 
-	int status = hs_get_int_num_data_by_resc_recursive(icss, (void *) _resc_name, _count);
+	int status = hs_get_int_num_data_by_resc_recursive(svc, icss, (void *) _resc_name, _count);
     if ( status != 0 ) {
         return ERROR( status, "cmlGetFirstRowFromSql failed" );
     }
@@ -10564,7 +10904,7 @@ irods::error db_get_distinct_data_objs_missing_from_child_given_parent_op(
 
 char *resultValue = (char *) malloc(MAX_NAME_LEN * _limit);
         int status = 0;
-	    status = hs_get_some_data_by_resc_not_in_child(icss,(void *) _parent, (void *) _child, resultValue, MAX_NAME_LEN, _limit);
+	    status = hs_get_some_data_by_resc_not_in_child(svc, icss,(void *) _parent, (void *) _child, resultValue, MAX_NAME_LEN, _limit);
         if ( status < 0 ) {
             return ERROR( status, "failed to get a row" );
         }
@@ -10635,7 +10975,7 @@ irods::error db_get_repl_list_for_leaf_bundles_op(
 	char **resultValue;
   int len;
         int status = 0;
-            status = hs_get_all_data_by_resc_list(
+            status = hs_get_all_data_by_resc_list(svc,
 				icss, (void *) not_child_array.c_str(), (void *) child_array.c_str(), &resultValue, &len
 			);
 
@@ -10711,7 +11051,7 @@ irods::error db_get_hierarchy_for_resc_op(
     while ( current_node ) {
         {
             // Ask for parent of current node
-            status = hs_get_resc_parent_by_zone_and_name( icss, (void *) _zone_name->c_str(), current_node,
+            status = hs_get_resc_parent_by_zone_and_name(svc,  icss, (void *) _zone_name->c_str(), current_node,
                                                parent, MAX_NAME_LEN);
         }
         if ( status == CAT_NO_ROWS_FOUND ) { // Resource doesn't exist
@@ -10719,7 +11059,7 @@ irods::error db_get_hierarchy_for_resc_op(
             // quick check to see if the resource actually exists
             char type_name[ 250 ] = "";
             {
-                status = hs_get_resc_type_name_by_zone_and_name(icss,
+                status = hs_get_resc_type_name_by_zone_and_name(svc, icss,
 				                (void *) _zone_name->c_str(),
          								current_node,
                         type_name, 250);
@@ -10808,7 +11148,7 @@ irods::error db_get_icss_op(
 
 // =-=-=-=-=-=-=-
 // from general_query.cpp ::
-int chl_gen_query_impl( void *, genQueryInp_t, genQueryOut_t* );
+int chl_gen_query_impl( void *,void *, genQueryInp_t, genQueryOut_t* );
 
 irods::error db_gen_query_op(
     irods::plugin_context& _ctx,
@@ -10843,6 +11183,7 @@ irods::error db_gen_query_op(
 //        icatSessionStruct icss;
 //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
     int status = chl_gen_query_impl(
+      svc,
                      icss,
                      *_gen_query_inp,
                      _result );

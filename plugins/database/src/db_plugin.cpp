@@ -279,7 +279,7 @@ int get_object_count_of_resource_by_name(
         return ret.code();
     }
 
-    int status = hs_get_num_data_by_resc(svc, _icss, (void *) resc_id_str.c_str(),
+    int status = hs_get_int_num_data_by_resc(svc, _icss, (void *) resc_id_str.c_str(),
                      &_count);
 
     return status;
@@ -308,7 +308,7 @@ irods::error determine_user_has_modify_metadata_access(
     // get the number of data object to which this will apply
     rodsLong_t num_data_objects = -1;
     {
-        status = hs_get_num_data_by_name(svc,
+        status = hs_get_int_num_data_by_name(svc,
 					  icss,
 					  (void *) _collection.c_str(),
 					  (void *) _data_name.c_str(),
@@ -3629,7 +3629,7 @@ irods::error db_del_user_re_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelUserRE SQL 3" );
     }
-    status = hs_delete_user_password_by_user(svc, icss, iValStr);
+    status = hs_delete_user_password_by_user_id(svc, icss, iValStr);
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         char errMsg[MAX_NAME_LEN + 40];
         rodsLog( LOG_NOTICE,
@@ -3646,7 +3646,7 @@ irods::error db_del_user_re_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlDelUserRE SQL 4" );
     }
-    status = hs_delete_user_group(svc, icss, iValStr, iValStr);
+    status = hs_delete_user_group_(svc, icss, iValStr, iValStr);
     if ( status != 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         char errMsg[MAX_NAME_LEN + 40];
         rodsLog( LOG_NOTICE,
@@ -5506,7 +5506,7 @@ irods::error db_check_auth_op(
     if ( nPasswords == MAX_PASSWORDS ) {
         {
             // There are more than MAX_PASSWORDS in the database take the extra time to get them all.
-            status = hs_get_num_password_by_user_name(svc,  icss, userName2, &MAX_PASSWORDS);
+            status = hs_get_int_num_password_by_user_name(svc,  icss, userName2, &MAX_PASSWORDS);
         }
         if ( status < 0 ) {
             rodsLog( LOG_ERROR, "cmlGetIntegerValueFromSql failed in db_check_auth_op with status %d", status );
@@ -6708,7 +6708,7 @@ irods::error db_mod_group_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModGroup SQL 3" );
         }
-        status =  hs_delete_user_group(svc, icss, groupId, userId);
+        status =  hs_delete_user_group_(svc, icss, groupId, userId);
         if ( status != 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlModGroup cmlExecuteNoAnswerSql delete failure %d",
@@ -9153,7 +9153,7 @@ irods::error db_mod_access_control_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModAccessControl SQL 10" );
     }
-    status = hs_create_data_access_by_user_recursive(svc, icss, userIdStr, (void *) _path_name, myAccessLev, myTime, myTime);
+    status = hs_create_data_access_recursive(svc, icss, userIdStr, (void *) _path_name, myAccessLev, myTime, myTime);
     if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
         status = 0;    /* no files, OK */
     }
@@ -9167,7 +9167,7 @@ irods::error db_mod_access_control_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModAccessControl SQL 11" );
     }
-    status =  hs_create_coll_access_by_user_recursive(svc, userIdStr, (void *) _path_name, myAccessLev, myTime, myTime, icss );
+    status =  hs_create_coll_access_recursive(svc, userIdStr, (void *) _path_name, myAccessLev, myTime, myTime, icss );
     if ( status != 0 ) {
         _rollback( "chlModAccessControl" );
         return ERROR( status, "insert failure" );
@@ -9275,7 +9275,7 @@ objIdString,
             rodsLog( LOG_SQL, "chlRenameObject SQL 3" );
         }
         {
-            status = hs_get_int_sub_coll_id_by_name(svc, icss, collIdString, collNameTmp,
+            status = hs_get_int_sub_coll_id_by_name(svc, icss, collIdString, (void *) _new_name,
                          &otherCollId);
         }
         if ( status != CAT_NO_ROWS_FOUND ) {
@@ -9601,7 +9601,7 @@ irods::error db_move_object_op(
             rodsLog( LOG_SQL, "chlMoveObject SQL 5" );
         }
         {
-            status = hs_get_int_sub_coll_id_by_name(svc, icss, collIdString, nameTmp,
+            status = hs_get_int_sub_coll_id_by_name(svc, icss, collIdString, dataObjName,
                          &otherCollId);
         }
         if ( status != CAT_NO_ROWS_FOUND ) {

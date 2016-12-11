@@ -32,7 +32,7 @@ extern int logSQL_CML;
 int checkObjIdByTicket( const char *dataId, const char *accessLevel,
                         const char *ticketStr, const char *ticketHost,
                         const char *userName, const char *userZone,
-                        void *svc, 
+                        void *svc,
                         void *icss );
 
 /*
@@ -520,7 +520,7 @@ int cmlGetGroupMemberCount( const char *groupName, void *svc, void *icss ) {
 
     rodsLong_t iVal;
     int status;
-    status = hs_get_group_member_count(svc, icss, (void *) groupName, &iVal);
+    status = hs_get_int_group_member_count(svc, icss, (void *) groupName, &iVal);
     if ( status == 0 ) {
         status = iVal;
     }

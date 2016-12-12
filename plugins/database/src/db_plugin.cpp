@@ -9529,9 +9529,9 @@ irods::error db_move_object_op(
 
     /* check that the target collection exists and user has write
        permission, and get the names while at it */
-    cVal[0] = parentTargetCollName;
+    cVal[0] = targetCollName;
     iVal[0] = MAX_NAME_LEN;
-    cVal[1] = targetCollName;
+    cVal[1] = parentTargetCollName;
     iVal[1] = MAX_NAME_LEN;
     snprintf( objIdString, MAX_NAME_LEN, "%lld", _target_coll_id );
     if ( logSQL != 0 ) {
@@ -9642,10 +9642,10 @@ irods::error db_move_object_op(
 
     /* See if it's a collection, and get the parentCollName and
        oldCollName, and check permission at the same time */
-    cVal[1] = parentCollName;
-    iVal[1] = MAX_NAME_LEN;
     cVal[0] = oldCollName;
     iVal[0] = MAX_NAME_LEN;
+    cVal[1] = parentCollName;
+    iVal[1] = MAX_NAME_LEN;
 
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlMoveObject SQL 8" );

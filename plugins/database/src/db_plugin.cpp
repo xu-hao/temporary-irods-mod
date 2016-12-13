@@ -1538,7 +1538,7 @@ irods::error db_open_op(
                    status,
                    "failed to obtain db service" );
     }
-    char config [] = "/etc/irods/QueryArrow/tdb-plugin-abs.json";
+    char config [] = "/etc/QueryArrow/tdb-plugin-gen-abs.json";
     // char config [] = "/tmp/QueryArrow";
     status = hs_connect(svc, config, &icss );
     if ( 0 != status ) {

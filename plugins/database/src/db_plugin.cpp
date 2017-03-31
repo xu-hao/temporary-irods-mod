@@ -1532,13 +1532,13 @@ irods::error db_open_op(
     // =-=-=-=-=-=-=-
     // call open in mid level
     int status = hs_local(&svc);
-    // int status = hs_unix_domain_socket((void *)"/etc/irods/QueryArrow/tdb-plugin-abs.json", &svc);
+    // int status = hs_unix_domain_socket(&svc);
     if ( 0 != status ) {
         return ERROR(
                    status,
                    "failed to obtain db service" );
     }
-    char config [] = "/etc/QueryArrow/tdb-plugin-gen-abs.json";
+    char config [] = "/etc/QueryArrow/tdb-plugin-gen-abs.yaml";
     // char config [] = "/tmp/QueryArrow";
     status = hs_connect(svc, config, &icss );
     if ( 0 != status ) {

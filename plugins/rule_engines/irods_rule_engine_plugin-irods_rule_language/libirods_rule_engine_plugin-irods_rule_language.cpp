@@ -97,9 +97,9 @@ void register_regexes_from_array(
     try {
         const auto& arr = boost::any_cast<const std::vector<boost::any>&>( _array );
         for ( const auto& elem : arr ) {
-            try {  
+            try {
                 const auto& tmp = boost::any_cast<const std::string&>(elem);
-                RuleExistsHelper::Instance()->registerRuleRegex( tmp ); 
+                RuleExistsHelper::Instance()->registerRuleRegex( tmp );
             } catch ( boost::bad_any_cast& ) {
                 rodsLog(
                         LOG_ERROR,
@@ -176,7 +176,7 @@ irods::error start(irods::default_re_ctx&,const std::string& _instance_name ) {
                     rodsLog(
                             LOG_DEBUG,
                             "No regexes found in server config - using default regexes: [%s], [%s], [%s]",
-                            STATIC_PEP_RULE_REGEX.c_str(), 
+                            STATIC_PEP_RULE_REGEX.c_str(),
                             DYNAMIC_PEP_RULE_REGEX.c_str(),
                             MICROSERVICE_RULE_REGEX.c_str() );
                 }
@@ -209,7 +209,7 @@ irods::error stop(irods::default_re_ctx& _u, const std::string& _instance_name) 
     return SUCCESS();
 }
 
-irods::error rule_exists(irods::default_re_ctx&, std::string _rn, bool& _ret) {
+irods::error rule_exists(irods::default_re_ctx&, const std::string& _rn, bool& _ret) {
     if(ruleEngineConfig.ruleEngineStatus == UNINITIALIZED) {
         rodsLog(
             LOG_DEBUG,
@@ -231,12 +231,12 @@ irods::error rule_exists(irods::default_re_ctx&, std::string _rn, bool& _ret) {
 
 irods::error list_rules( irods::default_re_ctx&, std::vector<std::string>& rule_vec ) {
     for ( int i = 0; i < ruleEngineConfig.coreRuleSet->len; ++i ) {
-       rule_vec.push_back( ruleEngineConfig.coreRuleSet->rules[i]->node->subtrees[0]->text ); 
+       rule_vec.push_back( ruleEngineConfig.coreRuleSet->rules[i]->node->subtrees[0]->text );
     }
     return SUCCESS();
 }
 
-irods::error exec_rule(irods::default_re_ctx&, std::string _rn, std::list<boost::any>& _ps, irods::callback _eff_hdlr) {
+irods::error exec_rule(irods::default_re_ctx&, const std::string& _rn, std::list<boost::any>& _ps, irods::callback _eff_hdlr) {
     if(ruleEngineConfig.ruleEngineStatus == UNINITIALIZED) {
         rodsLog(
             LOG_DEBUG,
@@ -347,9 +347,7 @@ irods::error exec_rule(irods::default_re_ctx&, std::string _rn, std::list<boost:
     if (ret < 0) {
         std::stringstream msg;
         msg << "applyRuleUpdateParams failed for rule " << _rn;
-        rodsLog(
-            LOG_DEBUG,
-            msg.str().c_str() );
+        rodsLog(LOG_DEBUG, "%s", msg.str().c_str() );
         return ERROR(ret, msg.str());
     }
 
@@ -358,8 +356,9 @@ irods::error exec_rule(irods::default_re_ctx&, std::string _rn, std::list<boost:
 
 irods::error exec_rule_text(
     irods::default_re_ctx&,
-    std::string            _rt,
-    std::list<boost::any>& _ps,
+    const std::string&     _rt,
+    msParamArray_t*        _ms_params,
+    const std::string&     _out_desc,
     irods::callback        _eff_hdlr) {
 
     if(ruleEngineConfig.ruleEngineStatus == UNINITIALIZED) {
@@ -370,35 +369,28 @@ irods::error exec_rule_text(
         return SUCCESS();
     }
 
+    ruleExecInfo_t * rei;
+    irods::error err;
+    if(!(err = _eff_hdlr("unsafe_ms_ctx", &rei)).ok()) {
+        return err;
+    }
+
     rodsLog(
         LOG_DEBUG,
         "applying rule %s, params %ld",
         _rt.c_str(),
-        _ps.size());
-
-    auto itr = begin(_ps);
-    ++itr; // skip tuple
-    ++itr; // skip callback
-    msParamArray_t* ms_params = boost::any_cast<msParamArray_t*>(*itr);
-
-    ++itr; // skip msparam
-    std::string out_desc = *boost::any_cast<std::string*>(*itr);
-    
-    ++itr; // skip msparam
-    ruleExecInfo_t* rei = boost::any_cast<ruleExecInfo_t*>(*itr);
+        _ms_params->len);
 
     const int status = execMyRule(
                      (char*)_rt.c_str(),
-                     ms_params,
-                     const_cast<char*>(out_desc.data()),
+                     _ms_params,
+                     _out_desc.c_str(),
                      rei );
 
      if (status < 0) {
         std::stringstream msg;
         msg << "execMyRule failed for rule " << _rt;
-        rodsLog(
-            LOG_DEBUG,
-            msg.str().c_str() );
+        rodsLog(LOG_DEBUG, "%s", msg.str().c_str() );
         return ERROR(status, msg.str());
     }
 
@@ -407,8 +399,8 @@ irods::error exec_rule_text(
 
 irods::error exec_rule_expression(
     irods::default_re_ctx&,
-    std::string            _rt,
-    std::list<boost::any>& _ps,
+    const std::string&     _rt,
+    msParamArray_t*        _ms_params,
     irods::callback        _eff_hdlr) {
 
     if(ruleEngineConfig.ruleEngineStatus == UNINITIALIZED) {
@@ -419,29 +411,24 @@ irods::error exec_rule_expression(
         return SUCCESS();
     }
 
+    ruleExecInfo_t * rei;
+    irods::error err;
+    if(!(err = _eff_hdlr("unsafe_ms_ctx", &rei)).ok()) {
+        return err;
+    }
+
     rodsLog(
         LOG_DEBUG,
         "applying rule %s, params %ld",
         _rt.c_str(),
-        _ps.size());
-
-    auto itr = begin(_ps);
-    ++itr; // skip tuple
-    ++itr; // skip callback
-    msParamArray_t* ms_params = boost::any_cast<msParamArray_t*>(*itr);
-
-    ++itr; // skip msparam
-    std::string out_desc = *boost::any_cast<std::string*>(*itr);
-    
-    ++itr; // skip msparam
-    ruleExecInfo_t* rei = boost::any_cast<ruleExecInfo_t*>(*itr);
+        _ms_params->len);
 
     std::string rule_text = "{" + _rt + "}";
 
     char res[MAX_COND_LEN];
     int status = computeExpression(
                      (char*)rule_text.c_str(),
-                     ms_params,
+                     _ms_params,
                      rei,
                      NO_SAVE_REI,
                      res );
@@ -449,9 +436,7 @@ irods::error exec_rule_expression(
     if (status < 0) {
         std::stringstream msg;
         msg << "computeExpression failed for input " << _rt;
-        rodsLog(
-            LOG_DEBUG,
-            msg.str().c_str() );
+        rodsLog(LOG_DEBUG, "%s", msg.str().c_str() );
         return ERROR(status, msg.str());
     }
 
@@ -463,33 +448,26 @@ extern "C"
 irods::pluggable_rule_engine<irods::default_re_ctx>* plugin_factory( const std::string& _inst_name,
                                  const std::string& _context ) {
     irods::pluggable_rule_engine<irods::default_re_ctx>* re = new irods::pluggable_rule_engine<irods::default_re_ctx>( _inst_name , _context);
-    re->add_operation<irods::default_re_ctx&,const std::string&>(
-            "start",
+    re->add_operation( "start",
             std::function<irods::error(irods::default_re_ctx&,const std::string&)>( start ) );
 
-    re->add_operation<irods::default_re_ctx&,const std::string&>(
-            "stop",
+    re->add_operation( "stop",
             std::function<irods::error(irods::default_re_ctx&,const std::string&)>( stop ) );
 
-    re->add_operation<irods::default_re_ctx&, std::string, bool&>(
-            "rule_exists",
-            std::function<irods::error(irods::default_re_ctx&, std::string, bool&)>( rule_exists ) );
+    re->add_operation( "rule_exists",
+            std::function<irods::error(irods::default_re_ctx&, const std::string&, bool&)>( rule_exists ) );
 
-    re->add_operation<irods::default_re_ctx&, std::vector<std::string>&>(
-            "list_rules",
+    re->add_operation( "list_rules",
             std::function<irods::error(irods::default_re_ctx&,std::vector<std::string>&)>( list_rules ) );
 
-    re->add_operation<irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback>(
-            "exec_rule",
-            std::function<irods::error(irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback)>( exec_rule ) );
+    re->add_operation( "exec_rule",
+            std::function<irods::error(irods::default_re_ctx&,const std::string&,std::list<boost::any>&,irods::callback)>( exec_rule ) );
 
-    re->add_operation<irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback>(
-            "exec_rule_text",
-            std::function<irods::error(irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback)>( exec_rule_text ) );
+    re->add_operation( "exec_rule_text",
+            std::function<irods::error(irods::default_re_ctx&,const std::string&,msParamArray_t*,const std::string&,irods::callback)>( exec_rule_text ) );
 
-    re->add_operation<irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback>(
-            "exec_rule_expression",
-            std::function<irods::error(irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback)>( exec_rule_expression ) );
+    re->add_operation( "exec_rule_expression",
+            std::function<irods::error(irods::default_re_ctx&,const std::string&,msParamArray_t*,irods::callback)>( exec_rule_expression ) );
 
     return re;
 

@@ -88,7 +88,7 @@ static std::string get_string_array_from_array( const boost::any& _array ) {
                     __PRETTY_FUNCTION__ );
                 continue;
             }
-            
+
             str_array += ",";
         } // for
 
@@ -158,7 +158,7 @@ acCreateUserF1 {
 
         other_user_name = other_user_info.userName;
     } catch ( const irods::exception& e ) {
-        rodsLog(LOG_ERROR, e.what());
+        irods::log(e);
         return ERROR(e.code(), "irods exception in acCreateUser");
     }
 
@@ -204,7 +204,7 @@ irods::error acCreateUserZoneCollections( irods::callback _cb, std::list<boost::
         rods_zone_proxy = user_info.rodsZone;
         other_user_name = other_user_info.userName;
     } catch ( const irods::exception& e ) {
-        rodsLog(LOG_ERROR, e.what());
+        irods::log(e);
         return ERROR(e.code(), "irods exception in acCreateDefaultCollections");
     }
 
@@ -269,7 +269,7 @@ acDeleteUserF1 {
 
     ret = _cb(std::string("msiCommit"));
 
-    ret = _cb(std::string("acPostProcForDeleteUser")); 
+    ret = _cb(std::string("acPostProcForDeleteUser"));
 
     return ret;
 }
@@ -300,7 +300,7 @@ irods::error acDeleteUserZoneCollections( irods::callback _cb, std::list<boost::
         rods_zone_proxy = user_info.rodsZone;
         other_user_name = other_user_info.userName;
     } catch ( const irods::exception& e ) {
-        rodsLog(LOG_ERROR, e.what());
+        irods::log(e);
         return ERROR(e.code(), "irods exception in acDeleteDefaultCollections");
     }
 
@@ -374,7 +374,7 @@ irods::error acDeleteCollByAdmin( irods::callback _cb, std::list<boost::any>& _p
 irods::error acRenameLocalZone( irods::callback _cb, std::list<boost::any>& ) {
 //  msiRenameCollection ::: msiRollback;
 //  msiRenameLocalZone ::: msiRenameLocalZone;
-//  msiCommit; 
+//  msiCommit;
    irods::error ret = _cb(std::string("msiRenameCollection"));
     if( !ret.ok() ) {
         _cb(std::string("msiRollback"));
@@ -441,7 +441,7 @@ irods::error acSetRescSchemeForRepl( irods::callback _cb, std::list<boost::any>&
     if( !ret.ok() ) {
         resc_name = "demoResc";
     }
-*/    
+*/
     std::string resc_name = "demoResc";
     try {
         resc_name = irods::server_properties::instance().get_property<std::string>("default_resource_name");
@@ -716,7 +716,7 @@ irods::error acPreProcForWriteSessionVariable( irods::callback, std::list<boost:
             if (i == 0) {
                 session_var = tmp;
                 break;
-            } 
+            }
 
             i++;
         } catch (const boost::bad_any_cast& e) {
@@ -892,7 +892,7 @@ irods::error stop(irods::default_re_ctx& _u, const std::string&) {
     (void) _u;
     return SUCCESS();
 }
-irods::error rule_exists(irods::default_re_ctx&, std::string _rn, bool& _ret) {
+irods::error rule_exists(irods::default_re_ctx&, const std::string& _rn, bool& _ret) {
     _ret = ( static_policy_enforcement_points.find(_rn) !=
              static_policy_enforcement_points.end() );
     return SUCCESS();
@@ -906,7 +906,7 @@ irods::error list_rules(irods::default_re_ctx&, std::vector<std::string>& rule_v
     return SUCCESS();
 }
 
-irods::error exec_rule(irods::default_re_ctx&, std::string _rn, std::list<boost::any>& _ps, irods::callback _eff_hdlr) {
+irods::error exec_rule(irods::default_re_ctx&, const std::string& _rn, std::list<boost::any>& _ps, irods::callback _eff_hdlr) {
     ruleExecInfo_t * rei;
     irods::error err;
 
@@ -927,12 +927,12 @@ irods::error exec_rule(irods::default_re_ctx&, std::string _rn, std::list<boost:
     }
 }
 
-irods::error exec_rule_text(irods::default_re_ctx&, std::string _rt, std::list<boost::any>& _ps, irods::callback _eff_hdlr) {
+irods::error exec_rule_text(irods::default_re_ctx&, const std::string& _rt, msParamArray_t* _ms_params, const std::string& out_desc, irods::callback _eff_hdlr) {
     rodsLog( LOG_DEBUG, "exec_rule_text not supported in the cpp_default_policy rule engine plugin");
     return ERROR( SYS_NOT_SUPPORTED, "exec_rule_text not supported in the cpp_default_policy rule engine plugin" );
 }
 
-irods::error exec_rule_expression(irods::default_re_ctx&, std::string _rt, std::list<boost::any>& _ps, irods::callback _eff_hdlr) {
+irods::error exec_rule_expression(irods::default_re_ctx&, const std::string& _rt, msParamArray_t* _ms_params, irods::callback _eff_hdlr) {
     rodsLog( LOG_DEBUG, "exec_rule_expression not supported in the cpp_default_policy rule engine plugin");
     return ERROR( SYS_NOT_SUPPORTED, "exec_rule_expression not supported in the cpp_default_policy rule engine plugin" );
 }
@@ -941,34 +941,26 @@ extern "C"
 irods::pluggable_rule_engine<irods::default_re_ctx>* plugin_factory( const std::string& _inst_name,
                                  const std::string& _context ) {
     irods::pluggable_rule_engine<irods::default_re_ctx>* re = new irods::pluggable_rule_engine<irods::default_re_ctx>( _inst_name , _context);
-    re->add_operation<irods::default_re_ctx&, const std::string&>(
-            "start",
+    re->add_operation( "start",
             std::function<irods::error(irods::default_re_ctx&, const std::string&)>( start ) );
 
-    re->add_operation<irods::default_re_ctx&, const std::string&>(
-            "stop",
+    re->add_operation( "stop",
             std::function<irods::error(irods::default_re_ctx&, const std::string&)>( stop ) );
 
-    re->add_operation<irods::default_re_ctx&, std::string, bool&>(
-            "rule_exists",
-            std::function<irods::error(irods::default_re_ctx&, std::string, bool&)>( rule_exists ) );
+    re->add_operation( "rule_exists",
+            std::function<irods::error(irods::default_re_ctx&, const std::string&, bool&)>( rule_exists ) );
 
-    re->add_operation<irods::default_re_ctx&, std::vector<std::string>&>(
-            "list_rules",
+    re->add_operation( "list_rules",
             std::function<irods::error(irods::default_re_ctx&, std::vector<std::string>&)>( list_rules ) );
-            
-    re->add_operation<irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback>(
-            "exec_rule",
-            std::function<irods::error(irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback)>( exec_rule ) );
 
-    re->add_operation<irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback>(
-            "exec_rule_text",
-            std::function<irods::error(irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback)>( exec_rule_text ) );
+    re->add_operation( "exec_rule",
+            std::function<irods::error(irods::default_re_ctx&,const std::string&,std::list<boost::any>&,irods::callback)>( exec_rule ) );
 
-    re->add_operation<irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback>(
-            "exec_rule_expression",
-            std::function<irods::error(irods::default_re_ctx&,std::string,std::list<boost::any>&,irods::callback)>( exec_rule_expression ) );
+    re->add_operation( "exec_rule_text",
+            std::function<irods::error(irods::default_re_ctx&,const std::string&,msParamArray_t*,const std::string&,irods::callback)>( exec_rule_text ) );
+
+    re->add_operation( "exec_rule_expression",
+            std::function<irods::error(irods::default_re_ctx&,const std::string&,msParamArray_t*,irods::callback)>( exec_rule_expression ) );
 
     return re;
 }
-

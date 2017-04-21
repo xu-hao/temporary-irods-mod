@@ -10750,7 +10750,7 @@ irods::error db_set_quota_op(
             rodsLog( LOG_SQL, "chlSetQuota SQL 2" );
         }
         {
-            status = hs_get_int_user_id(svc, icss, userZone,userName,
+            status = hs_get_int_non_group_user_id(svc, icss, userZone,userName,
                          &userId);
         }
         if ( status != 0 ) {

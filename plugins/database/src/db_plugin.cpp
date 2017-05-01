@@ -6505,9 +6505,9 @@ irods_pam_password_min_time, irods_pam_password_max_time);
         }
     }
 
-    if ( tSQL[0] == '\0' ) {
-        return ERROR( CAT_INVALID_ARGUMENT, "invalid argument" );
-    }
+//    if ( tSQL[0] == '\0' ) {
+//        return ERROR( CAT_INVALID_ARGUMENT, "invalid argument" );
+//    }
 
     memset( decoded, 0, MAX_PASSWORD_LEN );
 

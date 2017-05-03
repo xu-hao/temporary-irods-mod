@@ -208,6 +208,9 @@ int usage( char *prog );
 
 int
 main( int argc, char **argv ) {
+    if(getenv("IRODS_NO_RE_SERVER") != NULL) {
+        return 0;
+    }
     int status;
     int c;
     int runMode = SERVER;

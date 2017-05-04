@@ -659,6 +659,25 @@ _rescHasParentOrChild( char* rescId ) {
 
 }
 
+bool _userInRUserAuth( char* userName, char* zoneName ) {
+    int status;
+    rodsLong_t iVal;
+    irods::sql_logger logger( "_userInRUserAuth", logSQL );
+
+    logger.log();
+    {
+        status = hs_get_int_user_id_by_user_zone_and_name(svc, icss, userName, zoneName, &iVal);
+    }
+    if ( status != 0 ) {
+        if ( status != CAT_NO_ROWS_FOUND ) {
+            _rollback( "_userInRUserAuth" );
+        }
+        return false;
+    } else {
+        return true;
+    }
+}
+
 // =-=-=-=-=-=-=-
 /// @brief function which determines if a char is allowed in a zone name
 static bool allowed_zone_char( const char _c ) {
@@ -6755,7 +6774,12 @@ irods::error db_mod_user_op(
                 return ERROR( CAT_INVALID_USER, "invalid user" );
             } else {
         opType = 4;
+        if ( !_userInRUserAuth( userName2, zoneName ) ) {
         status = hs_create_user_auth_by_user_zone_and_name(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
+        } else {
+        status = hs_create_user_auth_by_user_zone_and_name2(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
+        }
+
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 4" );
         }

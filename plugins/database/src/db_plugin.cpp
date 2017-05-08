@@ -2471,18 +2471,18 @@ irods::error db_reg_replica_op(
                        r_comment, \
                        create_ts, \
                        modify_ts"; */
-    const int IX_DATA_REPL_NUM = 3; /* index of data_repl_num in theColls */
+//    const int IX_DATA_REPL_NUM = 3; /* index of data_repl_num in theColls */
 //        int IX_RESC_GROUP_NAME = 7; /* index into theColls */
-    const int IX_RESC_ID = 10;
-    const int IX_DATA_PATH = 11;    /* index into theColls */
+//    const int IX_RESC_ID = 10;
+//    const int IX_DATA_PATH = 11;    /* index into theColls */
 
-    const int IX_DATA_MODE = 19;
-    const int IX_CREATE_TS = 21;
-    const int IX_MODIFY_TS = 22;
-    const int IX_RESC_NAME2 = 23;
-    const int IX_DATA_PATH2 = 24;
-    const int IX_DATA_ID2 = 25;
-    int nColumns = 26;
+//    const int IX_DATA_MODE = 19;
+//    const int IX_CREATE_TS = 21;
+//    const int IX_MODIFY_TS = 22;
+//    const int IX_RESC_NAME2 = 23;
+//    const int IX_DATA_PATH2 = 24;
+//    const int IX_DATA_ID2 = 25;
+    int nColumns = 19;
 
     char objIdString[MAX_NAME_LEN];
     char replNumString[MAX_NAME_LEN];
@@ -2550,8 +2550,10 @@ irods::error db_reg_replica_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegReplica SQL 3" );
     }
+    char **dVal;
+    int nCols;
     {
-        status = hs_get_some_repl2_by_repl_num(svc, icss, objIdString, replNumString, cVal, 30, nColumns);
+        status = hs_get_all_repl2_by_repl_num(svc, icss, objIdString, replNumString, &nCols, &dVal);
     }
     if ( status < 0 ) {
         _rollback( "chlRegReplica" );
@@ -2561,19 +2563,28 @@ irods::error db_reg_replica_op(
 
     std::string resc_id_str = boost::lexical_cast<std::string>(_dst_data_obj_info->rescId);
 
-    cVal[IX_DATA_REPL_NUM]   = nextRepl;
+    cVal[0] = objIdString;
+    cVal[1] = (char*)resc_id_str.c_str();
+    cVal[2] = dVal[3]; // coll id
+    cVal[3] = dVal[4]; // data name
+    cVal[4] = nextRepl; // repl num
     //cVal[IX_RESC_NAME]       = _dst_data_obj_info->rescName;
-    cVal[IX_RESC_ID]       = (char*)resc_id_str.c_str();
-    cVal[IX_DATA_PATH]       = _dst_data_obj_info->filePath;
-    cVal[IX_DATA_MODE]       = _dst_data_obj_info->dataMode;
+    cVal[5] = dVal[5]; // version
+    cVal[6] = dVal[6]; // data type
+    cVal[7] = dVal[7]; // data size
+    cVal[8]       = _dst_data_obj_info->filePath;
+    cVal[9] = dVal[9]; // user name
+    cVal[10] = dVal[10]; // zone name
+    cVal[11] = dVal[11]; // is dirty
+    cVal[12] = dVal[12]; // status
+    cVal[13] = dVal[13]; // chksum
+    cVal[14]       = _dst_data_obj_info->dataMode;
 
     getNowStr( myTime );
-    cVal[IX_MODIFY_TS] = myTime;
-    cVal[IX_CREATE_TS] = myTime;
-
-    cVal[IX_RESC_NAME2] = (char*)resc_id_str.c_str();//_dst_data_obj_info->rescName; // JMC - backport 4669
-    cVal[IX_DATA_PATH2] = _dst_data_obj_info->filePath; // JMC - backport 4669
-    cVal[IX_DATA_ID2] = objIdString; // JMC - backport 4669
+    cVal[15] = myTime;
+    cVal[16] = myTime;
+    cVal[17] = "";
+    cVal[18] = "";
 
     for ( i = 0; i < nColumns; i++ ) {
         cllBindVars[i] = cVal[i];
@@ -3600,7 +3611,7 @@ irods::error db_del_user_re_op(
         rodsLog( LOG_SQL, "chlDelUserRE SQL 1 " );
     }
     {
-        status = hs_get_user_id(svc, icss, userName2, zoneToUse,
+        status = hs_get_user_id(svc, icss, zoneToUse, userName2, 
                      iValStr, 200);
     }
     if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ||
@@ -6351,7 +6362,7 @@ irods::error db_mod_user_op(
         rodsLog( LOG_SQL, "chlModUser" );
     }
 
-    if ( *_user_name == '\0' || *_option == '\0' || *_new_value == '\0' ) {
+    if ( *_user_name == '\0' || *_option == '\0' ) {
         return ERROR( CAT_INVALID_ARGUMENT, "parameter is empty" );
     }
 
@@ -6407,30 +6418,67 @@ irods::error db_mod_user_op(
 
     if ( strcmp( _option, "type" ) == 0 ||
             strcmp( _option, "user_type_name" ) == 0 ) {
+            int status2;
+            if ( logSQL != 0 ) {
+                rodsLog( LOG_SQL, "chlModUser SQL 11" );
+            }
+            {
+                status2 = hs_get_int_token_id(svc, icss, (void *) "user_type", (void *) _new_value,
+                              &iVal );
+            }
+            if ( status2 != 0 ) {
+                char errMsg[105];
+                snprintf( errMsg, 100, "user_type '%s' is not valid",
+                          _new_value );
+                addRErrorMsg( &_ctx.comm()->rError, 0, errMsg );
+
+                rodsLog( LOG_NOTICE,
+                         "chlModUser invalid user_type" );
+                return ERROR( CAT_INVALID_USER_TYPE, "invalid user type" );
+            } else {
         status = hs_create_user_type_by_name_and_user_type_token(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
         opType = 1;
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 2" );
         }
-    }
+            }
+    } else
     if ( strcmp( _option, "zone" ) == 0 ||
             strcmp( _option, "zone_name" ) == 0 ) {
         status = hs_create_user_zone_name_by_zone_and_name(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
-    }
+    } else
     if ( strcmp( _option, "addAuth" ) == 0 ) {
+            /* check if user exists */
+            int status2;
+            if ( logSQL != 0 ) {
+                rodsLog( LOG_SQL, "chlModUser SQL 12" );
+            }
+            {
+                status2 = hs_get_int_user_id(svc, icss, zoneName,userName2,
+                              &iVal );
+            }
+            if ( status2 != 0 ) {
+                rodsLog( LOG_NOTICE,
+                         "chlModUser invalid user %s zone %s", userName2, zoneName );
+                return ERROR( CAT_INVALID_USER, "invalid user" );
+            } else {
         opType = 4;
         status = hs_create_user_auth_by_user_zone_and_name(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 4" );
         }
-    }
+        if(status != 0) {
+            _rollback( "chlModUser" );
+        }
+            }
+    } else
     if ( strcmp( _option, "rmAuth" ) == 0 ) {
         status = hs_delete_user_auth_by_user_name(svc, icss, zoneName, userName2, (void *) _new_value);
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 5" );
         }
 
-    }
+    } else
 
     if ( strncmp( _option, "rmPamPw", 9 ) == 0 ) {
 		status = hs_delete_user_password_by_user_zone_and_name_and_expiry_ts(svc, icss,
@@ -6440,7 +6488,7 @@ irods_pam_password_min_time, irods_pam_password_max_time);
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 6" );
         }
-    }
+    } else
 
     if ( strcmp( _option, "info" ) == 0 ||
             strcmp( _option, "user_info" ) == 0 ) {
@@ -6448,14 +6496,14 @@ irods_pam_password_min_time, irods_pam_password_max_time);
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 6" );
         }
-    }
+    } else
     if ( strcmp( _option, "comment" ) == 0 ||
             strcmp( _option, "r_comment" ) == 0 ) {
         status = hs_create_user_comment_by_zone_and_name(svc, icss, zoneName, userName2, (void *) _new_value, myTime);
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlModUser SQL 7" );
         }
-    }
+    } else
     if ( strcmp( _option, "password" ) == 0 ) {
         int i;
         char userIdStr[MAX_NAME_LEN];
@@ -6483,6 +6531,7 @@ irods_pam_password_min_time, irods_pam_password_max_time);
             i = hs_get_user_id_with_password(svc, icss,zoneName,userName2,
                     userIdStr, MAX_NAME_LEN );
         }
+        printf("***********************************get password %d\n", i);
         if ( i != 0 && i != CAT_NO_ROWS_FOUND ) {
             return ERROR( i, "get user password failed" );
         }
@@ -6497,45 +6546,8 @@ irods_pam_password_min_time, irods_pam_password_max_time);
             }
         }
         else {
-            opType = 4;
-			status = hs_create_user_password_by_user_zone_and_name(svc, icss, zoneName, userName2, decoded, (void *) "9999-12-31-23.59.01", myTime, myTime);
-            if ( logSQL != 0 ) {
-                rodsLog( LOG_SQL, "chlModUser SQL 10" );
-            }
-        }
-    }
-
-//    if ( tSQL[0] == '\0' ) {
-//        return ERROR( CAT_INVALID_ARGUMENT, "invalid argument" );
-//    }
-
-    memset( decoded, 0, MAX_PASSWORD_LEN );
-
-    if ( status != 0 ) { /* error */
-        if ( opType == 1 ) { /* doing a type change, check if user_type problem */
-            int status2;
-            if ( logSQL != 0 ) {
-                rodsLog( LOG_SQL, "chlModUser SQL 11" );
-            }
-            {
-                status2 = hs_get_int_token_id(svc, icss, (void *) "user_type", (void *) _new_value,
-                              &iVal );
-            }
-            if ( status2 != 0 ) {
-                char errMsg[105];
-                snprintf( errMsg, 100, "user_type '%s' is not valid",
-                          _new_value );
-                addRErrorMsg( &_ctx.comm()->rError, 0, errMsg );
-
-                rodsLog( LOG_NOTICE,
-                         "chlModUser invalid user_type" );
-                return ERROR( CAT_INVALID_USER_TYPE, "invalid user type" );
-            }
-        }
-        if ( opType == 4 ) { /* trying to insert password or auth-name */
             /* check if user exists */
             int status2;
-            _rollback( "chlModUser" );
             if ( logSQL != 0 ) {
                 rodsLog( LOG_SQL, "chlModUser SQL 12" );
             }
@@ -6547,8 +6559,28 @@ irods_pam_password_min_time, irods_pam_password_max_time);
                 rodsLog( LOG_NOTICE,
                          "chlModUser invalid user %s zone %s", userName2, zoneName );
                 return ERROR( CAT_INVALID_USER, "invalid user" );
+            } else {
+            opType = 4;
+			status = hs_create_user_password_by_user_zone_and_name(svc, icss, zoneName, userName2, decoded, (void *) "9999-12-31-23.59.01", myTime, myTime);
+            if (status != 0) {
+                _rollback( "chlModUser" );
+            }
+            if ( logSQL != 0 ) {
+                rodsLog( LOG_SQL, "chlModUser SQL 10" );
+            }
             }
         }
+    } else {
+        return ERROR( CAT_INVALID_ARGUMENT, "invalid option" );
+    }
+
+//    if ( tSQL[0] == '\0' ) {
+//        return ERROR( CAT_INVALID_ARGUMENT, "invalid argument" );
+//    }
+
+    memset( decoded, 0, MAX_PASSWORD_LEN );
+
+    if ( status != 0 ) { /* error */
         rodsLog( LOG_NOTICE,
                  "chlModUser cmlExecuteNoAnswerSql failure %d",
                  status );

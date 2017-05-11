@@ -2008,7 +2008,7 @@ OUTPUT ruleExecOut
 
         # manually update the replica in archive vault
         out, _, _ = self.admin.run_icommand('ils -L ' + filename)
-        archivereplicaphypath = out.split()[-1]  # split into tokens, get the last one
+        archivereplicaphypath = filter(lambda x : "archiveRescVault" in x, out.split())[0]  # split into tokens, get the last one
         with open(archivereplicaphypath, 'wt') as f:
             print('MANUALLY UPDATED ON ARCHIVE\n', file=f, end='')
         # get file
@@ -2032,7 +2032,7 @@ OUTPUT ruleExecOut
 
             # manually update the replica in archive vault
             out, _, _ = self.admin.run_icommand('ils -L ' + filename)
-            archivereplicaphypath = out.split()[-1]  # split into tokens, get the last one
+            archivereplicaphypath = filter(lambda x : "archiveRescVault" in x, out.split())[0]  # split into tokens, get the last one
             with open(archivereplicaphypath, 'wt') as f:
                 print('MANUALLY UPDATED ON ARCHIVE **AGAIN**\n', file=f, end='')
 

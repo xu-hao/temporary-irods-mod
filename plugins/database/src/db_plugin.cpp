@@ -2444,7 +2444,7 @@ irods::error db_reg_replica_op(
     rodsLong_t status;
     // char tSQL[MAX_SQL_SIZE];
     char *cVal[30];
-    int i;
+    // int i;
     int statementNumber;
     int nextReplNum;
     char nextRepl[30];
@@ -2553,7 +2553,7 @@ irods::error db_reg_replica_op(
     char **dVal;
     int nCols;
     {
-        status = hs_get_all_repl2_by_repl_num(svc, icss, objIdString, replNumString, &nCols, &dVal);
+        status = hs_get_all_repl2_by_repl_num(svc, icss, objIdString, replNumString, &dVal, &nCols);
     }
     if ( status < 0 ) {
         _rollback( "chlRegReplica" );
@@ -2565,19 +2565,19 @@ irods::error db_reg_replica_op(
 
     cVal[0] = objIdString;
     cVal[1] = (char*)resc_id_str.c_str();
-    cVal[2] = dVal[3]; // coll id
-    cVal[3] = dVal[4]; // data name
+    cVal[2] = dVal[1]; // coll id
+    cVal[3] = dVal[2]; // data name
     cVal[4] = nextRepl; // repl num
     //cVal[IX_RESC_NAME]       = _dst_data_obj_info->rescName;
-    cVal[5] = dVal[5]; // version
-    cVal[6] = dVal[6]; // data type
-    cVal[7] = dVal[7]; // data size
+    cVal[5] = dVal[3]; // version
+    cVal[6] = dVal[4]; // data type
+    cVal[7] = dVal[5]; // data size
     cVal[8]       = _dst_data_obj_info->filePath;
-    cVal[9] = dVal[9]; // user name
-    cVal[10] = dVal[10]; // zone name
-    cVal[11] = dVal[11]; // is dirty
-    cVal[12] = dVal[12]; // status
-    cVal[13] = dVal[13]; // chksum
+    cVal[9] = dVal[7]; // user name
+    cVal[10] = dVal[8]; // zone name
+    cVal[11] = dVal[9]; // is dirty
+    cVal[12] = dVal[10]; // status
+    cVal[13] = dVal[11]; // chksum
     cVal[14]       = _dst_data_obj_info->dataMode;
 
     getNowStr( myTime );
@@ -2586,10 +2586,10 @@ irods::error db_reg_replica_op(
     cVal[17] = "";
     cVal[18] = "";
 
-    for ( i = 0; i < nColumns; i++ ) {
-        cllBindVars[i] = cVal[i];
-    }
-    cllBindVarCount = nColumns;
+//    for ( i = 0; i < nColumns; i++ ) {
+//        cllBindVars[i] = cVal[i];
+//    }
+//    cllBindVarCount = nColumns;
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlRegReplica SQL 4" );
     }
@@ -2831,7 +2831,7 @@ irods::error db_unreg_replica_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlUnregDataObj SQL 3" );
         }
-        status = hs_delete_access_by_obj_id(svc, icss, dataObjNumber);
+        status = hs_delete_access_by_data_id(svc, icss, dataObjNumber);
         if ( status == 0 ) {
             removeMetaMapAndAVU( dataObjNumber ); /* remove AVU metadata, if any */
         }
@@ -10978,6 +10978,7 @@ irods::error db_get_repl_list_for_leaf_bundles_op(
 
     // capture list of child resc ids
     std::stringstream child_array_stream;
+    child_array_stream << "{";
     for( auto id : (*_bundles)[_child_index] ) {
         child_array_stream << id << ",";
     }
@@ -10990,8 +10991,10 @@ irods::error db_get_repl_list_for_leaf_bundles_op(
 
     std::string child_array = child_array_stream.str();
     child_array.pop_back(); // trim last ','
+    child_array += "}";
 
     std::stringstream not_child_stream;
+    not_child_stream << "{";
     for( size_t idx = 0; idx < _bundles->size(); ++idx ) {
         if( idx == _child_index ) {
             continue;
@@ -11003,12 +11006,16 @@ irods::error db_get_repl_list_for_leaf_bundles_op(
 
     std::string not_child_array = not_child_stream.str();
     not_child_array.pop_back(); // trim last ','
+    not_child_array += "}";
 
 	char **resultValue;
   int len;
         int status = 0;
+char *not_ca = (char *) not_child_array.c_str();
+char *ca = (char *) child_array.c_str(); 
+
             status = hs_get_all_data_by_resc_list(svc,
-				icss, (void *) not_child_array.c_str(), (void *) child_array.c_str(), &resultValue, &len
+				icss, not_ca, ca, &resultValue, &len
 			);
 
         if ( status < 0 ) {
@@ -11025,7 +11032,7 @@ free(resultValue[i]);
 
 	free(resultValue);
 
-    return SUCCESS();
+    return ERROR(CAT_NO_ROWS_FOUND, ""); // see replication plugin
 
 } // db_get_repl_list_for_leaf_bundles_op
 

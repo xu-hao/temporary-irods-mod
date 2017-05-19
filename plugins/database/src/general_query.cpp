@@ -32,6 +32,11 @@
 #include "GenQuery_stub.h"
 
 
+char accessControlUserName[MAX_NAME_LEN];
+char accessControlZone[MAX_NAME_LEN];
+int accessControlPriv;
+int accessControlControlFlag = 0;
+
 /* Save some pre-provided parameters if msiAclPolicy is STRICT.
    Called with user == NULL to set the controlFlag, else with the
    user info.
@@ -43,10 +48,40 @@ int chl_gen_query_access_control_setup_impl(
     const char *host,
     int priv,
     int controlFlag ) {
-    return 0;
+    if ( user != NULL ) {
+        if ( !rstrcpy( accessControlUserName, user, MAX_NAME_LEN ) ) {
+            return USER_STRLEN_TOOLONG;
+        }
+        if ( !rstrcpy( accessControlZone, zone, MAX_NAME_LEN ) ) {
+            return USER_STRLEN_TOOLONG;
+        }
+//      if(!rstrcpy(accessControlHost, host, MAX_NAME_LEN);
+        accessControlPriv = priv;
+    } else {
+        accessControlUserName[0] = '\0';
+        accessControlZone[0] = '\0';
+        accessControlPriv = NO_USER_AUTH;
+    }
+
+    // =-=-=-=-=-=-=-
+    // add the >= 0 to allow for repave of strict acl due to
+    // issue with file create vs file open in rsDataObjCreate
+    int old_flag = accessControlControlFlag;
+    if ( controlFlag >= 0 ) {
+        /*
+        If the caller is making this STRICT, then allow the change as
+               this will be an initial acAclPolicy call which is setup in
+               core.re.  But don't let users override this admin setting
+               via their own calls to the msiAclPolicy; once it is STRICT,
+               it stays strict.
+             */
+        accessControlControlFlag = controlFlag;
+    }
+
+    return old_flag;
 }
 
- int chl_gen_query_ticket_setup_impl(
+int chl_gen_query_ticket_setup_impl(
     const char* ticket,
     const char* clientAddr ) {
     return 0;
@@ -176,10 +211,28 @@ int maxLen(char **out, int n) {
 
     std::string qu;
     genThatQuery(&genQueryInp, qu);
+    int doCheck = 0;
+
+    if ( accessControlPriv == LOCAL_PRIV_USER_AUTH ) {
+    } else {
+
+        if ( accessControlControlFlag > 1 ) {
+            doCheck = 1;
+        }
+
+        if ( doCheck == 0 ) {
+            if ( strncmp( accessControlUserName, ANONYMOUS_USER, MAX_NAME_LEN ) == 0 ) {
+                doCheck = 1;
+            }
+        }
+    }
+
+    int distinct = ! (genQueryInp.options & NO_DISTINCT);
     char **out = NULL;
     int col = 0;
     int row = 0;
-    int status = hs_gen_query(svc, icss, (void *)  qu.c_str(), &out, &col, &row);
+    char *qucstr = (char *) qu.c_str();
+    int status = hs_gen_query(svc, icss, distinct, doCheck, accessControlZone, accessControlUserName, (void *)  qucstr, &out, &col, &row);
     if (status < 0) {
         return status;
     }
@@ -205,3 +258,4 @@ int maxLen(char **out, int n) {
     return 0;
 
 }
+

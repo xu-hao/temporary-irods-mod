@@ -9199,7 +9199,7 @@ irods::error db_mod_access_control_op(
     if ( logSQL != 0 ) {
         rodsLog( LOG_SQL, "chlModAccessControl SQL 11" );
     }
-    status =  hs_create_coll_access_recursive(svc, userIdStr, (void *) _path_name, myAccessLev, myTime, myTime, icss );
+    status =  hs_create_coll_access_recursive(svc, icss, userIdStr, (void *) _path_name, myAccessLev, myTime, myTime );
     if ( status != 0 ) {
         _rollback( "chlModAccessControl" );
         return ERROR( status, "insert failure" );

@@ -1531,15 +1531,17 @@ irods::error db_open_op(
     hs_init(&argc, &argv);
     // =-=-=-=-=-=-=-
     // call open in mid level
-    int status = hs_local(&svc);
-    // int status = hs_unix_domain_socket(&svc);
+    // int status = hs_local(&svc);
+    // int status = hs_tcp(&svc);
+    int status = hs_unix_domain_socket(&svc);
     if ( 0 != status ) {
         return ERROR(
                    status,
                    "failed to obtain db service" );
     }
-    char config [] = "/etc/QueryArrow/tdb-plugin-gen-abs.yaml";
-    // char config [] = "/tmp/QueryArrow";
+    // char config [] = "/etc/QueryArrow/tdb-plugin-gen-abs.yaml";
+    // char config [] = "{\"tcpServerAddr\":\"*\",\"tcpServerPort\":12345}";
+    char config [] = "/tmp/QueryArrow";
     status = hs_connect(svc, config, &icss );
     if ( 0 != status ) {
         return ERROR(

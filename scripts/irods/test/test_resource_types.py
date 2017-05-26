@@ -27,6 +27,23 @@ def statvfs_path_or_parent(path):
         path = os.path.dirname(path)
     return os.statvfs(path)
 
+
+def load_tests(loader, standard_tests, pattern):
+    filtered_tests = []
+    add = os.environ['IRODS_TEST_SKIP_UNTIL'] == ''
+    for t in standard_tests:
+        for t1 in t._tests:
+            print(t1.id())
+            if add:
+                filtered_tests.append(t1)
+                print("added")
+            else:
+                print("skipped")
+            if t1.id() == os.environ['IRODS_TEST_SKIP_UNTIL']:
+                add = True
+    standard_tests._tests = filtered_tests
+    return standard_tests
+
 class Test_Resource_RandomWithinReplication(ResourceSuite, ChunkyDevTest, unittest.TestCase):
 
     def setUp(self):

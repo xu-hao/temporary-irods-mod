@@ -208,7 +208,7 @@ int usage( char *prog );
 
 int
 main( int argc, char **argv ) {
-    if(getenv("IRODS_NO_RE_SERVER") != NULL) {
+    if(getenv("IRODS_DELAY_EXEC_SERVER") == NULL) {
         return 0;
     }
     int status;

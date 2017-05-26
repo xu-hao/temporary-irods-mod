@@ -43,6 +43,8 @@ set(
   HSrts-ghc8.0.2
   HSQueryArrow-ffi-c-0.2-ghc8.0.2
   HSQueryArrow-ffi-c-local-0.2-ghc8.0.2
+  HSQueryArrow-ffi-c-unixdomainsocket-0.2-ghc8.0.2
+  HSQueryArrow-ffi-c-tcp-0.2-ghc8.0.2
   HSQueryArrow-ffi-c-genquery-0.2-ghc8.0.2
 )
 

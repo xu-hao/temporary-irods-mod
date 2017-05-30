@@ -2776,7 +2776,7 @@ irods::error db_unreg_replica_op(
             {
                 status = hs_get_int_repl_resc_id(svc, icss, dataObjNumber,replNumber, &resc_id );
             }
-            if ( status != 0 ) {
+            if ( status < 0 ) {
                 return ERROR( status, "cmlGetStringValueFromSql failed" );
             }
         }
@@ -2784,7 +2784,7 @@ irods::error db_unreg_replica_op(
             {
                 status = hs_get_int_resc_id_by_data_id(svc, icss, dataObjNumber, &resc_id);
             }
-            if ( status != 0 ) {
+            if ( status < 0 ) {
                 return ERROR( status, "cmlGetStringValueFromSql failed" );
             }
         }
@@ -2833,8 +2833,10 @@ irods::error db_unreg_replica_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlUnregDataObj SQL 3" );
         }
-        status = hs_delete_access_by_data_id(svc, icss, dataObjNumber);
-        if ( status == 0 ) {
+        rodsLong_t id2 = 0;
+        status = hs_get_int_data_id_by_data_id(svc, icss, dataObjNumber, &id2);
+        if ( status < 0 ) {
+            hs_delete_access_by_data_id(svc, icss, dataObjNumber);
             removeMetaMapAndAVU( dataObjNumber ); /* remove AVU metadata, if any */
         }
     }

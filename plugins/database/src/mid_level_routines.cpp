@@ -255,8 +255,8 @@ cmlCheckDirAndGetInheritFlag( const char *dirName, const char *userName, const c
 */
 rodsLong_t
 cmlCheckDirId( const char *dirId, const char *userName, const char *userZone,
-  void *svc,
-               const char *accessLevel, void *icss ) {
+               const char *accessLevel,   void *svc,
+void *icss ) {
     int status;
     rodsLong_t iVal;
 

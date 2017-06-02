@@ -2861,6 +2861,99 @@ irods::error db_reg_rule_exec_op(
     irods::plugin_context& _ctx,
     ruleExecSubmitInp_t*   _re_sub_inp ) {
 
+     // =-=-=-=-=-=-=-
+     // check the context
+     irods::error ret = _ctx.valid();
+     if ( !ret.ok() ) {
+         return PASS( ret );
+     }
+ 
+     // =-=-=-=-=-=-=-
+     // check the params
+     if (
+         !_re_sub_inp ) {
+         return ERROR(
+                    CAT_INVALID_ARGUMENT,
+                    "null parameter" );
+     }
+ 
+     // =-=-=-=-=-=-=-
+     // get a postgres object from the context
+     /*irods::postgres_object_ptr pg;
+     ret = make_db_ptr( _ctx.fco(), pg );
+     if ( !ret.ok() ) {
+         return PASS( ret );
+ 
+     }*/
+ 
+     // =-=-=-=-=-=-=-
+     // extract the icss property
+ //        icatSessionStruct icss;
+ //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
+ 
+     char myTime[50];
+     rodsLong_t seqNum;
+     char ruleExecIdNum[MAX_NAME_LEN];
+     int status;
+ 
+     if ( logSQL != 0 ) {
+         rodsLog( LOG_SQL, "chlRegRuleExec" );
+     }
+//     if ( !icss.status ) {
+//         return ERROR( CATALOG_NOT_CONNECTED, "catalog not connected" );
+//     }
+ 
+     if ( logSQL != 0 ) {
+         rodsLog( LOG_SQL, "chlRegRuleExec SQL 1 " );
+     }
+     status = hs_get_int_next_id(svc,  icss, &seqNum );
+     if ( status < 0 ) {
+         rodsLog( LOG_NOTICE, "chlRegRuleExec cmlGetNextSeqVal failure %d",
+                  status );
+         _rollback( "chlRegRuleExec" );
+         return ERROR( status, "cmlGetNextSeqVal failure" );
+     }
+     snprintf( ruleExecIdNum, MAX_NAME_LEN, "%lld", seqNum );
+ 
+     /* store as output parameter */
+     snprintf( _re_sub_inp->ruleExecId, NAME_LEN, "%s", ruleExecIdNum );
+ 
+     getNowStr( myTime );
+ 
+ 
+     if ( logSQL != 0 ) {
+         rodsLog( LOG_SQL, "chlRegRuleExec SQL 2" );
+     }
+     status =  hs_create_rule_exec2(svc, icss, ruleExecIdNum,
+     _re_sub_inp->ruleName,
+     _re_sub_inp->reiFilePath,
+     _re_sub_inp->userName,
+     _re_sub_inp->exeAddress,
+     _re_sub_inp->exeTime,
+     _re_sub_inp->exeFrequency,
+     _re_sub_inp->priority,
+     _re_sub_inp->estimateExeTime,
+     _re_sub_inp->notificationAddr,
+     myTime,
+     myTime);
+     if ( status != 0 ) {
+         rodsLog( LOG_NOTICE,
+                  "chlRegRuleExec cmlExecuteNoAnswerSql(insert) failure %d", status );
+         _rollback( "chlRegRuleExec" );
+         return ERROR( status, "cmlExecuteNoAnswerSql(insert) failure" );
+ 
+     }
+ 
+     /* Audit */
+ 
+     status =  hs_commit( svc, icss );
+     if ( status != 0 ) {
+         rodsLog( LOG_NOTICE,
+                  "chlRegRuleExec cmlExecuteNoAnswerSql commit failure %d",
+                  status );
+         return ERROR( status, "cmlExecuteNoAnswerSql commit failure" );
+  }
+
     return SUCCESS();
 
 } // db_reg_rule_exec_op
@@ -2872,7 +2965,102 @@ irods::error db_mod_rule_exec_op(
     const char*            _re_id,
     keyValPair_t*          _reg_param ) {
 
-    return SUCCESS ();
+     // =-=-=-=-=-=-=-
+     // check the context
+     irods::error ret = _ctx.valid();
+     if ( !ret.ok() ) {
+         return PASS( ret );
+     }
+ 
+     // =-=-=-=-=-=-=-
+     // check the params
+     if (
+         !_re_id  ||
+         !_reg_param ) {
+         return ERROR(
+                    CAT_INVALID_ARGUMENT,
+                    "null parameter" );
+     }
+ 
+     // =-=-=-=-=-=-=-
+     // get a postgres object from the context
+     /*irods::postgres_object_ptr pg;
+     ret = make_db_ptr( _ctx.fco(), pg );
+     if ( !ret.ok() ) {
+         return PASS( ret );
+ 
+     }*/
+ 
+     // =-=-=-=-=-=-=-
+     // extract the icss property
+ //        icatSessionStruct icss;
+ //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
+ 
+ 
+     // =-=-=-=-=-=-=-
+     //
+     int i, j, status;
+ 
+     char *theVal = 0;
+ 
+     /* regParamNames has the argument names (in regParam) that this
+        routine understands and colNames has the corresponding column
+        names; one for one. */
+     char *regParamNames[] = {
+         RULE_NAME_KW, RULE_REI_FILE_PATH_KW, RULE_USER_NAME_KW,
+         RULE_EXE_ADDRESS_KW, RULE_EXE_TIME_KW,
+         RULE_EXE_FREQUENCY_KW, RULE_PRIORITY_KW, RULE_ESTIMATE_EXE_TIME_KW,
+         RULE_NOTIFICATION_ADDR_KW, RULE_LAST_EXE_TIME_KW,
+         RULE_EXE_STATUS_KW,
+         "END"
+     };
+     char *colNames[] = {
+         "rule_name", "rei_file_path", "user_name",
+         "exe_address", "exe_time", "exe_frequency", "priority",
+         "estimated_exe_time", "notification_addr",
+         "last_exe_time", "exe_status",
+         "create_ts", "modify_ts",
+     };
+ 
+     if ( logSQL != 0 ) {
+         rodsLog( LOG_SQL, "chlModRuleExec" );
+     }
+ 
+     std::vector<char *> paramcols, paramvals;
+ 
+     for ( i = 0, j = 0; strcmp( regParamNames[i], "END" ); i++ ) {
+         theVal = getValByKey( _reg_param, regParamNames[i] );
+         if ( theVal != NULL ) {
+             paramcols.push_back(colNames[i]);
+             paramvals.push_back(theVal);
+         }
+     }
+ 
+     if ( paramcols.size() == 0 ) {
+         return ERROR( CAT_INVALID_ARGUMENT, "invalid argument" );
+     }
+ 
+     rodsLong_t reid = atoll(_re_id);
+ 
+     status =  hs_modify_rule_exec( svc, icss, paramcols.data(), paramvals.data(), paramcols.size(), reid );
+ 
+     if ( status < 0 ) {
+         _rollback( "chlModRuleExec" );
+         rodsLog( LOG_NOTICE,
+                  "chlModRuleExec cmlExecuteNoAnswer(update) failure %d",
+                  status );
+         return ERROR( status, "cmlExecuteNoAnswer(update) failure" );
+     }
+ 
+     status =  hs_commit( svc, icss );
+     if ( status != 0 ) {
+         rodsLog( LOG_NOTICE,
+                  "chlModRuleExecMeta cmlExecuteNoAnswerSql commit failure %d",
+                  status );
+         return ERROR( status, "cmlExecuteNoAnswerSql commit failure" );
+     }
+ 
+  return CODE( status );
 
 } // db_mod_rule_exec_op
 
@@ -2881,7 +3069,83 @@ irods::error db_mod_rule_exec_op(
 irods::error db_del_rule_exec_op(
     irods::plugin_context& _ctx,
     const char*            _re_id ) {
-    return SUCCESS ();
+
+     // =-=-=-=-=-=-=-
+     // check the context
+     irods::error ret = _ctx.valid();
+     if ( !ret.ok() ) {
+         return PASS( ret );
+     }
+ 
+     // =-=-=-=-=-=-=-
+     // check the params
+     if (
+         !_re_id ) {
+         return ERROR(
+                    CAT_INVALID_ARGUMENT,
+                    "null parameter" );
+     }
+ 
+     // =-=-=-=-=-=-=-
+     // get a postgres object from the context
+     /*irods::postgres_object_ptr pg;
+     ret = make_db_ptr( _ctx.fco(), pg );
+     if ( !ret.ok() ) {
+         return PASS( ret );
+ 
+     }*/
+ 
+     // =-=-=-=-=-=-=-
+     // extract the icss property
+ //        icatSessionStruct icss;
+ //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
+     char userName[MAX_NAME_LEN + 2];
+ 
+     if ( logSQL != 0 ) {
+         rodsLog( LOG_SQL, "chlDelRuleExec" );
+     }
+ 
+     if ( _ctx.comm()->proxyUser.authInfo.authFlag < LOCAL_PRIV_USER_AUTH ) {
+         if ( _ctx.comm()->proxyUser.authInfo.authFlag == LOCAL_USER_AUTH ) {
+             if ( logSQL != 0 ) {
+                 rodsLog( LOG_SQL, "chlDelRuleExec SQL 1 " );
+             }
+             int status;
+             {
+                 status = hs_get_user_name_by_rule_exec_id(svc, icss, (void *) _re_id,
+                              userName, MAX_NAME_LEN);
+             }
+             if ( status < 0 || strncmp( userName, _ctx.comm()->clientUser.userName, MAX_NAME_LEN )
+                     != 0 ) {
+                 return ERROR( CAT_NO_ACCESS_PERMISSION, "no access permission" );
+             }
+         }
+         else {
+             return ERROR( CAT_INSUFFICIENT_PRIVILEGE_LEVEL, "insufficient privilege" );
+         }
+     }
+ 
+     if ( logSQL != 0 ) {
+         rodsLog( LOG_SQL, "chlDelRuleExec SQL 2 " );
+     }
+     int status =  hs_delete_rule_exec(svc, icss, (void *) _re_id);
+     if ( status < 0 ) {
+         rodsLog( LOG_NOTICE,
+                  "chlDelRuleExec delete failure %d",
+                  status );
+         _rollback( "chlDelRuleExec" );
+         return ERROR( status, "delete failure" );
+     }
+ 
+     status =  hs_commit( svc, icss );
+     if ( status != 0 ) {
+         rodsLog( LOG_NOTICE,
+                  "chlDelRuleExec cmlExecuteNoAnswerSql commit failure %d",
+                  status );
+         return ERROR( status, "cmlExecuteNoAnswerSql commit failure" );
+     }
+ 
+     return CODE( status );
 
 } // db_del_rule_exec_op
 
@@ -6939,8 +7203,8 @@ irods::error db_mod_resc_op(
             rodsLog( LOG_SQL, "chlModResc SQL 4" );
         }
         if ( inType == 0 ) {
-			status =  hs_create_resc_free_space_ts(svc, rescId,(void *) _option_value, myTime, myTime,
-	                      icss );
+			status =  hs_create_resc_free_space_ts(svc,
+	                      icss, rescId,(void *) _option_value, myTime, myTime );
 		}
         if ( inType == 1 ) {
           return ERROR( -1, "failed to update freespace" );

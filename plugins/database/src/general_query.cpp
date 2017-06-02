@@ -36,6 +36,134 @@ char accessControlUserName[MAX_NAME_LEN];
 char accessControlZone[MAX_NAME_LEN];
 int accessControlPriv;
 int accessControlControlFlag = 0;
+char sessionTicket[MAX_NAME_LEN] = "";
+char sessionClientAddr[MAX_NAME_LEN] = "";
+
+
+/*
+ Perform a check based on the condInput parameters;
+ Verify that the user has access to the dataObj at the requested level.
+ If continueFlag is non-zero this is a continuation (more rows), so if
+ the dataId is the same, can skip the check to the db.
+ */
+int
+checkCondInputAccess( genQueryInp_t genQueryInp, char **resultValue,
+                      void *svc, void *icss, int continueFlag ) {
+    int i, nCols;
+    int userIx = -1, zoneIx = -1, accessIx = -1, dataIx = -1, collIx = -1;
+    int status;
+    std::string zoneName;
+
+    static char prevDataId[LONG_NAME_LEN];
+    static char prevUser[LONG_NAME_LEN];
+    static char prevAccess[LONG_NAME_LEN];
+    static int prevStatus;
+
+    if ( getValByKey( &genQueryInp.condInput, ADMIN_KW ) ) {
+        return 0;
+    }
+
+    for ( i = 0; i < genQueryInp.condInput.len; i++ ) {
+        if ( strcmp( genQueryInp.condInput.keyWord[i],
+                     USER_NAME_CLIENT_KW ) == 0 ) {
+            userIx = i;
+        }
+        if ( strcmp( genQueryInp.condInput.keyWord[i],
+                     RODS_ZONE_CLIENT_KW ) == 0 ) {
+            zoneIx = i;
+        }
+        if ( strcmp( genQueryInp.condInput.keyWord[i],
+                     ACCESS_PERMISSION_KW ) == 0 ) {
+            accessIx = i;
+        }
+        if ( strcmp( genQueryInp.condInput.keyWord[i],
+                     TICKET_KW ) == 0 ) {
+            /* for now, log it but the one used is the session ticket */
+            rodsLog( LOG_NOTICE, "ticket input, value: %s",
+                     genQueryInp.condInput.value[i] );
+        }
+    }
+    if ( genQueryInp.condInput.len == 1 &&
+            strcmp( genQueryInp.condInput.keyWord[0], ZONE_KW ) == 0 ) {
+        return 0;
+    }
+
+    if ( userIx < 0 || zoneIx < 0 || accessIx < 0 ) {
+        // this function will get called if any condInput is available.  we now have a
+        // case where this kvp is the only option so consider that a success
+        char* disable_acl = getValByKey( &genQueryInp.condInput, DISABLE_STRICT_ACL_KW );
+        if ( disable_acl ) {
+            return 0;
+        }
+        return CAT_INVALID_ARGUMENT;
+    }
+
+    /* Try to find the dataId and/or collID in the output */
+    nCols = genQueryInp.selectInp.len;
+    for ( i = 0; i < nCols; i++ ) {
+        if ( genQueryInp.selectInp.inx[i] == COL_D_DATA_ID ) {
+            dataIx = i;
+        }
+        if ( genQueryInp.selectInp.inx[i] == COL_COLL_ID ) {
+            collIx = i;
+        }
+    }
+    if ( dataIx < 0 && collIx < 0 ) {
+        return CAT_INVALID_ARGUMENT;
+    }
+
+    if ( dataIx >= 0 ) {
+        if ( continueFlag == 1 ) {
+            if ( strcmp( prevDataId,
+                         resultValue[dataIx] ) == 0 ) {
+                if ( strcmp( prevUser, genQueryInp.condInput.value[userIx] ) == 0 ) {
+                    if ( strcmp( prevAccess,
+                                 genQueryInp.condInput.value[accessIx] ) == 0 ) {
+                        return prevStatus;
+                    }
+                }
+            }
+        }
+
+        snprintf( prevDataId, sizeof( prevDataId ), "%s", resultValue[dataIx] );
+        snprintf( prevUser, sizeof( prevUser ), "%s", genQueryInp.condInput.value[userIx] );
+        snprintf( prevAccess, sizeof( prevAccess ), "%s", genQueryInp.condInput.value[accessIx] );
+        prevStatus = 0;
+
+        if ( strlen( genQueryInp.condInput.value[zoneIx] ) == 0 ) {
+            if ( !chlGetLocalZone( zoneName ) ) {
+            }
+        }
+        else {
+            zoneName = genQueryInp.condInput.value[zoneIx];
+        }
+        status = cmlCheckDataObjId(
+                     resultValue[dataIx],
+                     genQueryInp.condInput.value[userIx],
+                     ( char* )zoneName.c_str(),
+                     genQueryInp.condInput.value[accessIx],
+                     /*                  sessionTicket, accessControlHost, icss); */
+                     sessionTicket, sessionClientAddr, svc, icss );
+        prevStatus = status;
+        return status;
+    }
+
+    if ( collIx >= 0 ) {
+        if ( strlen( genQueryInp.condInput.value[zoneIx] ) == 0 ) {
+            if ( !chlGetLocalZone( zoneName ) ) {
+            }
+        }
+        else {
+            zoneName = genQueryInp.condInput.value[zoneIx];
+        }
+        status = cmlCheckDirId(
+                     resultValue[collIx],
+                     genQueryInp.condInput.value[userIx],
+                     ( char* )zoneName.c_str(),
+                     genQueryInp.condInput.value[accessIx], svc, icss );
+    }
+    return 0;
+}
 
 /* Save some pre-provided parameters if msiAclPolicy is STRICT.
    Called with user == NULL to set the controlFlag, else with the
@@ -243,11 +371,21 @@ int maxLen(char **out, int n) {
         result->sqlResult[i].len = len;
         result->sqlResult[i].value = (char *) malloc(row * len);
         memset(result->sqlResult[i].value, 0, row * len);
+    }
         for(int j = 0; j< row; j++ ) {
+            if ( genQueryInp.condInput.len > 0 ) {                                                                                                                                                                                   
+                status = checkCondInputAccess( genQueryInp, out + col * j, svc, icss, 0 );                                                                                                                                                 
+                // need to free the rest of out
+                if ( status != 0 ) {                                                                                                                                                                                                 
+                    return status;                                                                                                                                                                                                   
+                }                                                                                                                                                                                                                    
+            }
+          for(int i = 0; i < genQueryInp.selectInp.len; i++) {
             snprintf(result->sqlResult[i].value + j * len, len, "%s", out[col * j + i]);
             free(out[col * j + i]);
+          }                                                                                                                                                                                                                        
         }
-    }
+    
     free(out);
 
     result->rowCnt = row;

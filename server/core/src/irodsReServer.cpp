@@ -20,6 +20,7 @@
 #include "objMetaOpr.hpp"
 #include "genQuery.h"
 #include "getRodsEnv.h"
+#include <unistd.h>
 
 // =-=-=-=-=-=-=-
 // irods includes
@@ -208,7 +209,7 @@ int usage( char *prog );
 
 int
 main( int argc, char **argv ) {
-    if(getenv("IRODS_DELAY_EXEC_SERVER") == NULL) {
+    if(access("/tmp/IRODS_DELAY_EXEC_SERVER", R_OK) != 0) {
         return 0;
     }
     int status;

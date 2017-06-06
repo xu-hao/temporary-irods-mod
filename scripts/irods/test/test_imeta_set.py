@@ -161,6 +161,7 @@ class Test_ImetaSet(ResourceBase, unittest.TestCase):
             self.admin.assert_icommand_fail('imeta ls -u %s %s' % (user, a), 'STDOUT_SINGLELINE', ['value: ' + v + '$'])
             self.admin.assert_icommand_fail('imeta ls -u %s %s' % (user, a), 'STDOUT_SINGLELINE', ['units:' + u + '$'])
 
+    unittest.skip("supported by qa")
     def test_imeta_with_too_long_string(self):
         self.admin.assert_icommand(['imeta', 'add', '-d', self.testfile, 'a', 'v', 'u'])
         num_extra_bind_vars = 10000

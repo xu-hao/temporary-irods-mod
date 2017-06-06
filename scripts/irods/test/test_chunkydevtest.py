@@ -238,18 +238,6 @@ class ChunkyDevTest(ResourceBase):
         assert (not compare_dirs.right_only and not compare_dirs.left_only and not compare_dirs.diff_files), "Directories differ"
         shutil.rmtree(dir_w + "/icmdtestbz2")
         self.admin.assert_icommand("irm -rf " + irodshome + "/icmdtestx1.tar.bz2")
-        # [#3012]
-        # self.admin.assert_icommand("iphybun -R " + self.anotherresc + " -Dbzip2 " + irodshome + "/icmdtestbz2")
-        # self.admin.assert_icommand("itrim -N1 -S " + self.testresc + " -r " + irodshome + "/icmdtestbz2", 'STDOUT_SINGLELINE', "Total size trimmed")
-        # self.admin.assert_icommand("itrim -N1 -S " + irodsdefresource + " -r " + irodshome + "/icmdtestbz2", 'STDOUT_SINGLELINE', "Total size trimmed")
-
-        # get the name of bundle file
-        # out, _ = lib.execute_command(['ils', '-L', os.path.join(irodshome, 'icmdtestbz2', 'icmdtestx', 'foo1')])
-        # bunfile = out.split()[-1]
-        # print(bunfile)
-        # self.admin.assert_icommand("ils --bundle " + bunfile, 'STDOUT_SINGLELINE', "Subfiles")
-        # self.admin.assert_icommand("irm -rf " + irodshome + "/icmdtestbz2")
-        # self.admin.assert_icommand("irm -f --empty " + bunfile)
 
         # cleanup
         os.unlink(dir_w + "/testx1.tar")

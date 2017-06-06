@@ -269,6 +269,7 @@ class ResourceSuite(ResourceBase):
     # iput
     ###################
     @unittest.skipIf(test.settings.RUN_IN_TOPOLOGY, "Skip for Topology Testing")
+    @unittest.skip("**************************ssl")
     def test_ssl_iput_with_rods_env(self):
         config = IrodsConfig()
         server_key_path = os.path.join(self.admin.local_session_dir, 'server.key')
@@ -309,6 +310,7 @@ class ResourceSuite(ResourceBase):
         IrodsController().restart()
 
     @unittest.skipIf(test.settings.RUN_IN_TOPOLOGY, "Skip for Topology Testing")
+    @unittest.skip("**************************ssl")
     def test_ssl_iput_small_and_large_files(self):
         # set up client and server side for ssl handshake
 

@@ -348,7 +348,7 @@ irods::error determine_user_has_modify_metadata_access(
     // of "ACCESS_VIEW_ONE" and "ACCESS_VIEW_TWO"
     rodsLong_t access_permission = -1;
     {
-        status = hs_get_int_access_permission_use_wildcard(svc, icss, (void *) _user_name.c_str(), (void *) _zone.c_str(), (void *) _collection.c_str(), (void *) _data_name.c_str(), &access_permission);
+        status = hs_get_int_access_permission_use_wildcard(svc, icss, (void *) _zone.c_str(), (void *) _user_name.c_str(), (void *) _collection.c_str(), (void *) _data_name.c_str(), &access_permission);
         if ( status == CAT_NO_ROWS_FOUND ) {
             _rollback( "chlAddAVUMetadataWild" );
             return ERROR(
@@ -367,7 +367,7 @@ irods::error determine_user_has_modify_metadata_access(
     // reproduce the count of access permission entries in "ACCESS_VIEW_TWO"
     rodsLong_t access_permission_count = -1;
     {
-        status = hs_get_int_num_access_permission_use_wildcard(svc, icss, (void *) _user_name.c_str(), (void *) _zone.c_str(), (void *) _collection.c_str(), (void *) _data_name.c_str(), &access_permission_count);
+        status = hs_get_int_num_access_permission_use_wildcard(svc, icss, (void *) _zone.c_str(), (void *) _user_name.c_str(), (void *) _collection.c_str(), (void *) _data_name.c_str(), &access_permission_count);
         if( 0 != status ) {
             _rollback( "chlAddAVUMetadataWild" );
             return ERROR(
@@ -5763,10 +5763,10 @@ irods::error db_check_auth_op(
 
     {
         /* four strings per password returned */
-        status = hs_get_some_user_password_by_user_zone_and_name(svc, icss, myUserZone, userName2, pwInfoArray.data(), MAX_PASSWORD_LEN, MAX_PASSWORDS * 4 ) * 4;
+        status = hs_get_some_user_password_by_user_zone_and_name(svc, icss, myUserZone, userName2, pwInfoArray.data(), MAX_PASSWORD_LEN, MAX_PASSWORDS * 4 );
     }
 
-    if ( status < 4 ) {
+    if ( status < 1 ) {
         if ( status == CAT_NO_ROWS_FOUND ) {
             status = CAT_INVALID_USER; /* Be a little more specific */
             if ( strncmp( ANONYMOUS_USER, userName2, NAME_LEN ) == 0 ) {
@@ -5777,7 +5777,7 @@ irods::error db_check_auth_op(
         return ERROR( status, "select rcat_password failed" );
     }
 
-    nPasswords = status / 4; /* four strings per password returned */
+    nPasswords = status; /* four strings per password returned */
     goodPwExpiry[0] = '\0';
     goodPwTs[0] = '\0';
     goodPwModTs[0] = '\0';
@@ -10788,7 +10788,7 @@ irods::error db_set_quota_op(
     }
     status =  hs_delete_quota_by_user_id_and_resc_id(svc, icss, userIdStr, rescIdStr
                    );
-    if ( status != 0 ) {
+    if ( status < 0 ) {
         rodsLog( LOG_DEBUG,
                  "chlSetQuota cmlExecuteNoAnswerSql delete failure %d",
                  status );
@@ -10798,9 +10798,9 @@ irods::error db_set_quota_op(
         if ( logSQL != 0 ) {
             rodsLog( LOG_SQL, "chlSetQuota SQL 5" );
         }
-        status =  hs_create_quota(svc, userIdStr, rescIdStr, (void *) _limit, myTime,
-                      icss );
-        if ( status != 0 ) {
+        status =  hs_create_quota(svc,
+                      icss, userIdStr, rescIdStr, (void *) _limit, myTime );
+        if ( status < 0 ) {
             rodsLog( LOG_NOTICE,
                      "chlSetQuota cmlExecuteNoAnswerSql insert failure %d",
                      status );
@@ -11405,8 +11405,523 @@ irods::error db_mod_ticket_op(
     const char*            _arg4,
     const char*            _arg5 ) {
 
-    return ERROR( -1, "unsupported operation" );
-
+     // =-=-=-=-=-=-=-
+     // check the context
+     irods::error ret = _ctx.valid();
+     if ( !ret.ok() ) {
+ 
+       return PASS( ret );
+     }
+ 
+     // =-=-=-=-=-=-=-
+     // get a postgres object from the context
+     /*irods::postgres_object_ptr pg;
+     ret = make_db_ptr( _ctx.fco(), pg );
+     if ( !ret.ok() ) {
+         return PASS( ret );
+ 
+     }*/
+ 
+     // =-=-=-=-=-=-=-
+     // extract the icss property
+ //        icatSessionStruct icss;
+ //        _ctx.prop_map().get< icatSessionStruct >( ICSS_PROP, icss );
+     rodsLong_t status, status2, status3;
+     char logicalEndName[MAX_NAME_LEN];
+     char logicalParentDirName[MAX_NAME_LEN];
+     rodsLong_t objId = 0;
+     rodsLong_t userId;
+     rodsLong_t ticketId;
+     rodsLong_t seqNum;
+     char seqNumStr[NAME_LEN];
+     char objIdStr[NAME_LEN];
+     char objTypeStr[NAME_LEN];
+     char userIdStr[NAME_LEN];
+     char user2IdStr[MAX_NAME_LEN];
+     char group2IdStr[NAME_LEN];
+     char ticketIdStr[NAME_LEN];
+     char ticketType[NAME_LEN];
+     char myTime[50];
+ 
+     status = 0;
+ 
+     /* session ticket */
+     if ( strcmp( _op_name, "session" ) == 0 ) {
+         if ( strlen( _arg3 ) > 0 ) {
+             /* for 2 server hops, arg3 is the original client addr */
+             status = chlGenQueryTicketSetup( _ticket_string, _arg3 );
+             snprintf( mySessionTicket, sizeof( mySessionTicket ), "%s", _ticket_string );
+             snprintf( mySessionClientAddr, sizeof( mySessionClientAddr ), "%s", _arg3 );
+         }
+         else {
+             /* for direct connections, rsComm has the original client addr */
+             status = chlGenQueryTicketSetup( _ticket_string, _ctx.comm()->clientAddr );
+             snprintf( mySessionTicket, sizeof( mySessionTicket ), "%s", _ticket_string );
+             snprintf( mySessionClientAddr, sizeof( mySessionClientAddr ), "%s", _ctx.comm()->clientAddr );
+         }
+         return SUCCESS();
+     }
+ 
+     /* create */
+     if ( strcmp( _op_name, "create" ) == 0 ) {
+         status = splitPathByKey( _arg4,
+                                  logicalParentDirName, MAX_NAME_LEN, logicalEndName, MAX_NAME_LEN, '/' );
+         if ( strlen( logicalParentDirName ) == 0 ) {
+             snprintf( logicalParentDirName, sizeof( logicalParentDirName ), "%s", PATH_SEPARATOR );
+             snprintf( logicalEndName, sizeof( logicalEndName ), "%s", _arg4 + 1 );
+         }
+         status2 = cmlCheckDataObjOnly( logicalParentDirName, logicalEndName,
+                                        _ctx.comm()->clientUser.userName,
+                                        _ctx.comm()->clientUser.rodsZone,
+                                        ACCESS_OWN, svc, icss );
+         if ( status2 > 0 ) {
+             snprintf( objTypeStr, sizeof( objTypeStr ), "%s", TICKET_TYPE_DATA );
+             objId = status2;
+         }
+         else {
+             status3 = cmlCheckDir( _arg4,   _ctx.comm()->clientUser.userName,
+                                    _ctx.comm()->clientUser.rodsZone,
+                                    ACCESS_OWN, svc, icss );
+             if ( status3 == CAT_NO_ROWS_FOUND && status2 == CAT_NO_ROWS_FOUND ) {
+                 return ERROR( CAT_UNKNOWN_COLLECTION, _arg4 );
+             }
+             if ( status3 < 0 ) {
+                 return ERROR( status3, "cmlCheckDir failed" );
+             }
+             snprintf( objTypeStr, sizeof( objTypeStr ), "%s", TICKET_TYPE_COLL );
+             objId = status3;
+         }
+ 
+         if ( logSQL != 0 ) {
+             rodsLog( LOG_SQL, "chlModTicket SQL 1" );
+         }
+         {
+             status = hs_get_int_user_id(svc, icss,
+                          _ctx.comm()->clientUser.rodsZone,
+                          _ctx.comm()->clientUser.userName,
+                          &userId);
+         }
+         if ( status != 0 ) {
+             return ERROR( CAT_INVALID_USER, "select user_id failed" );
+         }
+ 
+         status = hs_get_int_next_id( svc, icss, &seqNum );
+         if ( status < 0 ) {
+             rodsLog( LOG_NOTICE, "chlModTicket failure %ld",
+                      status );
+             return ERROR( status, "cmlGetNextSeqVal failed" );
+         }
+         snprintf( seqNumStr, NAME_LEN, "%lld", seqNum );
+         snprintf( objIdStr, NAME_LEN, "%lld", objId );
+         snprintf( userIdStr, NAME_LEN, "%lld", userId );
+         if ( strncmp( _arg3, "write", 5 ) == 0 ) {
+             snprintf( ticketType, sizeof( ticketType ), "%s", "write" );
+         }
+         else {
+             snprintf( ticketType, sizeof( ticketType ), "%s", "read" );
+         }
+         getNowStr( myTime );
+         if ( logSQL != 0 ) {
+             rodsLog( LOG_SQL, "chlModTicket SQL 2" );
+         }
+         status = hs_create_ticket(svc,
+                       icss,
+                       seqNumStr,
+                       (void *) _ticket_string,
+                       ticketType,
+                       userIdStr,
+                       objIdStr,
+                       objTypeStr,
+                       myTime,
+                       myTime);
+ 
+         if ( status < 0 ) {
+             rodsLog( LOG_NOTICE,
+                      "chlModTicket cmlExecuteNoAnswerSql insert failure %d",
+                      status );
+             return ERROR( status, "insert failure" );
+         }
+         status =  hs_commit( svc, icss );
+         if ( status < 0 ) {
+             return ERROR( status, "commit failed" );
+         }
+         else {
+             return SUCCESS();
+         }
+     }
+ 
+     if ( logSQL != 0 ) {
+         rodsLog( LOG_SQL, "chlModTicket SQL 3" );
+     }
+     {
+             status = hs_get_int_user_id(svc, icss,
+                          _ctx.comm()->clientUser.rodsZone,
+                          _ctx.comm()->clientUser.userName,
+                          &userId);
+     }
+     if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ||
+             status == CAT_NO_ROWS_FOUND ) {
+         if ( !addRErrorMsg( &_ctx.comm()->rError, 0, "Invalid user" ) ) {
+         }
+         return ERROR( CAT_INVALID_USER, _ctx.comm()->clientUser.userName );
+     }
+     if ( status < 0 ) {
+         return ERROR( status, "failed to select user_id" );
+     }
+     snprintf( userIdStr, sizeof userIdStr, "%lld", userId );
+ 
+     if ( logSQL != 0 ) {
+         rodsLog( LOG_SQL, "chlModTicket SQL 4" );
+     }
+     {
+         status = hs_get_int_ticket_id_by_user_and_ticket_string(svc, icss,
+                      userIdStr,
+                      (void *) _ticket_string,
+                      &ticketId);
+     }
+     if ( status < 0 ) {
+         if ( logSQL != 0 ) {
+             rodsLog( LOG_SQL, "chlModTicket SQL 5" );
+         }
+         {
+         status = hs_get_int_ticket_id_by_user_and_ticket(svc, icss,
+                      userIdStr,
+                      (void *) _ticket_string,
+                      &ticketId);
+         }
+         if ( status < 0 ) {
+             return ERROR( CAT_TICKET_INVALID, _ticket_string );
+         }
+     }
+     snprintf( ticketIdStr, NAME_LEN, "%lld", ticketId );
+ 
+     /* delete */
+     if ( strcmp( _op_name, "delete" ) == 0 ) {
+         if ( logSQL != 0 ) {
+             rodsLog( LOG_SQL, "chlModTicket SQL 6" );
+         }
+         status = hs_delete_ticket_by_ticket_and_user(svc, icss, 
+                                                      ticketIdStr, userIdStr);
+         if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+             return CODE( status );
+         }
+         if ( status < 0 ) {
+             rodsLog( LOG_NOTICE,
+                      "chlModTicket cmlExecuteNoAnswerSql delete failure %d",
+                      status );
+             return ERROR( status, "delete failure" );
+         }
+ 
+         status =  hs_delete_ticket_allowed_hosts_by_ticket(svc, icss,
+                                                  ticketIdStr);
+         if ( status < 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+             rodsLog( LOG_NOTICE,
+                      "chlModTicket cmlExecuteNoAnswerSql delete 2 failure %d",
+                      status );
+         }
+ 
+         status =  hs_delete_ticket_allowed_groups_by_ticket(svc, icss,
+                                                  ticketIdStr);
+         if ( status < 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+             rodsLog( LOG_NOTICE,
+                      "chlModTicket cmlExecuteNoAnswerSql delete 3 failure %d",
+                      status );
+         }
+ 
+         status =  hs_delete_ticket_allowed_users_by_ticket(svc, icss,
+                                                  ticketIdStr);
+         if ( status < 0 && status != CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+             rodsLog( LOG_NOTICE,
+                      "chlModTicket cmlExecuteNoAnswerSql delete 4 failure %d",
+                      status );
+         }
+         status =  hs_commit( svc, icss );
+         if ( status < 0 ) {
+             return ERROR( status, "commit failed" );
+         }
+         else {
+             return SUCCESS();
+         }
+     }
+ 
+     /* mod */
+     if ( strcmp( _op_name, "mod" ) == 0 ) {
+         if ( strcmp( _arg3, "uses" ) == 0 ) {
+             if ( logSQL != 0 ) {
+                 rodsLog( LOG_SQL, "chlModTicket SQL 7" );
+             }
+             status =  hs_create_ticket_uses_limit_by_ticket_and_user(svc, icss,
+             (void *) _arg4,
+             ticketIdStr,
+             userIdStr);
+             if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                 return CODE( status );
+             }
+             if ( status < 0 ) {
+                 rodsLog( LOG_NOTICE,
+                          "chlModTicket cmlExecuteNoAnswerSql update failure %d",
+                          status );
+                 return ERROR( status, "update failure" );
+             }
+             status =  hs_commit( svc, icss );
+             if ( status < 0 ) {
+                 return ERROR( status, "commit failed" );
+             }
+             else {
+                 return SUCCESS();
+             }
+         }
+ 
+         if ( strncmp( _arg3, "write", 5 ) == 0 ) {
+             if ( strstr( _arg3, "file" ) != NULL ) {
+                 if ( logSQL != 0 ) {
+                     rodsLog( LOG_SQL, "chlModTicket SQL 8" );
+                 }
+             status =  hs_create_ticket_write_file_limit_by_ticket_and_user(svc, icss,
+             (void *) _arg4,
+             ticketIdStr,
+             userIdStr);
+                 if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                     return CODE( status );
+                 }
+                 if ( status < 0 ) {
+                     rodsLog( LOG_NOTICE,
+                              "chlModTicket cmlExecuteNoAnswerSql update failure %d",
+                              status );
+                     return ERROR( status, "update failure" );
+                 }
+                 status =  hs_commit( svc, icss );
+                 if ( status < 0 ) {
+                     return ERROR( status, "commit failed" );
+                 }
+                 else {
+                     return SUCCESS();
+                 }
+             }
+             if ( strstr( _arg3, "byte" ) != NULL ) {
+                 if ( logSQL != 0 ) {
+                     rodsLog( LOG_SQL, "chlModTicket SQL 9" );
+                 }
+             status =  hs_create_ticket_write_byte_limit_by_ticket_and_user(svc, icss,
+             (void *) _arg4,
+             ticketIdStr,
+             userIdStr);
+                 if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                     return CODE( status );
+                 }
+                 if ( status < 0 ) {
+                     rodsLog( LOG_NOTICE,
+                              "chlModTicket cmlExecuteNoAnswerSql update failure %d",
+                              status );
+                     return ERROR( status, "update failure" );
+                 }
+                 status =  hs_commit( svc, icss );
+                 if ( status < 0 ) {
+                     return ERROR( status, "commit failed" );
+                 }
+                 else {
+                     return SUCCESS();
+                 }
+             }
+         }
+ 
+         if ( strncmp( _arg3, "expir", 5 ) == 0 ) {
+             status = checkDateFormat( (char*)_arg4 );
+             if ( status != 0 ) {
+                 return ERROR( status, "date format incorrect" );
+             }
+             if ( logSQL != 0 ) {
+                 rodsLog( LOG_SQL, "chlModTicket SQL 10" );
+             }
+             status =  hs_create_ticket_expiry_ts_by_ticket_and_user(svc, icss,
+             (void *) _arg4,
+             ticketIdStr,
+             userIdStr);
+             if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                 return CODE( status );
+             }
+             if ( status < 0 ) {
+                 rodsLog( LOG_NOTICE,
+                          "chlModTicket cmlExecuteNoAnswerSql update failure %d",
+                          status );
+                 return ERROR( status, "update failure" );
+             }
+                 status =  hs_commit( svc, icss );
+             if ( status < 0 ) {
+                 return ERROR( status, "commit failed" );
+             }
+             else {
+                 return SUCCESS();
+             }
+         }
+ 
+         if ( strcmp( _arg3, "add" ) == 0 ) {
+             if ( strcmp( _arg4, "host" ) == 0 ) {
+                 char *hostIp;
+                 hostIp = convertHostToIp( _arg5 );
+                 if ( hostIp == NULL ) {
+                     return ERROR( CAT_HOSTNAME_INVALID, _arg5 );
+                 }
+                 if ( logSQL != 0 ) {
+                     rodsLog( LOG_SQL, "chlModTicket SQL 11" );
+                 }
+                 status =  hs_create_ticket_allowed_hosts(svc, icss, ticketIdStr, hostIp);
+                 if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                     return CODE( status );
+                 }
+                 if ( status < 0 ) {
+                     rodsLog( LOG_NOTICE,
+                              "chlModTicket cmlExecuteNoAnswerSql insert host failure %d",
+                              status );
+                     return ERROR( status, "insert host failure" );
+                 }
+                 status =  hs_commit( svc, icss );
+                 if ( status < 0 ) {
+                     return ERROR( status, "commit failed" );
+                 }
+                 else {
+                     return SUCCESS();
+                 }
+             }
+             if ( strcmp( _arg4, "user" ) == 0 ) {
+                 status = icatGetTicketUserId( _ctx.prop_map(), _arg5, user2IdStr );
+                 if ( status != 0 ) {
+                     return ERROR( status, "icatGetTicketUserId failed" );
+                 }
+                 if ( logSQL != 0 ) {
+                     rodsLog( LOG_SQL, "chlModTicket SQL 12" );
+                 }
+                 status =  hs_create_ticket_allowed_users(svc, icss, ticketIdStr, (void *) _arg5);
+                 if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                     return CODE( status );
+                 }
+                 if ( status < 0 ) {
+                     rodsLog( LOG_NOTICE,
+                              "chlModTicket cmlExecuteNoAnswerSql insert user failure %d",
+                              status );
+                     return ERROR( status, "insert user failure" );
+                 }
+	                 status =  hs_commit( svc, icss );
+                 if ( status < 0 ) {
+                     return ERROR( status, "commit failed" );
+                 }
+                 else {
+                     return SUCCESS();
+                 }
+             }
+             if ( strcmp( _arg4, "group" ) == 0 ) {
+                 status = icatGetTicketGroupId( _ctx.prop_map(), _arg5, user2IdStr );
+                 if ( status != 0 ) {
+                     return ERROR( status, "icatGetTicketGroupId failed" );
+                 }
+                 if ( logSQL != 0 ) {
+                     rodsLog( LOG_SQL, "chlModTicket SQL 13" );
+                 }
+                 status =  hs_create_ticket_allowed_groups(svc, icss, ticketIdStr, (void *) _arg5);
+                 if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                     return CODE( status );
+                 }
+                 if ( status < 0 ) {
+                     rodsLog( LOG_NOTICE,
+                              "chlModTicket cmlExecuteNoAnswerSql insert user failure %d",
+                              status );
+                     return ERROR( status, "insert failed" );
+                 }
+                 status =  hs_commit( svc, icss );
+                 if ( status < 0 ) {
+                     return ERROR( status, "commit failed" );
+                 }
+                 else {
+                     return SUCCESS();
+                 }
+             }
+         }
+         if ( strcmp( _arg3, "remove" ) == 0 ) {
+             if ( strcmp( _arg4, "host" ) == 0 ) {
+                 char *hostIp;
+                 hostIp = convertHostToIp( _arg5 );
+                 if ( hostIp == NULL ) {
+                     return ERROR( CAT_HOSTNAME_INVALID, "host name null" );
+                 }
+                 if ( logSQL != 0 ) {
+                     rodsLog( LOG_SQL, "chlModTicket SQL 14" );
+                 }
+                 status =  hs_delete_ticket_allowed_hosts(svc, icss, ticketIdStr, hostIp);
+                 if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                     return CODE( status );
+                 }
+                 if ( status < 0 ) {
+                     rodsLog( LOG_NOTICE,
+                              "chlModTicket cmlExecuteNoAnswerSql delete host failure %d",
+                              status );
+                     return ERROR( status, "delete failed" );
+                 }
+                 status =  hs_commit( svc, icss );
+                 if ( status < 0 ) {
+                     return ERROR( status, "commit failed" );
+                 }
+                 else {
+                     return SUCCESS();
+                 }
+ 
+             }
+             if ( strcmp( _arg4, "user" ) == 0 ) {
+                 status = icatGetTicketUserId( _ctx.prop_map(), _arg5, user2IdStr );
+                 if ( status != 0 ) {
+                     return ERROR( status, "icatGetTicketUserId failed" );
+                 }
+                 if ( logSQL != 0 ) {
+                     rodsLog( LOG_SQL, "chlModTicket SQL 15" );
+                 }
+                 status =  hs_delete_ticket_allowed_users(svc, icss, ticketIdStr, (void *) _arg5);
+                 if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                     return CODE( status );
+                 }
+                 if ( status < 0 ) {
+                     rodsLog( LOG_NOTICE,
+                              "chlModTicket cmlExecuteNoAnswerSql delete user failure %d",
+                              status );
+                     return ERROR( status, "delete failed" );
+                 }
+                 status =  hs_commit( svc, icss );
+                 if ( status < 0 ) {
+                     return ERROR( status, "commit failed" );
+                 }
+                 else {
+                     return SUCCESS();
+                 }
+             }
+             if ( strcmp( _arg4, "group" ) == 0 ) {
+                 status = icatGetTicketGroupId( _ctx.prop_map(), _arg5, group2IdStr );
+                 if ( status != 0 ) {
+                     return ERROR( status, "icatGetTicketGroupId failed" );
+                 }
+                 if ( logSQL != 0 ) {
+                     rodsLog( LOG_SQL, "chlModTicket SQL 16" );
+                 }
+                 status =  hs_delete_ticket_allowed_groups(svc, icss, ticketIdStr, (void *) _arg5);
+                 if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+                     return CODE( status );
+                 }
+                 if ( status < 0 ) {
+                     rodsLog( LOG_NOTICE,
+                              "chlModTicket cmlExecuteNoAnswerSql delete group failure %d",
+                              status );
+                     return ERROR( status, "delete group failed" );
+                 }
+                 status =  hs_commit( svc, icss );
+                 if ( status < 0 ) {
+                     return ERROR( status, "commit failed" );
+                 }
+                 else {
+                     return SUCCESS();
+                 }
+             }
+         }
+     }
+ 
+     return ERROR( CAT_INVALID_ARGUMENT, "invalid op name" );
+ 
 } // db_mod_ticket_op
 
 irods::error db_get_icss_op(

@@ -212,6 +212,13 @@ int chl_gen_query_access_control_setup_impl(
 int chl_gen_query_ticket_setup_impl(
     const char* ticket,
     const char* clientAddr ) {
+    if ( !rstrcpy( sessionTicket, ticket, sizeof( sessionTicket ) ) ) {
+        return USER_STRLEN_TOOLONG;
+    }
+    if ( !rstrcpy( sessionClientAddr, clientAddr, sizeof( sessionClientAddr ) ) ) {
+        return USER_STRLEN_TOOLONG;
+    }
+    rodsLog( LOG_NOTICE, "session ticket setup, value: %s", ticket );
     return 0;
 }
 
@@ -342,6 +349,7 @@ int maxLen(char **out, int n) {
     int doCheck = 0;
 
     if ( accessControlPriv == LOCAL_PRIV_USER_AUTH ) {
+        doCheck = -1; // -1 indicates list all tickets
     } else {
 
         if ( accessControlControlFlag > 1 ) {
@@ -360,7 +368,7 @@ int maxLen(char **out, int n) {
     int col = 0;
     int row = 0;
     char *qucstr = (char *) qu.c_str();
-    int status = hs_gen_query(svc, icss, distinct, doCheck, accessControlZone, accessControlUserName, (void *)  qucstr, &out, &col, &row);
+    int status = hs_gen_query(svc, icss, distinct, doCheck, accessControlZone, accessControlUserName, sessionTicket, (void *)  qucstr, &out, &col, &row);
     if (status < 0) {
         return status;
     }

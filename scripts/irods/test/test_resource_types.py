@@ -28,6 +28,7 @@ def statvfs_path_or_parent(path):
     return os.statvfs(path)
 
 
+'''
 def load_tests(loader, standard_tests, pattern):
     filtered_tests = []
     add = os.environ['IRODS_TEST_SKIP_UNTIL'] == ''
@@ -43,6 +44,7 @@ def load_tests(loader, standard_tests, pattern):
                 add = True
     standard_tests._tests = filtered_tests
     return standard_tests
+'''
 
 class Test_Resource_RandomWithinReplication(ResourceSuite, ChunkyDevTest, unittest.TestCase):
 

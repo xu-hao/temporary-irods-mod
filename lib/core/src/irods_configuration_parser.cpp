@@ -144,7 +144,7 @@ namespace irods {
                     try {
                         vector.push_back(convert_json(element));
                     } catch (const irods::exception& e) {
-                        rodsLog( LOG_ERROR, e.what() );
+                        irods::log(e);
                     }
                 }
                 return boost::any(vector);
@@ -159,7 +159,7 @@ namespace irods {
                     try {
                         map.insert(std::pair<std::string, boost::any>(std::string(key), convert_json(subval)));
                     } catch (const irods::exception& e) {
-                        rodsLog( LOG_ERROR, e.what() );
+                        irods::log(e);
                     }
                 }
                 return boost::any(map);

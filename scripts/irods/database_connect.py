@@ -218,6 +218,18 @@ def execute_sql_statement(cursor, statement, *params, **kwargs):
             IrodsError('pypyodbc encountered an error executing the query'),
             sys.exc_info()[2])
 
+def execute_queryarrow_statement(statement, headers = "", **kwargs):
+    l = logging.getLogger(__name__)
+    log_params = kwargs.get('log_params', True)
+    l.debug('Executing SQL statement:\n%s\nwith the following parameters:\n%s',
+            statement if log_params else '<hidden>', headers)
+    try:
+        return subprocess.check_output(["QueryArrow", statement, headers])
+    except pypyodbc.Error:
+        six.reraise(IrodsError,
+            IrodsError('pypyodbc encountered an error executing the query'),
+            sys.exc_info()[2])
+
 def execute_sql_file(filepath, cursor, by_line=False):
     l = logging.getLogger(__name__)
     l.debug('Executing SQL in %s', filepath)
@@ -344,76 +356,79 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
         else:
             raise IrodsError('no next object id function defined for %s' % irods_config.catalog_database_type)
 
+    def get_next_object_id_queryarrow():
+            return int(execute_queryarrow_statement("next_id(x)", "x"))
+
     #zone
-    zone_id = get_next_object_id()
-    execute_sql_statement(cursor,
-            "insert into R_ZONE_MAIN values (?,?,'local','','',?,?);",
-            zone_id,
-            irods_config.server_config['zone_name'],
-            timestamp,
-            timestamp)
+    zone_id = get_next_object_id_queryarrow()
+    execute_queryarrow_statement(
+            'insert ZONE_OBJ({0}) ZONE_NAME({0}, "{1}") ZONE_TYPE_NAME({0}, "local") ZONE_CREATE_TS({0}, "{2}") ZONE_MODIFY_TS({0}, "{3}")'.format(
+              zone_id,
+              irods_config.server_config['zone_name'],
+              timestamp,
+              timestamp))
 
     #groups
-    admin_group_id = get_next_object_id()
-    execute_sql_statement(cursor,
-            "insert into R_USER_MAIN values (?,?,?,?,'','',?,?);",
-            admin_group_id,
-            'rodsadmin',
-            'rodsgroup',
-            irods_config.server_config['zone_name'],
-            timestamp,
-            timestamp)
+    admin_group_id = get_next_object_id_queryarrow()
+    execute_queryarrow_statement(
+            'insert USER_OBJ({0}) USER_NAME({0}, "{1}") ZONE_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
+              admin_group_id,
+              'rodsadmin',
+              'rodsgroup',
+              irods_config.server_config['zone_name'],
+              timestamp,
+              timestamp))
 
-    public_group_id = get_next_object_id()
-    execute_sql_statement(cursor,
-            "insert into R_USER_MAIN values (?,?,?,?,'','',?,?);",
+    public_group_id = get_next_object_id_queryarrow()
+    execute_sql_statement(
+            'insert USER_OBJ({0}) USER_NAME({0}, "{1}") ZONE_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
             public_group_id,
             'public',
             'rodsgroup',
             irods_config.server_config['zone_name'],
             timestamp,
-            timestamp)
+            timestamp))
 
     #users
-    admin_user_id = get_next_object_id()
-    execute_sql_statement(cursor,
-            "insert into R_USER_MAIN values (?,?,?,?,'','',?,?);",
-            admin_user_id,
-            irods_config.server_config['zone_user'],
-            'rodsadmin',
-            irods_config.server_config['zone_name'],
-            timestamp,
-            timestamp)
+    admin_user_id = get_next_object_id_queryarrow()
+    execute_queryarrow_statement(
+            'insert USER_OBJ({0}) USER_NAME({0}, "{1}") ZONE_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
+              admin_user_id,
+              irods_config.server_config['zone_user'],
+              'rodsadmin',
+              irods_config.server_config['zone_name'],
+              timestamp,
+              timestamp))
 
     #group membership
-    execute_sql_statement(cursor,
-            "insert into R_USER_GROUP values (?,?,?,?);",
-            admin_group_id,
-            admin_user_id,
-            timestamp,
-            timestamp)
-    execute_sql_statement(cursor,
-            "insert into R_USER_GROUP values (?,?,?,?);",
-            admin_user_id,
-            admin_user_id,
-            timestamp,
-            timestamp)
-    execute_sql_statement(cursor,
-            "insert into R_USER_GROUP values (?,?,?,?);",
-            public_group_id,
-            admin_user_id,
-            timestamp,
-            timestamp)
+    execute_queryarrow_statement(
+            'insert USER_GROUP_OBJ({0}, {1}) USER_GROUP_CREATE_TS({0}, {1}, "{2}") USER_GROUP_MODIFY_TS({0}, {1}, "{2}")'.format(
+              admin_group_id,
+              admin_user_id,
+              timestamp,
+              timestamp))
+    execute_queryarrow_statement(
+            'insert USER_GROUP_OBJ({0}, {1}) USER_GROUP_CREATE_TS({0}, {1}, "{2}") USER_GROUP_MODIFY_TS({0}, {1}, "{2}")'.format(
+              admin_user_id,
+              admin_user_id,
+              timestamp,
+              timestamp))
+    execute_queryarrow_statement(
+            'insert USER_GROUP_OBJ({0}, {1}) USER_GROUP_CREATE_TS({0}, {1}, "{2}") USER_GROUP_MODIFY_TS({0}, {1}, "{2}")'.format(
+              public_group_id,
+              admin_user_id,
+              timestamp,
+              timestamp))
 
     #password
     scrambled_password = password_obfuscation.scramble(irods_config.admin_password,
             key=irods_config.server_config.get('environment_variables', {}).get('IRODS_DATABASE_USER_PASSWORD_SALT', None))
-    execute_sql_statement(cursor,
-            "insert into R_USER_PASSWORD values (?,?,'9999-12-31-23.59.00',?,?);",
-            admin_user_id,
-            scrambled_password,
-            timestamp,
-            timestamp,
+    execute_queryarrow_statement(
+            'insert USER_PASSWORD_OBJ({0}, "{1}") USER_PASSWORD_PASS_EXPIRY_TS({0}, "{1}", "9999-12-31-23.59.00") USER_PASSWORD_CREATE_TS({0}, "{1}", "{2}") USER_PASSWORD_MODIFY_TS({0}, "{1}", "{3}")'.format(
+              admin_user_id,
+              scrambled_password,
+              timestamp,
+              timestamp),
             log_params=False)
 
     #collections
@@ -435,40 +450,44 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
     for collection in itertools.chain(system_collections, public_collections, admin_collections):
         parent_collection = '/'.join(['', collection[1:].rpartition('/')[0]])
         collection_id = get_next_object_id()
-        execute_sql_statement(cursor,
-                "insert into R_COLL_MAIN values (?,?,?,?,?,0,'','','','','','',?,?);",
-                collection_id,
-                parent_collection,
-                collection,
-                irods_config.server_config['zone_user'],
-                irods_config.server_config['zone_name'],
-                timestamp,
-                timestamp)
+        execute_queryarrow_statement(
+                'insert COLL_OBJ({0}) COLL_PARENT_COLL_NAME({0}, "{1}") COLL_NAME({0}, "{2}") COLL_OWNER_NAME({0}, "{3}") COLL_OWNER_ZONE({0}, "{4}") COLL_CREATE_TS({0}, "{5}") COLL_MODIFY_TS({0}, "{6}")'.format(
+                  collection_id,
+                  parent_collection,
+                  collection,
+                  irods_config.server_config['zone_user'],
+                  irods_config.server_config['zone_name'],
+                  timestamp,
+                  timestamp))
 
-        execute_sql_statement(cursor,
-                "insert into R_OBJT_ACCESS values (?,?,1200,?,?);",
-                collection_id,
-                public_group_id if collection in public_collections else admin_user_id,
-                timestamp,
-                timestamp)
+        execute_queryarrow_statement(
+                'insert OBJT_ACCESS_OBJ({0}, {1}) OBJT_ACCESS_CREATE_TS({0}, {1}, "{2}") OBJT_ACCESS_MODIFY_TS({0}, {1}, "{3}")'.format(
+                  collection_id,
+                  public_group_id if collection in public_collections else admin_user_id,
+                  timestamp,
+                  timestamp))
 
     #bundle resource
     bundle_resc_id = get_next_object_id()
-    execute_sql_statement(cursor,
-            "insert into R_RESC_MAIN (resc_id,resc_name,zone_name,resc_type_name,resc_class_name,resc_net,resc_def_path,free_space,free_space_ts,resc_info,r_comment,resc_status,create_ts,modify_ts) values (?,'bundleResc',?,'unixfilesystem','bundle','localhost','/bundle','','','','','',?,?);",
-            bundle_resc_id,
-            irods_config.server_config['zone_name'],
-            timestamp,
-            timestamp)
+    execute_queryarrow_statement(
+            'insert RESC_OBJ({0}) RESC_NAME({0}, "bundleResc") RESC_ZONE_NAME({0}, "{1}") RESC_TYPE_NAME({0}, "unixfilesystem") RESC_CLASS_NAME({0}, "bundle") ' + 
+              'RESC_NET({0}, "localhost") RESC_DEF_PATH({0}, "/bundle") RESC_FREE_SPACE({0}, "") RESC_FREE_SPACE_TS({0}, "") RESC_INFO({0}, "") RESC_COMMENT({0}, "") ' + 
+              'RESC_STATUS({0}, "") RESC_CREATE_TS({0}, "{2}") RESC_MODIFY_TS({0}, "{3}")'.format(
+              bundle_resc_id,
+              irods_config.server_config['zone_name'],
+              timestamp,
+              timestamp))
 
     if default_resource_directory:
         default_resc_id = get_next_object_id()
-        execute_sql_statement(cursor,
-                "insert into R_RESC_MAIN (resc_id,resc_name,zone_name,resc_type_name,resc_class_name,resc_net,resc_def_path,free_space,free_space_ts,resc_info,r_comment,resc_status,create_ts,modify_ts) values (?,?,?,'unixfilesystem','cache',?,?,'','','','','',?,?);",
+        execute_queryarrow_statement(
+            'insert RESC_OBJ({0}) RESC_NAME({0}, "{1}") RESC_ZONE_NAME({0}, "{2}") RESC_TYPE_NAME({0}, "unixfilesystem") RESC_CLASS_NAME({0}, "bundle") ' + 
+              'RESC_NET({0}, "{3}") RESC_DEF_PATH({0}, "{4}") RESC_FREE_SPACE({0}, "") RESC_FREE_SPACE_TS({0}, "") RESC_INFO({0}, "") RESC_COMMENT({0}, "") ' + 
+              'RESC_STATUS({0}, "") RESC_CREATE_TS({0}, "{5}") RESC_MODIFY_TS({0}, "{6}")'.format(
                 default_resc_id,
                 'demoResc',
                 irods_config.server_config['zone_name'],
                 lib.get_hostname(),
                 default_resource_directory,
                 timestamp,
-                timestamp)
+                timestamp))

@@ -1,191 +1,191 @@
-insert into R_GRID_CONFIGURATION values ( 'database', 'schema_version', '1' );
+insert GRID_CONFIGURATION_OBJECT ( "database", "schema_version", "1" )
 
-insert into R_TOKN_MAIN values ('token_namespace',0,'zone_type','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',1,'user_type','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',2,'data_type','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',3,'resc_type','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',4,'action_type','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',5,'rulexec_type','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',6,'access_type','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',7,'object_type','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',8,'resc_class','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',9,'coll_map','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('token_namespace',10,'auth_scheme_type','','','','','1170000000','1170000000');
-
-
-insert into R_TOKN_MAIN values ('zone_type',100,'local','','native zone of this iCAT','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('zone_type',101,'remote','','foreign zone','','','1170000000','1170000000');
-
-insert into R_TOKN_MAIN values ('user_type',200,'rodsgroup','','rods group users','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('user_type',201,'rodsadmin','','rods administrators','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('user_type',202,'rodsuser','','normal rods user','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('user_type',204,'groupadmin','','user group administrators','','','1170000000','1170000000');
-
-insert into R_TOKN_MAIN values ('object_type',300,'data','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('object_type',301,'resource','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('object_type',302,'user','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('object_type',303,'rule','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('object_type',304,'metadata','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('object_type',305,'zone','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('object_type',306,'collection','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('object_type',307,'token','','','','','1170000000','1170000000');
-
-insert into R_TOKN_MAIN values ('resc_type',400,'unixfilesystem','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('resc_type',401,'hpss file system','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('resc_type',402,'windows file system','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('resc_type',403,'s3','','','','','1250100000','1250100000');
-insert into R_TOKN_MAIN values ('resc_type',404,'MSS universal driver','','','','','1250100000','1250100000');
-insert into R_TOKN_MAIN values ('resc_type',405,'database','','','','','1288631300','1288631300');
-insert into R_TOKN_MAIN values ('resc_type',406,'mso','','','','','1312910000','1312910000');
-
-insert into R_TOKN_MAIN values ('rulexec_type',600,'immediate','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('rulexec_type',601,'delayed','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('rulexec_type',602,'queued','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('rulexec_type',603,'before','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('rulexec_type',604,'after','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('rulexec_type',605,'concurrent','','','','','1170000000','1170000000');
-
-insert into R_TOKN_MAIN values ('access_type',1000,'null','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1010,'execute','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1020,'read annotation','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1030,'read system metadata','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1040,'read metadata','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1050,'read object','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1060,'write annotation','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1070,'create metadata','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1080,'modify metadata','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1090,'delete metadata','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1100,'administer object','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1110,'create object','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1120,'modify object','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1130,'delete object','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1140,'create token','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1150,'delete token','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1160,'curate','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('access_type',1200,'own','','','','','1170000000','1170000000');
+insert TOKN_OBJ(0) TOKN_TOKEN_NAMESPACE(0, "token_namespace") TOKN_TOKEN_NAME(0,"zone_type") TOKN_TOKEN_VALUE(0,"") TOKN_TOKEN_VALUE2(0,"") TOKN_TOKEN_VALUE3(0,"") TOKN_COMMENT(0,"") TOKN_CREATE_TS(0,"1170000000") TOKN_MODIFY_TS(0,"1170000000")
+insert TOKN_OBJ(1) TOKN_TOKEN_NAMESPACE(1, "token_namespace") TOKN_TOKEN_NAME(1,"user_type") TOKN_TOKEN_VALUE(1,"") TOKN_TOKEN_VALUE2(1,"") TOKN_TOKEN_VALUE3(1,"") TOKN_COMMENT(1,"") TOKN_CREATE_TS(1,"1170000000") TOKN_MODIFY_TS(1,"1170000000")  
+insert TOKN_OBJ(2) TOKN_TOKEN_NAMESPACE(2, "token_namespace") TOKN_TOKEN_NAME(2,"data_type") TOKN_TOKEN_VALUE(2,"") TOKN_TOKEN_VALUE2(2,"") TOKN_TOKEN_VALUE3(2,"") TOKN_COMMENT(2,"") TOKN_CREATE_TS(2,"1170000000") TOKN_MODIFY_TS(2,"1170000000")  
+insert TOKN_OBJ(3) TOKN_TOKEN_NAMESPACE(3, "token_namespace") TOKN_TOKEN_NAME(3,"resc_type") TOKN_TOKEN_VALUE(3,"") TOKN_TOKEN_VALUE2(3,"") TOKN_TOKEN_VALUE3(3,"") TOKN_COMMENT(3,"") TOKN_CREATE_TS(3,"1170000000") TOKN_MODIFY_TS(3,"1170000000")  
+insert TOKN_OBJ(4) TOKN_TOKEN_NAMESPACE(4, "token_namespace") TOKN_TOKEN_NAME(4,"action_type") TOKN_TOKEN_VALUE(4,"") TOKN_TOKEN_VALUE2(4,"") TOKN_TOKEN_VALUE3(4,"") TOKN_COMMENT(4,"") TOKN_CREATE_TS(4,"1170000000") TOKN_MODIFY_TS(4,"1170000000")  
+insert TOKN_OBJ(5) TOKN_TOKEN_NAMESPACE(5, "token_namespace") TOKN_TOKEN_NAME(5,"rulexec_type") TOKN_TOKEN_VALUE(5,"") TOKN_TOKEN_VALUE2(5,"") TOKN_TOKEN_VALUE3(5,"") TOKN_COMMENT(5,"") TOKN_CREATE_TS(5,"1170000000") TOKN_MODIFY_TS(5,"1170000000")  
+insert TOKN_OBJ(6) TOKN_TOKEN_NAMESPACE(6, "token_namespace") TOKN_TOKEN_NAME(6,"access_type") TOKN_TOKEN_VALUE(6,"") TOKN_TOKEN_VALUE2(6,"") TOKN_TOKEN_VALUE3(6,"") TOKN_COMMENT(6,"") TOKN_CREATE_TS(6,"1170000000") TOKN_MODIFY_TS(6,"1170000000")  
+insert TOKN_OBJ(7) TOKN_TOKEN_NAMESPACE(7, "token_namespace") TOKN_TOKEN_NAME(7,"object_type") TOKN_TOKEN_VALUE(7,"") TOKN_TOKEN_VALUE2(7,"") TOKN_TOKEN_VALUE3(7,"") TOKN_COMMENT(7,"") TOKN_CREATE_TS(7,"1170000000") TOKN_MODIFY_TS(7,"1170000000")  
+insert TOKN_OBJ(8) TOKN_TOKEN_NAMESPACE(8, "token_namespace") TOKN_TOKEN_NAME(8,"resc_class") TOKN_TOKEN_VALUE(8,"") TOKN_TOKEN_VALUE2(8,"") TOKN_TOKEN_VALUE3(8,"") TOKN_COMMENT(8,"") TOKN_CREATE_TS(8,"1170000000") TOKN_MODIFY_TS(8,"1170000000")  
+insert TOKN_OBJ(9) TOKN_TOKEN_NAMESPACE(9, "token_namespace") TOKN_TOKEN_NAME(9,"coll_map") TOKN_TOKEN_VALUE(9,"") TOKN_TOKEN_VALUE2(9,"") TOKN_TOKEN_VALUE3(9,"") TOKN_COMMENT(9,"") TOKN_CREATE_TS(9,"1170000000") TOKN_MODIFY_TS(9,"1170000000")  
+insert TOKN_OBJ(10) TOKN_TOKEN_NAMESPACE(10, "token_namespace") TOKN_TOKEN_NAME(10,"auth_scheme_type") TOKN_TOKEN_VALUE(10,"") TOKN_TOKEN_VALUE2(10,"") TOKN_TOKEN_VALUE3(10,"") TOKN_COMMENT(10,"") TOKN_CREATE_TS(10,"1170000000") TOKN_MODIFY_TS(10,"1170000000")  
 
 
-insert into R_TOKN_MAIN values ('coll_map',1400,'generic','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('coll_map',1401,'direct','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('coll_map',1402,'hard link','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('coll_map',1403,'soft link','','','','','1170000000','1170000000');
+insert TOKN_OBJ(100) TOKN_TOKEN_NAMESPACE(100, "zone_type") TOKN_TOKEN_NAME(100,"local") TOKN_TOKEN_VALUE(100,"") TOKN_TOKEN_VALUE2(100,"native zone of this iCAT") TOKN_TOKEN_VALUE3(100,"") TOKN_COMMENT(100,"") TOKN_CREATE_TS(100,"1170000000") TOKN_MODIFY_TS(100,"1170000000")  
+insert TOKN_OBJ(101) TOKN_TOKEN_NAMESPACE(101, "zone_type") TOKN_TOKEN_NAME(101,"remote") TOKN_TOKEN_VALUE(101,"") TOKN_TOKEN_VALUE2(101,"foreign zone") TOKN_TOKEN_VALUE3(101,"") TOKN_COMMENT(101,"") TOKN_CREATE_TS(101,"1170000000") TOKN_MODIFY_TS(101,"1170000000")  
 
-insert into R_TOKN_MAIN values ('auth_scheme_type',1500,'SPASSWORD','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('auth_scheme_type',1501,'GSI','','','','','1170000000','1170000000');
+insert TOKN_OBJ(200) TOKN_TOKEN_NAMESPACE(200, "user_type") TOKN_TOKEN_NAME(200,"rodsgroup") TOKN_TOKEN_VALUE(200,"") TOKN_TOKEN_VALUE2(200,"rods group users") TOKN_TOKEN_VALUE3(200,"") TOKN_COMMENT(200,"") TOKN_CREATE_TS(200,"1170000000") TOKN_MODIFY_TS(200,"1170000000")  
+insert TOKN_OBJ(201) TOKN_TOKEN_NAMESPACE(201, "user_type") TOKN_TOKEN_NAME(201,"rodsadmin") TOKN_TOKEN_VALUE(201,"") TOKN_TOKEN_VALUE2(201,"rods administrators") TOKN_TOKEN_VALUE3(201,"") TOKN_COMMENT(201,"") TOKN_CREATE_TS(201,"1170000000") TOKN_MODIFY_TS(201,"1170000000")  
+insert TOKN_OBJ(202) TOKN_TOKEN_NAMESPACE(202, "user_type") TOKN_TOKEN_NAME(202,"rodsuser") TOKN_TOKEN_VALUE(202,"") TOKN_TOKEN_VALUE2(202,"normal rods user") TOKN_TOKEN_VALUE3(202,"") TOKN_COMMENT(202,"") TOKN_CREATE_TS(202,"1170000000") TOKN_MODIFY_TS(202,"1170000000")  
+insert TOKN_OBJ(204) TOKN_TOKEN_NAMESPACE(204, "user_type") TOKN_TOKEN_NAME(204,"groupadmin") TOKN_TOKEN_VALUE(204,"") TOKN_TOKEN_VALUE2(204,"user group administrators") TOKN_TOKEN_VALUE3(204,"") TOKN_COMMENT(204,"") TOKN_CREATE_TS(204,"1170000000") TOKN_MODIFY_TS(204,"1170000000")  
 
-insert into R_TOKN_MAIN values ('data_type',1600,'generic','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1601,'text','text/text','|.txt|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1602,'ascii text','text/text','|.txt|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1603,'ascii compressed Lempel-Ziv','','|.z|.zip|.gz|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1604,'ascii compressed Huffman','','|.z|.zip|.gz|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1605,'ebcdic text','text/text','|.txt|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1606,'ebcdic compressed Lempel-Ziv','','|.z|.zip|.gz|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1607,'ebcdic compressed Huffman','','|.z|.zip|.gz|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1608,'image','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1609,'tiff image','image/tiff','|.tif|.tiff|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1610,'uuencoded tiff','text/text','|.uu|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1611,'gif image','image/gif','|.gif|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1612,'jpeg image','image/jpeg','|.jpeg|.jpg|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1613,'pbm image','image/pbm','|.pbm|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1614,'fig image','image/fig','|.fig|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1615,'FITS image','application/x-fits','|.fits|.fit|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1616,'DICOM image','application/dicom','|.IMA|.ima|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1617,'print-format','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1618,'LaTeX format','text/text','|.tex|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1619,'Troff format','text/text','|.trf|.trof|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1620,'Postscript format','application/postscript','|.ps|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1621,'DVI format','application/dvi','|.dvi|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1622,'Word format','application/msword','|.doc|.rtf|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1623,'program code','text/text','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1624,'SQL script','text/text','|.sql|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1625,'C code','text/text','|.c|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1626,'C include file','text/text','|.c|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1627,'fortran code','text/text','|.f|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1628,'object code','','|.o|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1629,'library code','','|.a|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1630,'data file','','|.dat|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1631,'html','text/html','|.htm|.html|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1632,'SGML File','text/sgml','|.sgm|.sgml|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1633,'Wave Audio','audio/x-wav','|.wav|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1634,'tar file','text/text','|.tar|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1635,'compressed tar file','|.tz|.tgz|.zip|','','','','1170000000','1170000000'  );
-insert into R_TOKN_MAIN values ('data_type',1636,'java code','text/text','|.jav|.java|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1637,'perl script','text/text','|.pl|','','','1170000000','1170000000'  );
-insert into R_TOKN_MAIN values ('data_type',1638,'tcl script','text/text','|.tcl|','','','1170000000','1170000000'  );
-insert into R_TOKN_MAIN values ('data_type',1639,'link code','','|.o|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1640,'shadow object','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1641,'database shadow object','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1642,'directory shadow object','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1643,'database','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1644,'streams','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1645,'audio streams','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1646,'realAudio','audio/x-pn-realaudio','|.ra|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1647,'video streams','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1648,'realVideo','audio/x-pn-realaudio','|.rv|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1649,'MPEG','video/mpeg','|.mpeg|.mpg|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1650,'AVI','video/msvideo','|.avi|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1651,'PNG-Portable Network Graphics','image/png','|.png|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1652,'MP3 - MPEG Audio','audio/x-mpeg','|.mp3|.mpa|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1653,'WMV-Windows Media Video','video/x-wmv','|.wmv|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1654,'BMP -Bit Map','image/bmp','|.bmp|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1655,'CSS-Cascading Style Sheet','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1656,'xml','text/xml','|.xml|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1657,'Slide','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1658,'Power Point Slide','application/vnd.ms-powerpoint','|.ppt|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1659,'Spread Sheet','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1660,'Excel Spread Sheet','application/x-msexcel','|.xls|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1661,'Document','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1622,'MSWord Document','application/msword','|.doc|.rtf|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1663,'PDF Document','application/pdf','|.pdf|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1664,'Executable','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1665,'NT Executable','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1666,'Solaris Executable','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1667,'AIX Executable','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1668,'Mac Executable','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1669,'Mac OSX Executable','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1670,'Cray Executable','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1671,'SGI Executable','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1672,'DLL','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1673,'NT DLL','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1674,'Solaris DLL','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1675,'AIX DLL','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1676,'Mac DLL','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1677,'Cray DLL','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1678,'SGI DLL','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1679,'Movie','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1680,'MPEG Movie','video/mpeg','|.mpeg|.mpg|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1681,'MPEG 3 Movie','video/mpeg','|.mpeg|.mpg|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1682,'Quicktime Movie','video/quicktime','|.mov|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1683,'compressed file','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1684,'compressed mmCIF file','','|.cif|.mmcif|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1685,'compressed PDB file','','|.pdb|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1686,'binary file','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1687,'URL','text/html','|.htm|.html|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1688,'NSF Award Abstracts','text/text','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1689,'email','text/text','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1690,'orb data','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1691,'datascope data','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1692,'DICOM header','','','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1693,'XML Schema','text/xml','|.xsd|','','','1170000000','1170000000');
-insert into R_TOKN_MAIN values ('data_type',1694,'tar bundle','','','','','1250100000','1250100000');
-insert into R_TOKN_MAIN values ('data_type',1695,'database object','text','','','','1288631300','1288631300');
-insert into R_TOKN_MAIN values ('data_type',1696,'mso','','','','','1312910000','1312910000');
-insert into R_TOKN_MAIN values ('data_type',1697,'gzipTar','','|.tar.gz|','','','1324000000','1324000000');
-insert into R_TOKN_MAIN values ('data_type',1698,'bzip2Tar','','|.tar.bz2|','','','1324000000','1324000000');
-insert into R_TOKN_MAIN values ('data_type',1699,'gzipFile','','|.gz|','','','1324000000','1324000000');
-insert into R_TOKN_MAIN values ('data_type',1700,'bzip2File','','|.bz2|','','','1324000000','1324000000');
-insert into R_TOKN_MAIN values ('data_type',1701,'zipFile','','|.zip|','','','1324000000','1324000000');
-insert into R_TOKN_MAIN values ('data_type',1702,'gzipTar bundle','','','','','1324000000','1324000000');
-insert into R_TOKN_MAIN values ('data_type',1703,'bzip2Tar bundle','','','','','1324000000','1324000000');
-insert into R_TOKN_MAIN values ('data_type',1704,'zipFile bundle','','','','','1324000000','1324000000');
-insert into R_TOKN_MAIN values ('data_type',1705,'msso file','','','','','1324000000','1324000000');
+insert TOKN_OBJ(300) TOKN_TOKEN_NAMESPACE(300, "object_type") TOKN_TOKEN_NAME(300,"data") TOKN_TOKEN_VALUE(300,"") TOKN_TOKEN_VALUE2(300,"") TOKN_TOKEN_VALUE3(300,"") TOKN_COMMENT(300,"") TOKN_CREATE_TS(300,"1170000000") TOKN_MODIFY_TS(300,"1170000000")  
+insert TOKN_OBJ(301) TOKN_TOKEN_NAMESPACE(301, "object_type") TOKN_TOKEN_NAME(301,"resource") TOKN_TOKEN_VALUE(301,"") TOKN_TOKEN_VALUE2(301,"") TOKN_TOKEN_VALUE3(301,"") TOKN_COMMENT(301,"") TOKN_CREATE_TS(301,"1170000000") TOKN_MODIFY_TS(301,"1170000000")  
+insert TOKN_OBJ(302) TOKN_TOKEN_NAMESPACE(302, "object_type") TOKN_TOKEN_NAME(302,"user") TOKN_TOKEN_VALUE(302,"") TOKN_TOKEN_VALUE2(302,"") TOKN_TOKEN_VALUE3(302,"") TOKN_COMMENT(302,"") TOKN_CREATE_TS(302,"1170000000") TOKN_MODIFY_TS(302,"1170000000")  
+insert TOKN_OBJ(303) TOKN_TOKEN_NAMESPACE(303, "object_type") TOKN_TOKEN_NAME(303,"rule") TOKN_TOKEN_VALUE(303,"") TOKN_TOKEN_VALUE2(303,"") TOKN_TOKEN_VALUE3(303,"") TOKN_COMMENT(303,"") TOKN_CREATE_TS(303,"1170000000") TOKN_MODIFY_TS(303,"1170000000")  
+insert TOKN_OBJ(304) TOKN_TOKEN_NAMESPACE(304, "object_type") TOKN_TOKEN_NAME(304,"metadata") TOKN_TOKEN_VALUE(304,"") TOKN_TOKEN_VALUE2(304,"") TOKN_TOKEN_VALUE3(304,"") TOKN_COMMENT(304,"") TOKN_CREATE_TS(304,"1170000000") TOKN_MODIFY_TS(304,"1170000000")  
+insert TOKN_OBJ(305) TOKN_TOKEN_NAMESPACE(305, "object_type") TOKN_TOKEN_NAME(305,"zone") TOKN_TOKEN_VALUE(305,"") TOKN_TOKEN_VALUE2(305,"") TOKN_TOKEN_VALUE3(305,"") TOKN_COMMENT(305,"") TOKN_CREATE_TS(305,"1170000000") TOKN_MODIFY_TS(305,"1170000000")  
+insert TOKN_OBJ(306) TOKN_TOKEN_NAMESPACE(306, "object_type") TOKN_TOKEN_NAME(306,"collection") TOKN_TOKEN_VALUE(306,"") TOKN_TOKEN_VALUE2(306,"") TOKN_TOKEN_VALUE3(306,"") TOKN_COMMENT(306,"") TOKN_CREATE_TS(306,"1170000000") TOKN_MODIFY_TS(306,"1170000000")  
+insert TOKN_OBJ(307) TOKN_TOKEN_NAMESPACE(307, "object_type") TOKN_TOKEN_NAME(307,"token") TOKN_TOKEN_VALUE(307,"") TOKN_TOKEN_VALUE2(307,"") TOKN_TOKEN_VALUE3(307,"") TOKN_COMMENT(307,"") TOKN_CREATE_TS(307,"1170000000") TOKN_MODIFY_TS(307,"1170000000")  
+
+insert TOKN_OBJ(400) TOKN_TOKEN_NAMESPACE(400, "resc_type") TOKN_TOKEN_NAME(400,"unixfilesystem") TOKN_TOKEN_VALUE(400,"") TOKN_TOKEN_VALUE2(400,"") TOKN_TOKEN_VALUE3(400,"") TOKN_COMMENT(400,"") TOKN_CREATE_TS(400,"1170000000") TOKN_MODIFY_TS(400,"1170000000")  
+insert TOKN_OBJ(401) TOKN_TOKEN_NAMESPACE(401, "resc_type") TOKN_TOKEN_NAME(401,"hpss file system") TOKN_TOKEN_VALUE(401,"") TOKN_TOKEN_VALUE2(401,"") TOKN_TOKEN_VALUE3(401,"") TOKN_COMMENT(401,"") TOKN_CREATE_TS(401,"1170000000") TOKN_MODIFY_TS(401,"1170000000")  
+insert TOKN_OBJ(402) TOKN_TOKEN_NAMESPACE(402, "resc_type") TOKN_TOKEN_NAME(402,"windows file system") TOKN_TOKEN_VALUE(402,"") TOKN_TOKEN_VALUE2(402,"") TOKN_TOKEN_VALUE3(402,"") TOKN_COMMENT(402,"") TOKN_CREATE_TS(402,"1170000000") TOKN_MODIFY_TS(402,"1170000000")  
+insert TOKN_OBJ(403) TOKN_TOKEN_NAMESPACE(403, "resc_type") TOKN_TOKEN_NAME(403,"s3") TOKN_TOKEN_VALUE(403,"") TOKN_TOKEN_VALUE2(403,"") TOKN_TOKEN_VALUE3(403,"") TOKN_COMMENT(403,"") TOKN_CREATE_TS(403,"1250100000") TOKN_MODIFY_TS(403,"1250100000")  
+insert TOKN_OBJ(404) TOKN_TOKEN_NAMESPACE(404, "resc_type") TOKN_TOKEN_NAME(404,"MSS universal driver") TOKN_TOKEN_VALUE(404,"") TOKN_TOKEN_VALUE2(404,"") TOKN_TOKEN_VALUE3(404,"") TOKN_COMMENT(404,"") TOKN_CREATE_TS(404,"1250100000") TOKN_MODIFY_TS(404,"1250100000")  
+insert TOKN_OBJ(405) TOKN_TOKEN_NAMESPACE(405, "resc_type") TOKN_TOKEN_NAME(405,"database") TOKN_TOKEN_VALUE(405,"") TOKN_TOKEN_VALUE2(405,"") TOKN_TOKEN_VALUE3(405,"") TOKN_COMMENT(405,"") TOKN_CREATE_TS(405,"1288631300") TOKN_MODIFY_TS(405,"1288631300")  
+insert TOKN_OBJ(406) TOKN_TOKEN_NAMESPACE(406, "resc_type") TOKN_TOKEN_NAME(406,"mso") TOKN_TOKEN_VALUE(406,"") TOKN_TOKEN_VALUE2(406,"") TOKN_TOKEN_VALUE3(406,"") TOKN_COMMENT(406,"") TOKN_CREATE_TS(406,"1312910000") TOKN_MODIFY_TS(406,"1312910000")  
+
+insert TOKN_OBJ(600) TOKN_TOKEN_NAMESPACE(600, "rulexec_type") TOKN_TOKEN_NAME(600,"immediate") TOKN_TOKEN_VALUE(600,"") TOKN_TOKEN_VALUE2(600,"") TOKN_TOKEN_VALUE3(600,"") TOKN_COMMENT(600,"") TOKN_CREATE_TS(600,"1170000000") TOKN_MODIFY_TS(600,"1170000000")  
+insert TOKN_OBJ(601) TOKN_TOKEN_NAMESPACE(601, "rulexec_type") TOKN_TOKEN_NAME(601,"delayed") TOKN_TOKEN_VALUE(601,"") TOKN_TOKEN_VALUE2(601,"") TOKN_TOKEN_VALUE3(601,"") TOKN_COMMENT(601,"") TOKN_CREATE_TS(601,"1170000000") TOKN_MODIFY_TS(601,"1170000000")  
+insert TOKN_OBJ(602) TOKN_TOKEN_NAMESPACE(602, "rulexec_type") TOKN_TOKEN_NAME(602,"queued") TOKN_TOKEN_VALUE(602,"") TOKN_TOKEN_VALUE2(602,"") TOKN_TOKEN_VALUE3(602,"") TOKN_COMMENT(602,"") TOKN_CREATE_TS(602,"1170000000") TOKN_MODIFY_TS(602,"1170000000")  
+insert TOKN_OBJ(603) TOKN_TOKEN_NAMESPACE(603, "rulexec_type") TOKN_TOKEN_NAME(603,"before") TOKN_TOKEN_VALUE(603,"") TOKN_TOKEN_VALUE2(603,"") TOKN_TOKEN_VALUE3(603,"") TOKN_COMMENT(603,"") TOKN_CREATE_TS(603,"1170000000") TOKN_MODIFY_TS(603,"1170000000")  
+insert TOKN_OBJ(604) TOKN_TOKEN_NAMESPACE(604, "rulexec_type") TOKN_TOKEN_NAME(604,"after") TOKN_TOKEN_VALUE(604,"") TOKN_TOKEN_VALUE2(604,"") TOKN_TOKEN_VALUE3(604,"") TOKN_COMMENT(604,"") TOKN_CREATE_TS(604,"1170000000") TOKN_MODIFY_TS(604,"1170000000")  
+insert TOKN_OBJ(605) TOKN_TOKEN_NAMESPACE(605, "rulexec_type") TOKN_TOKEN_NAME(605,"concurrent") TOKN_TOKEN_VALUE(605,"") TOKN_TOKEN_VALUE2(605,"") TOKN_TOKEN_VALUE3(605,"") TOKN_COMMENT(605,"") TOKN_CREATE_TS(605,"1170000000") TOKN_MODIFY_TS(605,"1170000000")  
+
+insert TOKN_OBJ(1000) TOKN_TOKEN_NAMESPACE(1000, "access_type") TOKN_TOKEN_NAME(1000,"null") TOKN_TOKEN_VALUE(1000,"") TOKN_TOKEN_VALUE2(1000,"") TOKN_TOKEN_VALUE3(1000,"") TOKN_COMMENT(1000,"") TOKN_CREATE_TS(1000,"1170000000") TOKN_MODIFY_TS(1000,"1170000000")  
+insert TOKN_OBJ(1010) TOKN_TOKEN_NAMESPACE(1010, "access_type") TOKN_TOKEN_NAME(1010,"execute") TOKN_TOKEN_VALUE(1010,"") TOKN_TOKEN_VALUE2(1010,"") TOKN_TOKEN_VALUE3(1010,"") TOKN_COMMENT(1010,"") TOKN_CREATE_TS(1010,"1170000000") TOKN_MODIFY_TS(1010,"1170000000")  
+insert TOKN_OBJ(1020) TOKN_TOKEN_NAMESPACE(1020, "access_type") TOKN_TOKEN_NAME(1020,"read annotation") TOKN_TOKEN_VALUE(1020,"") TOKN_TOKEN_VALUE2(1020,"") TOKN_TOKEN_VALUE3(1020,"") TOKN_COMMENT(1020,"") TOKN_CREATE_TS(1020,"1170000000") TOKN_MODIFY_TS(1020,"1170000000")  
+insert TOKN_OBJ(1030) TOKN_TOKEN_NAMESPACE(1030, "access_type") TOKN_TOKEN_NAME(1030,"read system metadata") TOKN_TOKEN_VALUE(1030,"") TOKN_TOKEN_VALUE2(1030,"") TOKN_TOKEN_VALUE3(1030,"") TOKN_COMMENT(1030,"") TOKN_CREATE_TS(1030,"1170000000") TOKN_MODIFY_TS(1030,"1170000000")  
+insert TOKN_OBJ(1040) TOKN_TOKEN_NAMESPACE(1040, "access_type") TOKN_TOKEN_NAME(1040,"read metadata") TOKN_TOKEN_VALUE(1040,"") TOKN_TOKEN_VALUE2(1040,"") TOKN_TOKEN_VALUE3(1040,"") TOKN_COMMENT(1040,"") TOKN_CREATE_TS(1040,"1170000000") TOKN_MODIFY_TS(1040,"1170000000")  
+insert TOKN_OBJ(1050) TOKN_TOKEN_NAMESPACE(1050, "access_type") TOKN_TOKEN_NAME(1050,"read object") TOKN_TOKEN_VALUE(1050,"") TOKN_TOKEN_VALUE2(1050,"") TOKN_TOKEN_VALUE3(1050,"") TOKN_COMMENT(1050,"") TOKN_CREATE_TS(1050,"1170000000") TOKN_MODIFY_TS(1050,"1170000000")  
+insert TOKN_OBJ(1060) TOKN_TOKEN_NAMESPACE(1060, "access_type") TOKN_TOKEN_NAME(1060,"write annotation") TOKN_TOKEN_VALUE(1060,"") TOKN_TOKEN_VALUE2(1060,"") TOKN_TOKEN_VALUE3(1060,"") TOKN_COMMENT(1060,"") TOKN_CREATE_TS(1060,"1170000000") TOKN_MODIFY_TS(1060,"1170000000")  
+insert TOKN_OBJ(1070) TOKN_TOKEN_NAMESPACE(1070, "access_type") TOKN_TOKEN_NAME(1070,"create metadata") TOKN_TOKEN_VALUE(1070,"") TOKN_TOKEN_VALUE2(1070,"") TOKN_TOKEN_VALUE3(1070,"") TOKN_COMMENT(1070,"") TOKN_CREATE_TS(1070,"1170000000") TOKN_MODIFY_TS(1070,"1170000000")  
+insert TOKN_OBJ(1080) TOKN_TOKEN_NAMESPACE(1080, "access_type") TOKN_TOKEN_NAME(1080,"modify metadata") TOKN_TOKEN_VALUE(1080,"") TOKN_TOKEN_VALUE2(1080,"") TOKN_TOKEN_VALUE3(1080,"") TOKN_COMMENT(1080,"") TOKN_CREATE_TS(1080,"1170000000") TOKN_MODIFY_TS(1080,"1170000000")  
+insert TOKN_OBJ(1090) TOKN_TOKEN_NAMESPACE(1090, "access_type") TOKN_TOKEN_NAME(1090,"delete metadata") TOKN_TOKEN_VALUE(1090,"") TOKN_TOKEN_VALUE2(1090,"") TOKN_TOKEN_VALUE3(1090,"") TOKN_COMMENT(1090,"") TOKN_CREATE_TS(1090,"1170000000") TOKN_MODIFY_TS(1090,"1170000000")  
+insert TOKN_OBJ(1100) TOKN_TOKEN_NAMESPACE(1100, "access_type") TOKN_TOKEN_NAME(1100,"administer object") TOKN_TOKEN_VALUE(1100,"") TOKN_TOKEN_VALUE2(1100,"") TOKN_TOKEN_VALUE3(1100,"") TOKN_COMMENT(1100,"") TOKN_CREATE_TS(1100,"1170000000") TOKN_MODIFY_TS(1100,"1170000000")  
+insert TOKN_OBJ(1110) TOKN_TOKEN_NAMESPACE(1110, "access_type") TOKN_TOKEN_NAME(1110,"create object") TOKN_TOKEN_VALUE(1110,"") TOKN_TOKEN_VALUE2(1110,"") TOKN_TOKEN_VALUE3(1110,"") TOKN_COMMENT(1110,"") TOKN_CREATE_TS(1110,"1170000000") TOKN_MODIFY_TS(1110,"1170000000")  
+insert TOKN_OBJ(1120) TOKN_TOKEN_NAMESPACE(1120, "access_type") TOKN_TOKEN_NAME(1120,"modify object") TOKN_TOKEN_VALUE(1120,"") TOKN_TOKEN_VALUE2(1120,"") TOKN_TOKEN_VALUE3(1120,"") TOKN_COMMENT(1120,"") TOKN_CREATE_TS(1120,"1170000000") TOKN_MODIFY_TS(1120,"1170000000")  
+insert TOKN_OBJ(1130) TOKN_TOKEN_NAMESPACE(1130, "access_type") TOKN_TOKEN_NAME(1130,"delete object") TOKN_TOKEN_VALUE(1130,"") TOKN_TOKEN_VALUE2(1130,"") TOKN_TOKEN_VALUE3(1130,"") TOKN_COMMENT(1130,"") TOKN_CREATE_TS(1130,"1170000000") TOKN_MODIFY_TS(1130,"1170000000")  
+insert TOKN_OBJ(1140) TOKN_TOKEN_NAMESPACE(1140, "access_type") TOKN_TOKEN_NAME(1140,"create token") TOKN_TOKEN_VALUE(1140,"") TOKN_TOKEN_VALUE2(1140,"") TOKN_TOKEN_VALUE3(1140,"") TOKN_COMMENT(1140,"") TOKN_CREATE_TS(1140,"1170000000") TOKN_MODIFY_TS(1140,"1170000000")  
+insert TOKN_OBJ(1150) TOKN_TOKEN_NAMESPACE(1150, "access_type") TOKN_TOKEN_NAME(1150,"delete token") TOKN_TOKEN_VALUE(1150,"") TOKN_TOKEN_VALUE2(1150,"") TOKN_TOKEN_VALUE3(1150,"") TOKN_COMMENT(1150,"") TOKN_CREATE_TS(1150,"1170000000") TOKN_MODIFY_TS(1150,"1170000000")  
+insert TOKN_OBJ(1160) TOKN_TOKEN_NAMESPACE(1160, "access_type") TOKN_TOKEN_NAME(1160,"curate") TOKN_TOKEN_VALUE(1160,"") TOKN_TOKEN_VALUE2(1160,"") TOKN_TOKEN_VALUE3(1160,"") TOKN_COMMENT(1160,"") TOKN_CREATE_TS(1160,"1170000000") TOKN_MODIFY_TS(1160,"1170000000")  
+insert TOKN_OBJ(1200) TOKN_TOKEN_NAMESPACE(1200, "access_type") TOKN_TOKEN_NAME(1200,"own") TOKN_TOKEN_VALUE(1200,"") TOKN_TOKEN_VALUE2(1200,"") TOKN_TOKEN_VALUE3(1200,"") TOKN_COMMENT(1200,"") TOKN_CREATE_TS(1200,"1170000000") TOKN_MODIFY_TS(1200,"1170000000")  
 
 
-insert into R_TOKN_MAIN values ('action_type',1800,'generic','','','','','1170000000','1170000000');
+insert TOKN_OBJ(1400) TOKN_TOKEN_NAMESPACE(1400, "coll_map") TOKN_TOKEN_NAME(1400,"generic") TOKN_TOKEN_VALUE(1400,"") TOKN_TOKEN_VALUE2(1400,"") TOKN_TOKEN_VALUE3(1400,"") TOKN_COMMENT(1400,"") TOKN_CREATE_TS(1400,"1170000000") TOKN_MODIFY_TS(1400,"1170000000")  
+insert TOKN_OBJ(1401) TOKN_TOKEN_NAMESPACE(1401, "coll_map") TOKN_TOKEN_NAME(1401,"direct") TOKN_TOKEN_VALUE(1401,"") TOKN_TOKEN_VALUE2(1401,"") TOKN_TOKEN_VALUE3(1401,"") TOKN_COMMENT(1401,"") TOKN_CREATE_TS(1401,"1170000000") TOKN_MODIFY_TS(1401,"1170000000")  
+insert TOKN_OBJ(1402) TOKN_TOKEN_NAMESPACE(1402, "coll_map") TOKN_TOKEN_NAME(1402,"hard link") TOKN_TOKEN_VALUE(1402,"") TOKN_TOKEN_VALUE2(1402,"") TOKN_TOKEN_VALUE3(1402,"") TOKN_COMMENT(1402,"") TOKN_CREATE_TS(1402,"1170000000") TOKN_MODIFY_TS(1402,"1170000000")  
+insert TOKN_OBJ(1403) TOKN_TOKEN_NAMESPACE(1403, "coll_map") TOKN_TOKEN_NAME(1403,"soft link") TOKN_TOKEN_VALUE(1403,"") TOKN_TOKEN_VALUE2(1403,"") TOKN_TOKEN_VALUE3(1403,"") TOKN_COMMENT(1403,"") TOKN_CREATE_TS(1403,"1170000000") TOKN_MODIFY_TS(1403,"1170000000")  
+
+insert TOKN_OBJ(1500) TOKN_TOKEN_NAMESPACE(1500, "auth_scheme_type") TOKN_TOKEN_NAME(1500,"SPASSWORD") TOKN_TOKEN_VALUE(1500,"") TOKN_TOKEN_VALUE2(1500,"") TOKN_TOKEN_VALUE3(1500,"") TOKN_COMMENT(1500,"") TOKN_CREATE_TS(1500,"1170000000") TOKN_MODIFY_TS(1500,"1170000000")  
+insert TOKN_OBJ(1501) TOKN_TOKEN_NAMESPACE(1501, "auth_scheme_type") TOKN_TOKEN_NAME(1501,"GSI") TOKN_TOKEN_VALUE(1501,"") TOKN_TOKEN_VALUE2(1501,"") TOKN_TOKEN_VALUE3(1501,"") TOKN_COMMENT(1501,"") TOKN_CREATE_TS(1501,"1170000000") TOKN_MODIFY_TS(1501,"1170000000")  
+
+insert TOKN_OBJ(1600) TOKN_TOKEN_NAMESPACE(1600, "data_type") TOKN_TOKEN_NAME(1600,"generic") TOKN_TOKEN_VALUE(1600,"") TOKN_TOKEN_VALUE2(1600,"") TOKN_TOKEN_VALUE3(1600,"") TOKN_COMMENT(1600,"") TOKN_CREATE_TS(1600,"1170000000") TOKN_MODIFY_TS(1600,"1170000000")  
+insert TOKN_OBJ(1601) TOKN_TOKEN_NAMESPACE(1601, "data_type") TOKN_TOKEN_NAME(1601,"text") TOKN_TOKEN_VALUE(1601,"text/text") TOKN_TOKEN_VALUE2(1601,"|.txt|") TOKN_TOKEN_VALUE3(1601,"") TOKN_COMMENT(1601,"") TOKN_CREATE_TS(1601,"1170000000") TOKN_MODIFY_TS(1601,"1170000000")  
+insert TOKN_OBJ(1602) TOKN_TOKEN_NAMESPACE(1602, "data_type") TOKN_TOKEN_NAME(1602,"ascii text") TOKN_TOKEN_VALUE(1602,"text/text") TOKN_TOKEN_VALUE2(1602,"|.txt|") TOKN_TOKEN_VALUE3(1602,"") TOKN_COMMENT(1602,"") TOKN_CREATE_TS(1602,"1170000000") TOKN_MODIFY_TS(1602,"1170000000")  
+insert TOKN_OBJ(1603) TOKN_TOKEN_NAMESPACE(1603, "data_type") TOKN_TOKEN_NAME(1603,"ascii compressed Lempel-Ziv") TOKN_TOKEN_VALUE(1603,"") TOKN_TOKEN_VALUE2(1603,"|.z|.zip|.gz|") TOKN_TOKEN_VALUE3(1603,"") TOKN_COMMENT(1603,"") TOKN_CREATE_TS(1603,"1170000000") TOKN_MODIFY_TS(1603,"1170000000")  
+insert TOKN_OBJ(1604) TOKN_TOKEN_NAMESPACE(1604, "data_type") TOKN_TOKEN_NAME(1604,"ascii compressed Huffman") TOKN_TOKEN_VALUE(1604,"") TOKN_TOKEN_VALUE2(1604,"|.z|.zip|.gz|") TOKN_TOKEN_VALUE3(1604,"") TOKN_COMMENT(1604,"") TOKN_CREATE_TS(1604,"1170000000") TOKN_MODIFY_TS(1604,"1170000000")  
+insert TOKN_OBJ(1605) TOKN_TOKEN_NAMESPACE(1605, "data_type") TOKN_TOKEN_NAME(1605,"ebcdic text") TOKN_TOKEN_VALUE(1605,"text/text") TOKN_TOKEN_VALUE2(1605,"|.txt|") TOKN_TOKEN_VALUE3(1605,"") TOKN_COMMENT(1605,"") TOKN_CREATE_TS(1605,"1170000000") TOKN_MODIFY_TS(1605,"1170000000")  
+insert TOKN_OBJ(1606) TOKN_TOKEN_NAMESPACE(1606, "data_type") TOKN_TOKEN_NAME(1606,"ebcdic compressed Lempel-Ziv") TOKN_TOKEN_VALUE(1606,"") TOKN_TOKEN_VALUE2(1606,"|.z|.zip|.gz|") TOKN_TOKEN_VALUE3(1606,"") TOKN_COMMENT(1606,"") TOKN_CREATE_TS(1606,"1170000000") TOKN_MODIFY_TS(1606,"1170000000")  
+insert TOKN_OBJ(1607) TOKN_TOKEN_NAMESPACE(1607, "data_type") TOKN_TOKEN_NAME(1607,"ebcdic compressed Huffman") TOKN_TOKEN_VALUE(1607,"") TOKN_TOKEN_VALUE2(1607,"|.z|.zip|.gz|") TOKN_TOKEN_VALUE3(1607,"") TOKN_COMMENT(1607,"") TOKN_CREATE_TS(1607,"1170000000") TOKN_MODIFY_TS(1607,"1170000000")  
+insert TOKN_OBJ(1608) TOKN_TOKEN_NAMESPACE(1608, "data_type") TOKN_TOKEN_NAME(1608,"image") TOKN_TOKEN_VALUE(1608,"") TOKN_TOKEN_VALUE2(1608,"") TOKN_TOKEN_VALUE3(1608,"") TOKN_COMMENT(1608,"") TOKN_CREATE_TS(1608,"1170000000") TOKN_MODIFY_TS(1608,"1170000000")  
+insert TOKN_OBJ(1609) TOKN_TOKEN_NAMESPACE(1609, "data_type") TOKN_TOKEN_NAME(1609,"tiff image") TOKN_TOKEN_VALUE(1609,"image/tiff") TOKN_TOKEN_VALUE2(1609,"|.tif|.tiff|") TOKN_TOKEN_VALUE3(1609,"") TOKN_COMMENT(1609,"") TOKN_CREATE_TS(1609,"1170000000") TOKN_MODIFY_TS(1609,"1170000000")  
+insert TOKN_OBJ(1610) TOKN_TOKEN_NAMESPACE(1610, "data_type") TOKN_TOKEN_NAME(1610,"uuencoded tiff") TOKN_TOKEN_VALUE(1610,"text/text") TOKN_TOKEN_VALUE2(1610,"|.uu|") TOKN_TOKEN_VALUE3(1610,"") TOKN_COMMENT(1610,"") TOKN_CREATE_TS(1610,"1170000000") TOKN_MODIFY_TS(1610,"1170000000")  
+insert TOKN_OBJ(1611) TOKN_TOKEN_NAMESPACE(1611, "data_type") TOKN_TOKEN_NAME(1611,"gif image") TOKN_TOKEN_VALUE(1611,"image/gif") TOKN_TOKEN_VALUE2(1611,"|.gif|") TOKN_TOKEN_VALUE3(1611,"") TOKN_COMMENT(1611,"") TOKN_CREATE_TS(1611,"1170000000") TOKN_MODIFY_TS(1611,"1170000000")  
+insert TOKN_OBJ(1612) TOKN_TOKEN_NAMESPACE(1612, "data_type") TOKN_TOKEN_NAME(1612,"jpeg image") TOKN_TOKEN_VALUE(1612,"image/jpeg") TOKN_TOKEN_VALUE2(1612,"|.jpeg|.jpg|") TOKN_TOKEN_VALUE3(1612,"") TOKN_COMMENT(1612,"") TOKN_CREATE_TS(1612,"1170000000") TOKN_MODIFY_TS(1612,"1170000000")  
+insert TOKN_OBJ(1613) TOKN_TOKEN_NAMESPACE(1613, "data_type") TOKN_TOKEN_NAME(1613,"pbm image") TOKN_TOKEN_VALUE(1613,"image/pbm") TOKN_TOKEN_VALUE2(1613,"|.pbm|") TOKN_TOKEN_VALUE3(1613,"") TOKN_COMMENT(1613,"") TOKN_CREATE_TS(1613,"1170000000") TOKN_MODIFY_TS(1613,"1170000000")  
+insert TOKN_OBJ(1614) TOKN_TOKEN_NAMESPACE(1614, "data_type") TOKN_TOKEN_NAME(1614,"fig image") TOKN_TOKEN_VALUE(1614,"image/fig") TOKN_TOKEN_VALUE2(1614,"|.fig|") TOKN_TOKEN_VALUE3(1614,"") TOKN_COMMENT(1614,"") TOKN_CREATE_TS(1614,"1170000000") TOKN_MODIFY_TS(1614,"1170000000")  
+insert TOKN_OBJ(1615) TOKN_TOKEN_NAMESPACE(1615, "data_type") TOKN_TOKEN_NAME(1615,"FITS image") TOKN_TOKEN_VALUE(1615,"application/x-fits") TOKN_TOKEN_VALUE2(1615,"|.fits|.fit|") TOKN_TOKEN_VALUE3(1615,"") TOKN_COMMENT(1615,"") TOKN_CREATE_TS(1615,"1170000000") TOKN_MODIFY_TS(1615,"1170000000")  
+insert TOKN_OBJ(1616) TOKN_TOKEN_NAMESPACE(1616, "data_type") TOKN_TOKEN_NAME(1616,"DICOM image") TOKN_TOKEN_VALUE(1616,"application/dicom") TOKN_TOKEN_VALUE2(1616,"|.IMA|.ima|") TOKN_TOKEN_VALUE3(1616,"") TOKN_COMMENT(1616,"") TOKN_CREATE_TS(1616,"1170000000") TOKN_MODIFY_TS(1616,"1170000000")  
+insert TOKN_OBJ(1617) TOKN_TOKEN_NAMESPACE(1617, "data_type") TOKN_TOKEN_NAME(1617,"print-format") TOKN_TOKEN_VALUE(1617,"") TOKN_TOKEN_VALUE2(1617,"") TOKN_TOKEN_VALUE3(1617,"") TOKN_COMMENT(1617,"") TOKN_CREATE_TS(1617,"1170000000") TOKN_MODIFY_TS(1617,"1170000000")  
+insert TOKN_OBJ(1618) TOKN_TOKEN_NAMESPACE(1618, "data_type") TOKN_TOKEN_NAME(1618,"LaTeX format") TOKN_TOKEN_VALUE(1618,"text/text") TOKN_TOKEN_VALUE2(1618,"|.tex|") TOKN_TOKEN_VALUE3(1618,"") TOKN_COMMENT(1618,"") TOKN_CREATE_TS(1618,"1170000000") TOKN_MODIFY_TS(1618,"1170000000")  
+insert TOKN_OBJ(1619) TOKN_TOKEN_NAMESPACE(1619, "data_type") TOKN_TOKEN_NAME(1619,"Troff format") TOKN_TOKEN_VALUE(1619,"text/text") TOKN_TOKEN_VALUE2(1619,"|.trf|.trof|") TOKN_TOKEN_VALUE3(1619,"") TOKN_COMMENT(1619,"") TOKN_CREATE_TS(1619,"1170000000") TOKN_MODIFY_TS(1619,"1170000000")  
+insert TOKN_OBJ(1620) TOKN_TOKEN_NAMESPACE(1620, "data_type") TOKN_TOKEN_NAME(1620,"Postscript format") TOKN_TOKEN_VALUE(1620,"application/postscript") TOKN_TOKEN_VALUE2(1620,"|.ps|") TOKN_TOKEN_VALUE3(1620,"") TOKN_COMMENT(1620,"") TOKN_CREATE_TS(1620,"1170000000") TOKN_MODIFY_TS(1620,"1170000000")  
+insert TOKN_OBJ(1621) TOKN_TOKEN_NAMESPACE(1621, "data_type") TOKN_TOKEN_NAME(1621,"DVI format") TOKN_TOKEN_VALUE(1621,"application/dvi") TOKN_TOKEN_VALUE2(1621,"|.dvi|") TOKN_TOKEN_VALUE3(1621,"") TOKN_COMMENT(1621,"") TOKN_CREATE_TS(1621,"1170000000") TOKN_MODIFY_TS(1621,"1170000000")  
+insert TOKN_OBJ(1622) TOKN_TOKEN_NAMESPACE(1622, "data_type") TOKN_TOKEN_NAME(1622,"Word format") TOKN_TOKEN_VALUE(1622,"application/msword") TOKN_TOKEN_VALUE2(1622,"|.doc|.rtf|") TOKN_TOKEN_VALUE3(1622,"") TOKN_COMMENT(1622,"") TOKN_CREATE_TS(1622,"1170000000") TOKN_MODIFY_TS(1622,"1170000000")  
+insert TOKN_OBJ(1623) TOKN_TOKEN_NAMESPACE(1623, "data_type") TOKN_TOKEN_NAME(1623,"program code") TOKN_TOKEN_VALUE(1623,"text/text") TOKN_TOKEN_VALUE2(1623,"") TOKN_TOKEN_VALUE3(1623,"") TOKN_COMMENT(1623,"") TOKN_CREATE_TS(1623,"1170000000") TOKN_MODIFY_TS(1623,"1170000000")  
+insert TOKN_OBJ(1624) TOKN_TOKEN_NAMESPACE(1624, "data_type") TOKN_TOKEN_NAME(1624,"SQL script") TOKN_TOKEN_VALUE(1624,"text/text") TOKN_TOKEN_VALUE2(1624,"|.sql|") TOKN_TOKEN_VALUE3(1624,"") TOKN_COMMENT(1624,"") TOKN_CREATE_TS(1624,"1170000000") TOKN_MODIFY_TS(1624,"1170000000")  
+insert TOKN_OBJ(1625) TOKN_TOKEN_NAMESPACE(1625, "data_type") TOKN_TOKEN_NAME(1625,"C code") TOKN_TOKEN_VALUE(1625,"text/text") TOKN_TOKEN_VALUE2(1625,"|.c|") TOKN_TOKEN_VALUE3(1625,"") TOKN_COMMENT(1625,"") TOKN_CREATE_TS(1625,"1170000000") TOKN_MODIFY_TS(1625,"1170000000")  
+insert TOKN_OBJ(1626) TOKN_TOKEN_NAMESPACE(1626, "data_type") TOKN_TOKEN_NAME(1626,"C include file") TOKN_TOKEN_VALUE(1626,"text/text") TOKN_TOKEN_VALUE2(1626,"|.c|") TOKN_TOKEN_VALUE3(1626,"") TOKN_COMMENT(1626,"") TOKN_CREATE_TS(1626,"1170000000") TOKN_MODIFY_TS(1626,"1170000000")  
+insert TOKN_OBJ(1627) TOKN_TOKEN_NAMESPACE(1627, "data_type") TOKN_TOKEN_NAME(1627,"fortran code") TOKN_TOKEN_VALUE(1627,"text/text") TOKN_TOKEN_VALUE2(1627,"|.f|") TOKN_TOKEN_VALUE3(1627,"") TOKN_COMMENT(1627,"") TOKN_CREATE_TS(1627,"1170000000") TOKN_MODIFY_TS(1627,"1170000000")  
+insert TOKN_OBJ(1628) TOKN_TOKEN_NAMESPACE(1628, "data_type") TOKN_TOKEN_NAME(1628,"object code") TOKN_TOKEN_VALUE(1628,"") TOKN_TOKEN_VALUE2(1628,"|.o|") TOKN_TOKEN_VALUE3(1628,"") TOKN_COMMENT(1628,"") TOKN_CREATE_TS(1628,"1170000000") TOKN_MODIFY_TS(1628,"1170000000")  
+insert TOKN_OBJ(1629) TOKN_TOKEN_NAMESPACE(1629, "data_type") TOKN_TOKEN_NAME(1629,"library code") TOKN_TOKEN_VALUE(1629,"") TOKN_TOKEN_VALUE2(1629,"|.a|") TOKN_TOKEN_VALUE3(1629,"") TOKN_COMMENT(1629,"") TOKN_CREATE_TS(1629,"1170000000") TOKN_MODIFY_TS(1629,"1170000000")  
+insert TOKN_OBJ(1630) TOKN_TOKEN_NAMESPACE(1630, "data_type") TOKN_TOKEN_NAME(1630,"data file") TOKN_TOKEN_VALUE(1630,"") TOKN_TOKEN_VALUE2(1630,"|.dat|") TOKN_TOKEN_VALUE3(1630,"") TOKN_COMMENT(1630,"") TOKN_CREATE_TS(1630,"1170000000") TOKN_MODIFY_TS(1630,"1170000000")  
+insert TOKN_OBJ(1631) TOKN_TOKEN_NAMESPACE(1631, "data_type") TOKN_TOKEN_NAME(1631,"html") TOKN_TOKEN_VALUE(1631,"text/html") TOKN_TOKEN_VALUE2(1631,"|.htm|.html|") TOKN_TOKEN_VALUE3(1631,"") TOKN_COMMENT(1631,"") TOKN_CREATE_TS(1631,"1170000000") TOKN_MODIFY_TS(1631,"1170000000")  
+insert TOKN_OBJ(1632) TOKN_TOKEN_NAMESPACE(1632, "data_type") TOKN_TOKEN_NAME(1632,"SGML File") TOKN_TOKEN_VALUE(1632,"text/sgml") TOKN_TOKEN_VALUE2(1632,"|.sgm|.sgml|") TOKN_TOKEN_VALUE3(1632,"") TOKN_COMMENT(1632,"") TOKN_CREATE_TS(1632,"1170000000") TOKN_MODIFY_TS(1632,"1170000000")  
+insert TOKN_OBJ(1633) TOKN_TOKEN_NAMESPACE(1633, "data_type") TOKN_TOKEN_NAME(1633,"Wave Audio") TOKN_TOKEN_VALUE(1633,"audio/x-wav") TOKN_TOKEN_VALUE2(1633,"|.wav|") TOKN_TOKEN_VALUE3(1633,"") TOKN_COMMENT(1633,"") TOKN_CREATE_TS(1633,"1170000000") TOKN_MODIFY_TS(1633,"1170000000")  
+insert TOKN_OBJ(1634) TOKN_TOKEN_NAMESPACE(1634, "data_type") TOKN_TOKEN_NAME(1634,"tar file") TOKN_TOKEN_VALUE(1634,"text/text") TOKN_TOKEN_VALUE2(1634,"|.tar|") TOKN_TOKEN_VALUE3(1634,"") TOKN_COMMENT(1634,"") TOKN_CREATE_TS(1634,"1170000000") TOKN_MODIFY_TS(1634,"1170000000")  
+insert TOKN_OBJ(1635) TOKN_TOKEN_NAMESPACE(1635, "data_type") TOKN_TOKEN_NAME(1635,"compressed tar file") TOKN_TOKEN_VALUE(1635,"|.tz|.tgz|.zip|") TOKN_TOKEN_VALUE2(1635,"") TOKN_TOKEN_VALUE3(1635,"") TOKN_COMMENT(1635,"") TOKN_CREATE_TS(1635,"1170000000") TOKN_MODIFY_TS(1635,"1170000000")                                                                                             
+insert TOKN_OBJ(1636) TOKN_TOKEN_NAMESPACE(1636, "data_type") TOKN_TOKEN_NAME(1636,"java code") TOKN_TOKEN_VALUE(1636,"text/text") TOKN_TOKEN_VALUE2(1636,"|.jav|.java|") TOKN_TOKEN_VALUE3(1636,"") TOKN_COMMENT(1636,"") TOKN_CREATE_TS(1636,"1170000000") TOKN_MODIFY_TS(1636,"1170000000")  
+insert TOKN_OBJ(1637) TOKN_TOKEN_NAMESPACE(1637, "data_type") TOKN_TOKEN_NAME(1637,"perl script") TOKN_TOKEN_VALUE(1637,"text/text") TOKN_TOKEN_VALUE2(1637,"|.pl|") TOKN_TOKEN_VALUE3(1637,"") TOKN_COMMENT(1637,"") TOKN_CREATE_TS(1637,"1170000000") TOKN_MODIFY_TS(1637,"1170000000")                                                                                             
+insert TOKN_OBJ(1638) TOKN_TOKEN_NAMESPACE(1638, "data_type") TOKN_TOKEN_NAME(1638,"tcl script") TOKN_TOKEN_VALUE(1638,"text/text") TOKN_TOKEN_VALUE2(1638,"|.tcl|") TOKN_TOKEN_VALUE3(1638,"") TOKN_COMMENT(1638,"") TOKN_CREATE_TS(1638,"1170000000") TOKN_MODIFY_TS(1638,"1170000000")                                                                                             
+insert TOKN_OBJ(1639) TOKN_TOKEN_NAMESPACE(1639, "data_type") TOKN_TOKEN_NAME(1639,"link code") TOKN_TOKEN_VALUE(1639,"") TOKN_TOKEN_VALUE2(1639,"|.o|") TOKN_TOKEN_VALUE3(1639,"") TOKN_COMMENT(1639,"") TOKN_CREATE_TS(1639,"1170000000") TOKN_MODIFY_TS(1639,"1170000000")  
+insert TOKN_OBJ(1640) TOKN_TOKEN_NAMESPACE(1640, "data_type") TOKN_TOKEN_NAME(1640,"shadow object") TOKN_TOKEN_VALUE(1640,"") TOKN_TOKEN_VALUE2(1640,"") TOKN_TOKEN_VALUE3(1640,"") TOKN_COMMENT(1640,"") TOKN_CREATE_TS(1640,"1170000000") TOKN_MODIFY_TS(1640,"1170000000")  
+insert TOKN_OBJ(1641) TOKN_TOKEN_NAMESPACE(1641, "data_type") TOKN_TOKEN_NAME(1641,"database shadow object") TOKN_TOKEN_VALUE(1641,"") TOKN_TOKEN_VALUE2(1641,"") TOKN_TOKEN_VALUE3(1641,"") TOKN_COMMENT(1641,"") TOKN_CREATE_TS(1641,"1170000000") TOKN_MODIFY_TS(1641,"1170000000")  
+insert TOKN_OBJ(1642) TOKN_TOKEN_NAMESPACE(1642, "data_type") TOKN_TOKEN_NAME(1642,"directory shadow object") TOKN_TOKEN_VALUE(1642,"") TOKN_TOKEN_VALUE2(1642,"") TOKN_TOKEN_VALUE3(1642,"") TOKN_COMMENT(1642,"") TOKN_CREATE_TS(1642,"1170000000") TOKN_MODIFY_TS(1642,"1170000000")  
+insert TOKN_OBJ(1643) TOKN_TOKEN_NAMESPACE(1643, "data_type") TOKN_TOKEN_NAME(1643,"database") TOKN_TOKEN_VALUE(1643,"") TOKN_TOKEN_VALUE2(1643,"") TOKN_TOKEN_VALUE3(1643,"") TOKN_COMMENT(1643,"") TOKN_CREATE_TS(1643,"1170000000") TOKN_MODIFY_TS(1643,"1170000000")  
+insert TOKN_OBJ(1644) TOKN_TOKEN_NAMESPACE(1644, "data_type") TOKN_TOKEN_NAME(1644,"streams") TOKN_TOKEN_VALUE(1644,"") TOKN_TOKEN_VALUE2(1644,"") TOKN_TOKEN_VALUE3(1644,"") TOKN_COMMENT(1644,"") TOKN_CREATE_TS(1644,"1170000000") TOKN_MODIFY_TS(1644,"1170000000")  
+insert TOKN_OBJ(1645) TOKN_TOKEN_NAMESPACE(1645, "data_type") TOKN_TOKEN_NAME(1645,"audio streams") TOKN_TOKEN_VALUE(1645,"") TOKN_TOKEN_VALUE2(1645,"") TOKN_TOKEN_VALUE3(1645,"") TOKN_COMMENT(1645,"") TOKN_CREATE_TS(1645,"1170000000") TOKN_MODIFY_TS(1645,"1170000000")  
+insert TOKN_OBJ(1646) TOKN_TOKEN_NAMESPACE(1646, "data_type") TOKN_TOKEN_NAME(1646,"realAudio") TOKN_TOKEN_VALUE(1646,"audio/x-pn-realaudio") TOKN_TOKEN_VALUE2(1646,"|.ra|") TOKN_TOKEN_VALUE3(1646,"") TOKN_COMMENT(1646,"") TOKN_CREATE_TS(1646,"1170000000") TOKN_MODIFY_TS(1646,"1170000000")  
+insert TOKN_OBJ(1647) TOKN_TOKEN_NAMESPACE(1647, "data_type") TOKN_TOKEN_NAME(1647,"video streams") TOKN_TOKEN_VALUE(1647,"") TOKN_TOKEN_VALUE2(1647,"") TOKN_TOKEN_VALUE3(1647,"") TOKN_COMMENT(1647,"") TOKN_CREATE_TS(1647,"1170000000") TOKN_MODIFY_TS(1647,"1170000000")  
+insert TOKN_OBJ(1648) TOKN_TOKEN_NAMESPACE(1648, "data_type") TOKN_TOKEN_NAME(1648,"realVideo") TOKN_TOKEN_VALUE(1648,"audio/x-pn-realaudio") TOKN_TOKEN_VALUE2(1648,"|.rv|") TOKN_TOKEN_VALUE3(1648,"") TOKN_COMMENT(1648,"") TOKN_CREATE_TS(1648,"1170000000") TOKN_MODIFY_TS(1648,"1170000000")  
+insert TOKN_OBJ(1649) TOKN_TOKEN_NAMESPACE(1649, "data_type") TOKN_TOKEN_NAME(1649,"MPEG") TOKN_TOKEN_VALUE(1649,"video/mpeg") TOKN_TOKEN_VALUE2(1649,"|.mpeg|.mpg|") TOKN_TOKEN_VALUE3(1649,"") TOKN_COMMENT(1649,"") TOKN_CREATE_TS(1649,"1170000000") TOKN_MODIFY_TS(1649,"1170000000")  
+insert TOKN_OBJ(1650) TOKN_TOKEN_NAMESPACE(1650, "data_type") TOKN_TOKEN_NAME(1650,"AVI") TOKN_TOKEN_VALUE(1650,"video/msvideo") TOKN_TOKEN_VALUE2(1650,"|.avi|") TOKN_TOKEN_VALUE3(1650,"") TOKN_COMMENT(1650,"") TOKN_CREATE_TS(1650,"1170000000") TOKN_MODIFY_TS(1650,"1170000000")  
+insert TOKN_OBJ(1651) TOKN_TOKEN_NAMESPACE(1651, "data_type") TOKN_TOKEN_NAME(1651,"PNG-Portable Network Graphics") TOKN_TOKEN_VALUE(1651,"image/png") TOKN_TOKEN_VALUE2(1651,"|.png|") TOKN_TOKEN_VALUE3(1651,"") TOKN_COMMENT(1651,"") TOKN_CREATE_TS(1651,"1170000000") TOKN_MODIFY_TS(1651,"1170000000")  
+insert TOKN_OBJ(1652) TOKN_TOKEN_NAMESPACE(1652, "data_type") TOKN_TOKEN_NAME(1652,"MP3 - MPEG Audio") TOKN_TOKEN_VALUE(1652,"audio/x-mpeg") TOKN_TOKEN_VALUE2(1652,"|.mp3|.mpa|") TOKN_TOKEN_VALUE3(1652,"") TOKN_COMMENT(1652,"") TOKN_CREATE_TS(1652,"1170000000") TOKN_MODIFY_TS(1652,"1170000000")  
+insert TOKN_OBJ(1653) TOKN_TOKEN_NAMESPACE(1653, "data_type") TOKN_TOKEN_NAME(1653,"WMV-Windows Media Video") TOKN_TOKEN_VALUE(1653,"video/x-wmv") TOKN_TOKEN_VALUE2(1653,"|.wmv|") TOKN_TOKEN_VALUE3(1653,"") TOKN_COMMENT(1653,"") TOKN_CREATE_TS(1653,"1170000000") TOKN_MODIFY_TS(1653,"1170000000")  
+insert TOKN_OBJ(1654) TOKN_TOKEN_NAMESPACE(1654, "data_type") TOKN_TOKEN_NAME(1654,"BMP -Bit Map") TOKN_TOKEN_VALUE(1654,"image/bmp") TOKN_TOKEN_VALUE2(1654,"|.bmp|") TOKN_TOKEN_VALUE3(1654,"") TOKN_COMMENT(1654,"") TOKN_CREATE_TS(1654,"1170000000") TOKN_MODIFY_TS(1654,"1170000000")  
+insert TOKN_OBJ(1655) TOKN_TOKEN_NAMESPACE(1655, "data_type") TOKN_TOKEN_NAME(1655,"CSS-Cascading Style Sheet") TOKN_TOKEN_VALUE(1655,"") TOKN_TOKEN_VALUE2(1655,"") TOKN_TOKEN_VALUE3(1655,"") TOKN_COMMENT(1655,"") TOKN_CREATE_TS(1655,"1170000000") TOKN_MODIFY_TS(1655,"1170000000")  
+insert TOKN_OBJ(1656) TOKN_TOKEN_NAMESPACE(1656, "data_type") TOKN_TOKEN_NAME(1656,"xml") TOKN_TOKEN_VALUE(1656,"text/xml") TOKN_TOKEN_VALUE2(1656,"|.xml|") TOKN_TOKEN_VALUE3(1656,"") TOKN_COMMENT(1656,"") TOKN_CREATE_TS(1656,"1170000000") TOKN_MODIFY_TS(1656,"1170000000")  
+insert TOKN_OBJ(1657) TOKN_TOKEN_NAMESPACE(1657, "data_type") TOKN_TOKEN_NAME(1657,"Slide") TOKN_TOKEN_VALUE(1657,"") TOKN_TOKEN_VALUE2(1657,"") TOKN_TOKEN_VALUE3(1657,"") TOKN_COMMENT(1657,"") TOKN_CREATE_TS(1657,"1170000000") TOKN_MODIFY_TS(1657,"1170000000")  
+insert TOKN_OBJ(1658) TOKN_TOKEN_NAMESPACE(1658, "data_type") TOKN_TOKEN_NAME(1658,"Power Point Slide") TOKN_TOKEN_VALUE(1658,"application/vnd.ms-powerpoint") TOKN_TOKEN_VALUE2(1658,"|.ppt|") TOKN_TOKEN_VALUE3(1658,"") TOKN_COMMENT(1658,"") TOKN_CREATE_TS(1658,"1170000000") TOKN_MODIFY_TS(1658,"1170000000")  
+insert TOKN_OBJ(1659) TOKN_TOKEN_NAMESPACE(1659, "data_type") TOKN_TOKEN_NAME(1659,"Spread Sheet") TOKN_TOKEN_VALUE(1659,"") TOKN_TOKEN_VALUE2(1659,"") TOKN_TOKEN_VALUE3(1659,"") TOKN_COMMENT(1659,"") TOKN_CREATE_TS(1659,"1170000000") TOKN_MODIFY_TS(1659,"1170000000")  
+insert TOKN_OBJ(1660) TOKN_TOKEN_NAMESPACE(1660, "data_type") TOKN_TOKEN_NAME(1660,"Excel Spread Sheet") TOKN_TOKEN_VALUE(1660,"application/x-msexcel") TOKN_TOKEN_VALUE2(1660,"|.xls|") TOKN_TOKEN_VALUE3(1660,"") TOKN_COMMENT(1660,"") TOKN_CREATE_TS(1660,"1170000000") TOKN_MODIFY_TS(1660,"1170000000")  
+insert TOKN_OBJ(1661) TOKN_TOKEN_NAMESPACE(1661, "data_type") TOKN_TOKEN_NAME(1661,"Document") TOKN_TOKEN_VALUE(1661,"") TOKN_TOKEN_VALUE2(1661,"") TOKN_TOKEN_VALUE3(1661,"") TOKN_COMMENT(1661,"") TOKN_CREATE_TS(1661,"1170000000") TOKN_MODIFY_TS(1661,"1170000000")  
+insert TOKN_OBJ(1622) TOKN_TOKEN_NAMESPACE(1622, "data_type") TOKN_TOKEN_NAME(1622,"MSWord Document") TOKN_TOKEN_VALUE(1622,"application/msword") TOKN_TOKEN_VALUE2(1622,"|.doc|.rtf|") TOKN_TOKEN_VALUE3(1622,"") TOKN_COMMENT(1622,"") TOKN_CREATE_TS(1622,"1170000000") TOKN_MODIFY_TS(1622,"1170000000")  
+insert TOKN_OBJ(1663) TOKN_TOKEN_NAMESPACE(1663, "data_type") TOKN_TOKEN_NAME(1663,"PDF Document") TOKN_TOKEN_VALUE(1663,"application/pdf") TOKN_TOKEN_VALUE2(1663,"|.pdf|") TOKN_TOKEN_VALUE3(1663,"") TOKN_COMMENT(1663,"") TOKN_CREATE_TS(1663,"1170000000") TOKN_MODIFY_TS(1663,"1170000000")  
+insert TOKN_OBJ(1664) TOKN_TOKEN_NAMESPACE(1664, "data_type") TOKN_TOKEN_NAME(1664,"Executable") TOKN_TOKEN_VALUE(1664,"") TOKN_TOKEN_VALUE2(1664,"") TOKN_TOKEN_VALUE3(1664,"") TOKN_COMMENT(1664,"") TOKN_CREATE_TS(1664,"1170000000") TOKN_MODIFY_TS(1664,"1170000000")  
+insert TOKN_OBJ(1665) TOKN_TOKEN_NAMESPACE(1665, "data_type") TOKN_TOKEN_NAME(1665,"NT Executable") TOKN_TOKEN_VALUE(1665,"") TOKN_TOKEN_VALUE2(1665,"") TOKN_TOKEN_VALUE3(1665,"") TOKN_COMMENT(1665,"") TOKN_CREATE_TS(1665,"1170000000") TOKN_MODIFY_TS(1665,"1170000000")  
+insert TOKN_OBJ(1666) TOKN_TOKEN_NAMESPACE(1666, "data_type") TOKN_TOKEN_NAME(1666,"Solaris Executable") TOKN_TOKEN_VALUE(1666,"") TOKN_TOKEN_VALUE2(1666,"") TOKN_TOKEN_VALUE3(1666,"") TOKN_COMMENT(1666,"") TOKN_CREATE_TS(1666,"1170000000") TOKN_MODIFY_TS(1666,"1170000000")  
+insert TOKN_OBJ(1667) TOKN_TOKEN_NAMESPACE(1667, "data_type") TOKN_TOKEN_NAME(1667,"AIX Executable") TOKN_TOKEN_VALUE(1667,"") TOKN_TOKEN_VALUE2(1667,"") TOKN_TOKEN_VALUE3(1667,"") TOKN_COMMENT(1667,"") TOKN_CREATE_TS(1667,"1170000000") TOKN_MODIFY_TS(1667,"1170000000")  
+insert TOKN_OBJ(1668) TOKN_TOKEN_NAMESPACE(1668, "data_type") TOKN_TOKEN_NAME(1668,"Mac Executable") TOKN_TOKEN_VALUE(1668,"") TOKN_TOKEN_VALUE2(1668,"") TOKN_TOKEN_VALUE3(1668,"") TOKN_COMMENT(1668,"") TOKN_CREATE_TS(1668,"1170000000") TOKN_MODIFY_TS(1668,"1170000000")  
+insert TOKN_OBJ(1669) TOKN_TOKEN_NAMESPACE(1669, "data_type") TOKN_TOKEN_NAME(1669,"Mac OSX Executable") TOKN_TOKEN_VALUE(1669,"") TOKN_TOKEN_VALUE2(1669,"") TOKN_TOKEN_VALUE3(1669,"") TOKN_COMMENT(1669,"") TOKN_CREATE_TS(1669,"1170000000") TOKN_MODIFY_TS(1669,"1170000000")  
+insert TOKN_OBJ(1670) TOKN_TOKEN_NAMESPACE(1670, "data_type") TOKN_TOKEN_NAME(1670,"Cray Executable") TOKN_TOKEN_VALUE(1670,"") TOKN_TOKEN_VALUE2(1670,"") TOKN_TOKEN_VALUE3(1670,"") TOKN_COMMENT(1670,"") TOKN_CREATE_TS(1670,"1170000000") TOKN_MODIFY_TS(1670,"1170000000")  
+insert TOKN_OBJ(1671) TOKN_TOKEN_NAMESPACE(1671, "data_type") TOKN_TOKEN_NAME(1671,"SGI Executable") TOKN_TOKEN_VALUE(1671,"") TOKN_TOKEN_VALUE2(1671,"") TOKN_TOKEN_VALUE3(1671,"") TOKN_COMMENT(1671,"") TOKN_CREATE_TS(1671,"1170000000") TOKN_MODIFY_TS(1671,"1170000000")  
+insert TOKN_OBJ(1672) TOKN_TOKEN_NAMESPACE(1672, "data_type") TOKN_TOKEN_NAME(1672,"DLL") TOKN_TOKEN_VALUE(1672,"") TOKN_TOKEN_VALUE2(1672,"") TOKN_TOKEN_VALUE3(1672,"") TOKN_COMMENT(1672,"") TOKN_CREATE_TS(1672,"1170000000") TOKN_MODIFY_TS(1672,"1170000000")  
+insert TOKN_OBJ(1673) TOKN_TOKEN_NAMESPACE(1673, "data_type") TOKN_TOKEN_NAME(1673,"NT DLL") TOKN_TOKEN_VALUE(1673,"") TOKN_TOKEN_VALUE2(1673,"") TOKN_TOKEN_VALUE3(1673,"") TOKN_COMMENT(1673,"") TOKN_CREATE_TS(1673,"1170000000") TOKN_MODIFY_TS(1673,"1170000000")  
+insert TOKN_OBJ(1674) TOKN_TOKEN_NAMESPACE(1674, "data_type") TOKN_TOKEN_NAME(1674,"Solaris DLL") TOKN_TOKEN_VALUE(1674,"") TOKN_TOKEN_VALUE2(1674,"") TOKN_TOKEN_VALUE3(1674,"") TOKN_COMMENT(1674,"") TOKN_CREATE_TS(1674,"1170000000") TOKN_MODIFY_TS(1674,"1170000000")  
+insert TOKN_OBJ(1675) TOKN_TOKEN_NAMESPACE(1675, "data_type") TOKN_TOKEN_NAME(1675,"AIX DLL") TOKN_TOKEN_VALUE(1675,"") TOKN_TOKEN_VALUE2(1675,"") TOKN_TOKEN_VALUE3(1675,"") TOKN_COMMENT(1675,"") TOKN_CREATE_TS(1675,"1170000000") TOKN_MODIFY_TS(1675,"1170000000")  
+insert TOKN_OBJ(1676) TOKN_TOKEN_NAMESPACE(1676, "data_type") TOKN_TOKEN_NAME(1676,"Mac DLL") TOKN_TOKEN_VALUE(1676,"") TOKN_TOKEN_VALUE2(1676,"") TOKN_TOKEN_VALUE3(1676,"") TOKN_COMMENT(1676,"") TOKN_CREATE_TS(1676,"1170000000") TOKN_MODIFY_TS(1676,"1170000000")  
+insert TOKN_OBJ(1677) TOKN_TOKEN_NAMESPACE(1677, "data_type") TOKN_TOKEN_NAME(1677,"Cray DLL") TOKN_TOKEN_VALUE(1677,"") TOKN_TOKEN_VALUE2(1677,"") TOKN_TOKEN_VALUE3(1677,"") TOKN_COMMENT(1677,"") TOKN_CREATE_TS(1677,"1170000000") TOKN_MODIFY_TS(1677,"1170000000")  
+insert TOKN_OBJ(1678) TOKN_TOKEN_NAMESPACE(1678, "data_type") TOKN_TOKEN_NAME(1678,"SGI DLL") TOKN_TOKEN_VALUE(1678,"") TOKN_TOKEN_VALUE2(1678,"") TOKN_TOKEN_VALUE3(1678,"") TOKN_COMMENT(1678,"") TOKN_CREATE_TS(1678,"1170000000") TOKN_MODIFY_TS(1678,"1170000000")  
+insert TOKN_OBJ(1679) TOKN_TOKEN_NAMESPACE(1679, "data_type") TOKN_TOKEN_NAME(1679,"Movie") TOKN_TOKEN_VALUE(1679,"") TOKN_TOKEN_VALUE2(1679,"") TOKN_TOKEN_VALUE3(1679,"") TOKN_COMMENT(1679,"") TOKN_CREATE_TS(1679,"1170000000") TOKN_MODIFY_TS(1679,"1170000000")  
+insert TOKN_OBJ(1680) TOKN_TOKEN_NAMESPACE(1680, "data_type") TOKN_TOKEN_NAME(1680,"MPEG Movie") TOKN_TOKEN_VALUE(1680,"video/mpeg") TOKN_TOKEN_VALUE2(1680,"|.mpeg|.mpg|") TOKN_TOKEN_VALUE3(1680,"") TOKN_COMMENT(1680,"") TOKN_CREATE_TS(1680,"1170000000") TOKN_MODIFY_TS(1680,"1170000000")  
+insert TOKN_OBJ(1681) TOKN_TOKEN_NAMESPACE(1681, "data_type") TOKN_TOKEN_NAME(1681,"MPEG 3 Movie") TOKN_TOKEN_VALUE(1681,"video/mpeg") TOKN_TOKEN_VALUE2(1681,"|.mpeg|.mpg|") TOKN_TOKEN_VALUE3(1681,"") TOKN_COMMENT(1681,"") TOKN_CREATE_TS(1681,"1170000000") TOKN_MODIFY_TS(1681,"1170000000")  
+insert TOKN_OBJ(1682) TOKN_TOKEN_NAMESPACE(1682, "data_type") TOKN_TOKEN_NAME(1682,"Quicktime Movie") TOKN_TOKEN_VALUE(1682,"video/quicktime") TOKN_TOKEN_VALUE2(1682,"|.mov|") TOKN_TOKEN_VALUE3(1682,"") TOKN_COMMENT(1682,"") TOKN_CREATE_TS(1682,"1170000000") TOKN_MODIFY_TS(1682,"1170000000")  
+insert TOKN_OBJ(1683) TOKN_TOKEN_NAMESPACE(1683, "data_type") TOKN_TOKEN_NAME(1683,"compressed file") TOKN_TOKEN_VALUE(1683,"") TOKN_TOKEN_VALUE2(1683,"") TOKN_TOKEN_VALUE3(1683,"") TOKN_COMMENT(1683,"") TOKN_CREATE_TS(1683,"1170000000") TOKN_MODIFY_TS(1683,"1170000000")  
+insert TOKN_OBJ(1684) TOKN_TOKEN_NAMESPACE(1684, "data_type") TOKN_TOKEN_NAME(1684,"compressed mmCIF file") TOKN_TOKEN_VALUE(1684,"") TOKN_TOKEN_VALUE2(1684,"|.cif|.mmcif|") TOKN_TOKEN_VALUE3(1684,"") TOKN_COMMENT(1684,"") TOKN_CREATE_TS(1684,"1170000000") TOKN_MODIFY_TS(1684,"1170000000")  
+insert TOKN_OBJ(1685) TOKN_TOKEN_NAMESPACE(1685, "data_type") TOKN_TOKEN_NAME(1685,"compressed PDB file") TOKN_TOKEN_VALUE(1685,"") TOKN_TOKEN_VALUE2(1685,"|.pdb|") TOKN_TOKEN_VALUE3(1685,"") TOKN_COMMENT(1685,"") TOKN_CREATE_TS(1685,"1170000000") TOKN_MODIFY_TS(1685,"1170000000")  
+insert TOKN_OBJ(1686) TOKN_TOKEN_NAMESPACE(1686, "data_type") TOKN_TOKEN_NAME(1686,"binary file") TOKN_TOKEN_VALUE(1686,"") TOKN_TOKEN_VALUE2(1686,"") TOKN_TOKEN_VALUE3(1686,"") TOKN_COMMENT(1686,"") TOKN_CREATE_TS(1686,"1170000000") TOKN_MODIFY_TS(1686,"1170000000")  
+insert TOKN_OBJ(1687) TOKN_TOKEN_NAMESPACE(1687, "data_type") TOKN_TOKEN_NAME(1687,"URL") TOKN_TOKEN_VALUE(1687,"text/html") TOKN_TOKEN_VALUE2(1687,"|.htm|.html|") TOKN_TOKEN_VALUE3(1687,"") TOKN_COMMENT(1687,"") TOKN_CREATE_TS(1687,"1170000000") TOKN_MODIFY_TS(1687,"1170000000")  
+insert TOKN_OBJ(1688) TOKN_TOKEN_NAMESPACE(1688, "data_type") TOKN_TOKEN_NAME(1688,"NSF Award Abstracts") TOKN_TOKEN_VALUE(1688,"text/text") TOKN_TOKEN_VALUE2(1688,"") TOKN_TOKEN_VALUE3(1688,"") TOKN_COMMENT(1688,"") TOKN_CREATE_TS(1688,"1170000000") TOKN_MODIFY_TS(1688,"1170000000")  
+insert TOKN_OBJ(1689) TOKN_TOKEN_NAMESPACE(1689, "data_type") TOKN_TOKEN_NAME(1689,"email") TOKN_TOKEN_VALUE(1689,"text/text") TOKN_TOKEN_VALUE2(1689,"") TOKN_TOKEN_VALUE3(1689,"") TOKN_COMMENT(1689,"") TOKN_CREATE_TS(1689,"1170000000") TOKN_MODIFY_TS(1689,"1170000000")  
+insert TOKN_OBJ(1690) TOKN_TOKEN_NAMESPACE(1690, "data_type") TOKN_TOKEN_NAME(1690,"orb data") TOKN_TOKEN_VALUE(1690,"") TOKN_TOKEN_VALUE2(1690,"") TOKN_TOKEN_VALUE3(1690,"") TOKN_COMMENT(1690,"") TOKN_CREATE_TS(1690,"1170000000") TOKN_MODIFY_TS(1690,"1170000000")  
+insert TOKN_OBJ(1691) TOKN_TOKEN_NAMESPACE(1691, "data_type") TOKN_TOKEN_NAME(1691,"datascope data") TOKN_TOKEN_VALUE(1691,"") TOKN_TOKEN_VALUE2(1691,"") TOKN_TOKEN_VALUE3(1691,"") TOKN_COMMENT(1691,"") TOKN_CREATE_TS(1691,"1170000000") TOKN_MODIFY_TS(1691,"1170000000")  
+insert TOKN_OBJ(1692) TOKN_TOKEN_NAMESPACE(1692, "data_type") TOKN_TOKEN_NAME(1692,"DICOM header") TOKN_TOKEN_VALUE(1692,"") TOKN_TOKEN_VALUE2(1692,"") TOKN_TOKEN_VALUE3(1692,"") TOKN_COMMENT(1692,"") TOKN_CREATE_TS(1692,"1170000000") TOKN_MODIFY_TS(1692,"1170000000")  
+insert TOKN_OBJ(1693) TOKN_TOKEN_NAMESPACE(1693, "data_type") TOKN_TOKEN_NAME(1693,"XML Schema") TOKN_TOKEN_VALUE(1693,"text/xml") TOKN_TOKEN_VALUE2(1693,"|.xsd|") TOKN_TOKEN_VALUE3(1693,"") TOKN_COMMENT(1693,"") TOKN_CREATE_TS(1693,"1170000000") TOKN_MODIFY_TS(1693,"1170000000")  
+insert TOKN_OBJ(1694) TOKN_TOKEN_NAMESPACE(1694, "data_type") TOKN_TOKEN_NAME(1694,"tar bundle") TOKN_TOKEN_VALUE(1694,"") TOKN_TOKEN_VALUE2(1694,"") TOKN_TOKEN_VALUE3(1694,"") TOKN_COMMENT(1694,"") TOKN_CREATE_TS(1694,"1250100000") TOKN_MODIFY_TS(1694,"1250100000")  
+insert TOKN_OBJ(1695) TOKN_TOKEN_NAMESPACE(1695, "data_type") TOKN_TOKEN_NAME(1695,"database object") TOKN_TOKEN_VALUE(1695,"text") TOKN_TOKEN_VALUE2(1695,"") TOKN_TOKEN_VALUE3(1695,"") TOKN_COMMENT(1695,"") TOKN_CREATE_TS(1695,"1288631300") TOKN_MODIFY_TS(1695,"1288631300")  
+insert TOKN_OBJ(1696) TOKN_TOKEN_NAMESPACE(1696, "data_type") TOKN_TOKEN_NAME(1696,"mso") TOKN_TOKEN_VALUE(1696,"") TOKN_TOKEN_VALUE2(1696,"") TOKN_TOKEN_VALUE3(1696,"") TOKN_COMMENT(1696,"") TOKN_CREATE_TS(1696,"1312910000") TOKN_MODIFY_TS(1696,"1312910000")  
+insert TOKN_OBJ(1697) TOKN_TOKEN_NAMESPACE(1697, "data_type") TOKN_TOKEN_NAME(1697,"gzipTar") TOKN_TOKEN_VALUE(1697,"") TOKN_TOKEN_VALUE2(1697,"|.tar.gz|") TOKN_TOKEN_VALUE3(1697,"") TOKN_COMMENT(1697,"") TOKN_CREATE_TS(1697,"1324000000") TOKN_MODIFY_TS(1697,"1324000000")  
+insert TOKN_OBJ(1698) TOKN_TOKEN_NAMESPACE(1698, "data_type") TOKN_TOKEN_NAME(1698,"bzip2Tar") TOKN_TOKEN_VALUE(1698,"") TOKN_TOKEN_VALUE2(1698,"|.tar.bz2|") TOKN_TOKEN_VALUE3(1698,"") TOKN_COMMENT(1698,"") TOKN_CREATE_TS(1698,"1324000000") TOKN_MODIFY_TS(1698,"1324000000")  
+insert TOKN_OBJ(1699) TOKN_TOKEN_NAMESPACE(1699, "data_type") TOKN_TOKEN_NAME(1699,"gzipFile") TOKN_TOKEN_VALUE(1699,"") TOKN_TOKEN_VALUE2(1699,"|.gz|") TOKN_TOKEN_VALUE3(1699,"") TOKN_COMMENT(1699,"") TOKN_CREATE_TS(1699,"1324000000") TOKN_MODIFY_TS(1699,"1324000000")  
+insert TOKN_OBJ(1700) TOKN_TOKEN_NAMESPACE(1700, "data_type") TOKN_TOKEN_NAME(1700,"bzip2File") TOKN_TOKEN_VALUE(1700,"") TOKN_TOKEN_VALUE2(1700,"|.bz2|") TOKN_TOKEN_VALUE3(1700,"") TOKN_COMMENT(1700,"") TOKN_CREATE_TS(1700,"1324000000") TOKN_MODIFY_TS(1700,"1324000000")  
+insert TOKN_OBJ(1701) TOKN_TOKEN_NAMESPACE(1701, "data_type") TOKN_TOKEN_NAME(1701,"zipFile") TOKN_TOKEN_VALUE(1701,"") TOKN_TOKEN_VALUE2(1701,"|.zip|") TOKN_TOKEN_VALUE3(1701,"") TOKN_COMMENT(1701,"") TOKN_CREATE_TS(1701,"1324000000") TOKN_MODIFY_TS(1701,"1324000000")  
+insert TOKN_OBJ(1702) TOKN_TOKEN_NAMESPACE(1702, "data_type") TOKN_TOKEN_NAME(1702,"gzipTar bundle") TOKN_TOKEN_VALUE(1702,"") TOKN_TOKEN_VALUE2(1702,"") TOKN_TOKEN_VALUE3(1702,"") TOKN_COMMENT(1702,"") TOKN_CREATE_TS(1702,"1324000000") TOKN_MODIFY_TS(1702,"1324000000")  
+insert TOKN_OBJ(1703) TOKN_TOKEN_NAMESPACE(1703, "data_type") TOKN_TOKEN_NAME(1703,"bzip2Tar bundle") TOKN_TOKEN_VALUE(1703,"") TOKN_TOKEN_VALUE2(1703,"") TOKN_TOKEN_VALUE3(1703,"") TOKN_COMMENT(1703,"") TOKN_CREATE_TS(1703,"1324000000") TOKN_MODIFY_TS(1703,"1324000000")  
+insert TOKN_OBJ(1704) TOKN_TOKEN_NAMESPACE(1704, "data_type") TOKN_TOKEN_NAME(1704,"zipFile bundle") TOKN_TOKEN_VALUE(1704,"") TOKN_TOKEN_VALUE2(1704,"") TOKN_TOKEN_VALUE3(1704,"") TOKN_COMMENT(1704,"") TOKN_CREATE_TS(1704,"1324000000") TOKN_MODIFY_TS(1704,"1324000000")  
+insert TOKN_OBJ(1705) TOKN_TOKEN_NAMESPACE(1705, "data_type") TOKN_TOKEN_NAME(1705,"msso file") TOKN_TOKEN_VALUE(1705,"") TOKN_TOKEN_VALUE2(1705,"") TOKN_TOKEN_VALUE3(1705,"") TOKN_COMMENT(1705,"") TOKN_CREATE_TS(1705,"1324000000") TOKN_MODIFY_TS(1705,"1324000000")  
+
+
+insert TOKN_OBJ(1800) TOKN_TOKEN_NAMESPACE(1800, "action_type") TOKN_TOKEN_NAME(1800,"generic") TOKN_TOKEN_VALUE(1800,"") TOKN_TOKEN_VALUE2(1800,"") TOKN_TOKEN_VALUE3(1800,"") TOKN_COMMENT(1800,"") TOKN_CREATE_TS(1800,"1170000000") TOKN_MODIFY_TS(1800,"1170000000")  
 
 
 
-insert into R_SPECIFIC_QUERY (alias, sqlStr, create_ts) values ('ls', 'select alias, sqlStr from R_SPECIFIC_QUERY', '01292940000');
-insert into R_SPECIFIC_QUERY (alias, sqlStr, create_ts) values ('lsl', 'select alias, sqlStr from R_SPECIFIC_QUERY where sqlStr like ?', '01292940000');
-insert into R_SPECIFIC_QUERY (alias, sqlStr, create_ts) values ('ShowCollAcls', 'select distinct R_USER_MAIN.user_name, R_USER_MAIN.zone_name, R_TOKN_MAIN.token_name, R_USER_MAIN.user_type_name from R_USER_MAIN, R_TOKN_MAIN, R_OBJT_ACCESS, R_COLL_MAIN where R_OBJT_ACCESS.object_id = R_COLL_MAIN.coll_id AND R_COLL_MAIN.coll_name = ? AND R_TOKN_MAIN.token_namespace = ''access_type'' AND R_USER_MAIN.user_id = R_OBJT_ACCESS.user_id AND R_OBJT_ACCESS.access_type_id = R_TOKN_MAIN.token_id', '01342019000');
+// insert into R_SPECIFIC_QUERY (alias, sqlStr, create_ts) values ("ls", "select alias, sqlStr from R_SPECIFIC_QUERY", "01292940000");
+// insert into R_SPECIFIC_QUERY (alias, sqlStr, create_ts) values ("lsl", "select alias, sqlStr from R_SPECIFIC_QUERY where sqlStr like ?", "01292940000");
+// insert into R_SPECIFIC_QUERY (alias, sqlStr, create_ts) values ("ShowCollAcls", "select distinct R_USER_MAIN.user_name, R_USER_MAIN.zone_name, R_TOKN_MAIN.token_name, R_USER_MAIN.user_type_name from R_USER_MAIN, R_TOKN_MAIN, R_OBJT_ACCESS, R_COLL_MAIN where R_OBJT_ACCESS.object_id = R_COLL_MAIN.coll_id AND R_COLL_MAIN.coll_name = ? AND R_TOKN_MAIN.token_namespace = ""access_type"" AND R_USER_MAIN.user_id = R_OBJT_ACCESS.user_id AND R_OBJT_ACCESS.access_type_id = R_TOKN_MAIN.token_id", "01342019000");
 

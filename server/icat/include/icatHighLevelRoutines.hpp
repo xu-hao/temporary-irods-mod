@@ -27,7 +27,7 @@ using leaf_bundle_t = irods::resource_manager::leaf_bundle_t;
 
 #include "irods_error.hpp"
 
-// extern icatSessionStruct icss;
+extern icatSessionStruct icss;
 
 int chlOpen();
 int chlClose();
@@ -219,7 +219,7 @@ int chlCheckAndGetObjectID(
     char*,     // name
     char* );   // access
 
-int chlGetRcs( void** );
+int chlGetRcs( icatSessionStruct** );
 
 int chlGetReplListForLeafBundles(
     rodsLong_t                  _count,

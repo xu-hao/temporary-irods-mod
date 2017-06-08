@@ -40,8 +40,6 @@
 
 int
 rsDataObjUnlink( rsComm_t *rsComm, dataObjInp_t *dataObjUnlinkInp ) {
-  printf(
-     "******************************rsDataObjUnlink 0");
     int status;
     ruleExecInfo_t rei;
     int trashPolicy;
@@ -87,13 +85,7 @@ rsDataObjUnlink( rsComm_t *rsComm, dataObjInp_t *dataObjUnlinkInp ) {
         // =-=-=-=-=-=-=-
         // we resolved the redirect and have a host, set the hier str for subsequent
         // api calls, etc.
-        const char *hierstr = hier.c_str();
-        rodsLog(LOG_ERROR,
-           "******************************rsDataObjUnlink 1");
-printf(
-   "******************************rsDataObjUnlink 1");
-        addKeyVal( &dataObjUnlinkInp->condInput, RESC_HIER_STR_KW, hierstr );
-        printf("******************************rsDataObjUnlink 2\n");
+        addKeyVal( &dataObjUnlinkInp->condInput, RESC_HIER_STR_KW, hier.c_str() );
     } // if keyword
 
     if ( getValByKey(
@@ -106,12 +98,10 @@ printf(
         rmTrashFlag = 1;
     }
 
-    printf("******************************rsDataObjUnlink 3\n");
     dataObjUnlinkInp->openFlags = O_WRONLY;  /* set the permission checking */
     status = getDataObjInfoIncSpecColl( rsComm, dataObjUnlinkInp,
                                     &dataObjInfoHead );
 
-                                    printf("******************************rsDataObjUnlink 4\n");
     if ( status < 0 ) {
         char* sys_error = NULL;
         const char* rods_error = rodsErrorName( status, &sys_error );
@@ -125,9 +115,8 @@ printf(
         return status;
     }
 
-    printf("******************************rsDataObjUnlink 5\n");
+    if ( rmTrashFlag == 1 ) {
         char *tmpAge;
-        if ( rmTrashFlag == 1 ) {
         int ageLimit;
         if ( ( tmpAge = getValByKey( &dataObjUnlinkInp->condInput, AGE_KW ) )
                 != NULL ) {
@@ -140,29 +129,22 @@ printf(
         }
     }
 
-    printf("******************************rsDataObjUnlink 6\n");
     if ( dataObjUnlinkInp->oprType == UNREG_OPR ||
             getValByKey( &dataObjUnlinkInp->condInput, FORCE_FLAG_KW ) != NULL ||
             getValByKey( &dataObjUnlinkInp->condInput, REPL_NUM_KW ) != NULL ||
             getValByKey( &dataObjUnlinkInp->condInput, EMPTY_BUNDLE_ONLY_KW ) != NULL ||
             dataObjInfoHead->specColl != NULL || rmTrashFlag == 1 ) {
-              printf("******************************rsDataObjUnlink 6.1\n");
         status = _rsDataObjUnlink( rsComm, dataObjUnlinkInp, &dataObjInfoHead );
-        printf("******************************rsDataObjUnlink 6.2\n");
     }
     else {
-      printf("******************************rsDataObjUnlink 6.3\n");
         initReiWithDataObjInp( &rei, rsComm, dataObjUnlinkInp );
         status = applyRule( "acTrashPolicy", NULL, &rei, NO_SAVE_REI );
         trashPolicy = rei.status;
 
         if ( trashPolicy != NO_TRASH_CAN ) {
-          printf("******************************rsDataObjUnlink 6.4\n");
             status = rsMvDataObjToTrash( rsComm, dataObjUnlinkInp,
                                          &dataObjInfoHead );
-                                         printf("******************************rsDataObjUnlink 6.5\n");
             freeAllDataObjInfo( dataObjInfoHead );
-            printf("******************************rsDataObjUnlink 6.6\n");
             return status;
         }
         else {
@@ -171,7 +153,6 @@ printf(
         }
     }
 
-    printf("******************************rsDataObjUnlink 7\n");
     initReiWithDataObjInp( &rei, rsComm, dataObjUnlinkInp );
     rei.doi = dataObjInfoHead;
     rei.status = status;
@@ -191,7 +172,6 @@ printf(
 
     /* dataObjInfoHead may be outdated */
     freeAllDataObjInfo( dataObjInfoHead );
-    printf("******************************rsDataObjUnlink 8\n");
 
     return status;
 }
@@ -199,8 +179,6 @@ printf(
 int
 _rsDataObjUnlink( rsComm_t *rsComm, dataObjInp_t *dataObjUnlinkInp,
                   dataObjInfo_t **dataObjInfoHead ) {
-    rodsLog( LOG_ERROR,
-             "******************************_rsDataObjUnlink" );
     int status;
     int retVal = 0;
     dataObjInfo_t *tmpDataObjInfo, *myDataObjInfoHead;
@@ -528,22 +506,18 @@ rsMvDataObjToTrash( rsComm_t *rsComm, dataObjInp_t *dataObjInp,
     int status;
     char trashPath[MAX_NAME_LEN];
     dataObjCopyInp_t dataObjRenameInp;
-    printf("******************************rsMvDataObjToTrash 0\n");
 
     if ( strstr( ( *dataObjInfoHead )->dataType, BUNDLE_STR ) != NULL ) { // JMC - backport 4658
         return SYS_CANT_MV_BUNDLE_DATA_TO_TRASH;
     }
-    printf("******************************rsMvDataObjToTrash 1\n");
 
     if ( getValByKey( &dataObjInp->condInput, DATA_ACCESS_KW ) == NULL ) {
         addKeyVal( &dataObjInp->condInput, DATA_ACCESS_KW,
                    ACCESS_DELETE_OBJECT );
     }
-    printf("******************************rsMvDataObjToTrash 2\n");
 
     status = getDataObjInfo( rsComm, dataObjInp, dataObjInfoHead,
                              ACCESS_DELETE_OBJECT, 0 );
-                             printf("******************************rsMvDataObjToTrash 3\n");
     if ( status < 0 ) {
         rodsLog( LOG_NOTICE,
                  "rsMvDataObjToTrash: getDataObjInfo error for %s. status = %d",
@@ -551,36 +525,29 @@ rsMvDataObjToTrash( rsComm_t *rsComm, dataObjInp_t *dataObjInp,
         return status;
     }
 
-    printf("******************************rsMvDataObjToTrash 4\n");
     status = chkPreProcDeleteRule( rsComm, dataObjInp, *dataObjInfoHead );
     if ( status < 0 ) {
         return status;
     }
 
-    printf("******************************rsMvDataObjToTrash 5\n");
 
     status = rsMkTrashPath( rsComm, dataObjInp->objPath, trashPath );
-    printf("******************************rsMvDataObjToTrash 6\n");
 
     if ( status < 0 ) {
         return status;
     }
-    printf("******************************rsMvDataObjToTrash 7\n");
 
     memset( &dataObjRenameInp, 0, sizeof( dataObjRenameInp ) );
 
-    printf("******************************rsMvDataObjToTrash 8\n");
     dataObjRenameInp.srcDataObjInp.oprType =
         dataObjRenameInp.destDataObjInp.oprType = RENAME_DATA_OBJ;
 
     rstrcpy( dataObjRenameInp.destDataObjInp.objPath, trashPath, MAX_NAME_LEN );
     rstrcpy( dataObjRenameInp.srcDataObjInp.objPath, dataObjInp->objPath,
              MAX_NAME_LEN );
-             printf("******************************rsMvDataObjToTrash 9\n");
 
     status = rsDataObjRename( rsComm, &dataObjRenameInp );
 
-    printf("******************************rsMvDataObjToTrash 10\n");
     while ( status == CAT_NAME_EXISTS_AS_DATAOBJ ||
             status == CAT_NAME_EXISTS_AS_COLLECTION ||
             status == SYS_PHY_PATH_INUSE ||
@@ -588,17 +555,12 @@ rsMvDataObjToTrash( rsComm_t *rsComm, dataObjInp_t *dataObjInp,
         appendRandomToPath( dataObjRenameInp.destDataObjInp.objPath );
         status = rsDataObjRename( rsComm, &dataObjRenameInp );
     }
-    printf("******************************rsMvDataObjToTrash 11, %d\n", status);
     if ( status < 0 ) {
         rodsLog( LOG_ERROR,
                  "rsMvDataObjToTrash: rcDataObjRename error for %s, status = %d",
                  dataObjRenameInp.destDataObjInp.objPath, status );
         return status;
     }
-    printf("******************************rsMvDataObjToTrash 12\n");
-    printf("******************************rsMvDataObjToTrash 13\n");
-    printf("******************************rsMvDataObjToTrash 14\n");
-
     return status;
 }
 

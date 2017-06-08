@@ -47,18 +47,15 @@ rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
     dataObjInfo_t *destDataObjInfo = NULL;
     specCollCache_t *specCollCache = NULL;
     int srcType, destType;
-    printf("******************************rsDataObjRename 0\n");
 
     srcDataObjInp = &dataObjRenameInp->srcDataObjInp;
     destDataObjInp = &dataObjRenameInp->destDataObjInp;
 
     /* don't translate the link pt. treat it as a normal collection */
     addKeyVal( &srcDataObjInp->condInput, NO_TRANSLATE_LINKPT_KW, "" );
-    printf("******************************rsDataObjRename 1\n");
     resolveLinkedPath( rsComm, srcDataObjInp->objPath, &specCollCache,
                        &srcDataObjInp->condInput );
     rmKeyVal( &srcDataObjInp->condInput, NO_TRANSLATE_LINKPT_KW );
-    printf("******************************rsDataObjRename 2\n");
 
     resolveLinkedPath( rsComm, destDataObjInp->objPath, &specCollCache,
                        &destDataObjInp->condInput );
@@ -66,7 +63,6 @@ rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
     if ( strcmp( srcDataObjInp->objPath, destDataObjInp->objPath ) == 0 ) {
         return SAME_SRC_DEST_PATHS_ERR;
     }
-    printf("******************************rsDataObjRename 3\n");
 
     /* connect to rcat for cross zone */
     status = getAndConnRcatHost(
@@ -78,16 +74,13 @@ rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
         return status;
     }
     else if ( rodsServerHost->rcatEnabled == REMOTE_ICAT ) {
-      printf("******************************rsDataObjRename 4\n");
         status = rcDataObjRename( rodsServerHost->conn, dataObjRenameInp );
         return status;
     }
 
-    printf("******************************rsDataObjRename 5\n");
     srcType = resolvePathInSpecColl( rsComm, srcDataObjInp->objPath,
                                      WRITE_COLL_PERM, 0, &srcDataObjInfo );
 
-                                     printf("******************************rsDataObjRename 6\n");
     destType = resolvePathInSpecColl( rsComm, destDataObjInp->objPath,
                                       WRITE_COLL_PERM, 0, &destDataObjInfo );
 
@@ -101,11 +94,9 @@ rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
         srcType = SYS_SPEC_COLL_NOT_IN_CACHE;
     }
 
-    printf("******************************rsDataObjRename 7\n");
     if ( !isSameZone( srcDataObjInp->objPath, destDataObjInp->objPath ) ) {
         return SYS_CROSS_ZONE_MV_NOT_SUPPORTED;
     }
-    printf("******************************rsDataObjRename 8\n");
 
     if ( destType >= 0 ) {
         rodsLog( LOG_ERROR,
@@ -116,7 +107,6 @@ rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
         return SYS_DEST_SPEC_COLL_SUB_EXIST;
     }
 
-    printf("******************************rsDataObjRename 9\n");
     if ( srcType >= 0 ) { /* specColl of some sort */
         if ( srcDataObjInfo && destType == SYS_SPEC_COLL_OBJ_NOT_EXIST ) {
             status = specCollObjRename( rsComm, srcDataObjInfo,
@@ -153,7 +143,6 @@ rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
         return SYS_SRC_DEST_SPEC_COLL_CONFLICT;
     }
 
-    printf("******************************rsDataObjRename 10\n");
     status = getAndConnRcatHost(
                  rsComm,
                  MASTER_RCAT,
@@ -162,7 +151,6 @@ rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
     if ( status < 0 ) {
         return status;
     }
-    printf("******************************rsDataObjRename 11\n");
     if ( rodsServerHost->localFlag == LOCAL_HOST ) {
         std::string svc_role;
         irods::error ret = get_catalog_service_role(svc_role);
@@ -184,11 +172,8 @@ rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
         }
     }
     else {
-      printf("******************************rsDataObjRename 12\n");
         status = rcDataObjRename( rodsServerHost->conn, dataObjRenameInp );
-        printf("******************************rsDataObjRename 13\n");
     }
-    printf("******************************rsDataObjRename 14\n");
 
     return status;
 }
@@ -217,7 +202,6 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
         irods::log(PASS(ret));
         return ret.code();
     }
-    printf("******************************_rsDataObjRename 0\n");
 
     if( irods::CFG_SERVICE_ROLE_PROVIDER == svc_role ) {
         if ( rsComm == NULL ) {
@@ -233,7 +217,6 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
         int multiCopyFlag;
         int acPreProcFromRenameFlag = 0;
 
-        printf("******************************_rsDataObjRename 1\n");
         const char *args[MAX_NUM_OF_ARGS_IN_ACTION];
         int i, argc;
         ruleExecInfo_t rei2;
@@ -247,7 +230,6 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
         srcDataObjInp = &dataObjRenameInp->srcDataObjInp;
         destDataObjInp = &dataObjRenameInp->destDataObjInp;
 
-        printf("******************************_rsDataObjRename 2\n");
         if ( ( status = splitPathByKey(
                             srcDataObjInp->objPath, srcColl, MAX_NAME_LEN, srcObj, MAX_NAME_LEN, '/' ) ) < 0 ) {
             rodsLog( LOG_ERROR,
@@ -256,7 +238,6 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
             return status;
         }
 
-        printf("******************************_rsDataObjRename 3\n");
         if ( ( status = splitPathByKey(
                             destDataObjInp->objPath, destColl, MAX_NAME_LEN, destObj, MAX_NAME_LEN, '/' ) ) < 0 ) {
             rodsLog( LOG_ERROR,
@@ -265,14 +246,11 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
             return status;
         }
 
-        printf("******************************_rsDataObjRename 4\n");
-
         multiCopyFlag = getMultiCopyPerResc( rsComm );  // JMC - backport 4556
+
         if ( srcDataObjInp->oprType == RENAME_DATA_OBJ ) {
 
-          printf("******************************_rsDataObjRename 5\n");
             status = getDataObjInfo( rsComm, srcDataObjInp, &dataObjInfoHead, ACCESS_DELETE_OBJECT, 0 );
-            printf("******************************_rsDataObjRename 6\n");
 
             if ( status >= 0 || NULL != dataObjInfoHead ) {
                 srcId = dataObjInfoHead->dataId;
@@ -285,9 +263,7 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
             }
         }
         else if ( srcDataObjInp->oprType == RENAME_COLL ) {
-          printf("******************************_rsDataObjRename 7\n");
             status = isColl( rsComm, srcDataObjInp->objPath, &srcId );
-            printf("******************************_rsDataObjRename 8\n");
             if ( status < 0 ) {
                 rodsLog( LOG_ERROR,
                          "_rsDataObjRename: src coll %s does not exist, status = %d",
@@ -325,7 +301,6 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
             }
         }
 
-        printf("******************************_rsDataObjRename 9\n");
         if ( srcDataObjInp->oprType == RENAME_DATA_OBJ ) {
             if ( strstr( dataObjInfoHead->dataType, BUNDLE_STR ) != NULL ) { // JMC - backport 4658
                 rodsLog( LOG_ERROR,
@@ -335,7 +310,6 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
             }
         }
 
-        printf("******************************_rsDataObjRename 10\n");
         if ( strcmp( srcObj, destObj ) != 0 ) {
             /* rename */
             if ( srcId < 0 ) {
@@ -363,17 +337,13 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
             status = chlRenameObject( rsComm, srcId, destObj );
         }
 
-        printf("******************************_rsDataObjRename 11\n");
         if ( status < 0 ) {
             return status;
         }
-        printf("******************************_rsDataObjRename 12\n");
 
         if ( strcmp( srcColl, destColl ) != 0 ) {
             /* move. The destColl is the target  */
-            printf("******************************_rsDataObjRename 12.1\n");
             status = isColl( rsComm, destColl, &destId );
-            printf("******************************_rsDataObjRename 12.2\n");
             if ( status < 0 ) {
                 rodsLog( LOG_ERROR,
                          "_rsDataObjRename: dest coll %s does not exist, status = %d",
@@ -398,13 +368,9 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
                 }
             }
             /**  June 1 2009 for pre-post processing rule hooks **/
-            printf("******************************_rsDataObjRename 12.3\n");
 
             status = chlMoveObject( rsComm, srcId, destId );
-            printf("******************************_rsDataObjRename 12.4, %d\n", status);
         }
-        printf("******************************_rsDataObjRename 13\n");
-
         if ( status >= 0 ) {
             if ( multiCopyFlag > 0 ) {
                 status = chlCommit( rsComm );
@@ -465,7 +431,6 @@ _rsDataObjRename( rsComm_t *rsComm, dataObjCopyInp_t *dataObjRenameInp ) {
             svc_role.c_str() );
         return SYS_SERVICE_ROLE_NOT_SUPPORTED;
     }
-    printf("******************************_rsDataObjRename 14\n");
 
 }
 

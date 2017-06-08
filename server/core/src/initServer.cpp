@@ -569,7 +569,7 @@ cleanup() {
 void
 cleanupAndExit( int status ) {
 #if 0
-    // RTS - rodsLog calls in signal handlers are unsafe - #3326 
+    // RTS - rodsLog calls in signal handlers are unsafe - #3326
     rodsLog( LOG_NOTICE,
              "Agent exiting with status = %d", status );
 #endif
@@ -587,7 +587,7 @@ cleanupAndExit( int status ) {
 void
 signalExit( int ) {
 #if 0
-    // RTS - rodsLog calls in signal handlers are unsafe - #3326 
+    // RTS - rodsLog calls in signal handlers are unsafe - #3326
     rodsLog( LOG_NOTICE,
              "caught a signal and exiting\n" );
 #endif
@@ -1037,13 +1037,13 @@ chkAllowedUser( const char *userName, const char *rodsZone ) {
             return -1;
         }
     } catch ( const irods::exception& e ) {
-        rodsLog(LOG_ERROR, e.what());
+        irods::log(e);
         return e.code();
     } catch ( const std::out_of_range& e ) {
-        rodsLog( LOG_ERROR, e.what());
+        rodsLog( LOG_ERROR, "%s", e.what());
         return KEY_NOT_FOUND;
     } catch ( const boost::bad_any_cast& e ) {
-        rodsLog( LOG_ERROR, e.what());
+        rodsLog( LOG_ERROR, "%s", e.what());
         return INVALID_ANY_CAST;
     }
     return 0;

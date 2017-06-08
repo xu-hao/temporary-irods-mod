@@ -103,7 +103,7 @@ int chlOpen() {
         }
         database_plugin_type = database_plugin_map.begin()->first;
     } catch ( const irods::exception& e ) {
-        rodsLog( LOG_ERROR, e.what() );
+        irods::log(e);
         return e.code();
     }
 
@@ -220,7 +220,7 @@ int chlClose() {
 //got larger) so this is a 'glue' that binds them together.  So this
 //is mostly an 'internal' function too.
 int chlGetRcs(
-    void** _icss ) {
+    icatSessionStruct** _icss ) {
     // =-=-=-=-=-=-=-
     // call factory for database object
     irods::database_object_ptr db_obj_ptr;
@@ -255,7 +255,7 @@ int chlGetRcs(
 
     // =-=-=-=-=-=-=-
     // call the operation on the plugin
-    ret = db->call< void** >( 0,
+    ret = db->call< icatSessionStruct** >( 0,
                                            irods::DATABASE_OP_GET_RCS,
                                            ptr,
                                            _icss );

@@ -399,17 +399,11 @@ chkApiPermission( rsComm_t * rsComm, int apiInx ) {
     clientUserAuth = clientUserAuth & 0xfff;	/* take out XMSG_SVR_* flags */
 
     if ( clientUserAuth > rsComm->clientUser.authInfo.authFlag ) {
-      rodsLog( LOG_ERROR,
-               "chkApiPermission: clientUser %d, %d, %d",
-               RsApiTable[apiInx]->apiNumber, clientUserAuth, rsComm->clientUser.authInfo.authFlag );
         return SYS_NO_API_PRIV;
     }
 
     proxyUserAuth = RsApiTable[apiInx]->proxyUserAuth & 0xfff;
     if ( proxyUserAuth > rsComm->proxyUser.authInfo.authFlag ) {
-      rodsLog( LOG_ERROR,
-               "chkApiPermission: proxyUser %d, %d, %d",
-               RsApiTable[apiInx]->apiNumber, proxyUserAuth, rsComm->proxyUser.authInfo.authFlag );
         return SYS_NO_API_PRIV;
     }
     return 0;

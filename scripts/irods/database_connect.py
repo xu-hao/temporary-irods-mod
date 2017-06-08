@@ -8,6 +8,7 @@ import pprint
 import sys
 import tempfile
 import time
+import subprocess
 
 try:
     from . import pypyodbc
@@ -224,6 +225,7 @@ def execute_queryarrow_statement(statement, headers = "", **kwargs):
     l.debug('Executing SQL statement:\n%s\nwith the following parameters:\n%s',
             statement if log_params else '<hidden>', headers)
     try:
+        print(statement)
         return subprocess.check_output(["QueryArrow", statement, headers])
     except pypyodbc.Error:
         six.reraise(IrodsError,
@@ -240,6 +242,7 @@ def execute_sql_file(filepath, cursor, by_line=False):
                     continue
                 l.debug('Executing SQL statement:\n%s', line)
                 try:
+                    print(line)
                     cursor.execute(line)
                 except IrodsError as e:
                     six.reraise(IrodsError,
@@ -249,6 +252,32 @@ def execute_sql_file(filepath, cursor, by_line=False):
         else:
             try:
                 cursor.execute(f.read())
+            except IrodsError as e:
+                six.reraise(IrodsError,
+                    IrodsError('Error encountered while executing '
+                        'the sql in %s:\n%s' % (filepath, str(e))),
+                    sys.exc_info()[2])
+
+def execute_queryarrow_file(filepath, by_line=False):
+    l = logging.getLogger(__name__)
+    l.debug('Executing SQL in %s', filepath)
+    with open(filepath, 'r') as f:
+        if by_line:
+            for line in f.readlines():
+                if not line.strip():
+                    continue
+                l.debug('Executing SQL statement:\n%s', line)
+                try:
+                    print(line)
+                    execute_queryarrow_statement(line)
+                except IrodsError as e:
+                    six.reraise(IrodsError,
+                        IrodsError('Error encountered while executing '
+                            'the statement:\n\t%s\n%s' % (line, str(e))),
+                        sys.exc_info()[2])
+        else:
+            try:
+                execute_queryarrow_statement(f.read())
             except IrodsError as e:
                 six.reraise(IrodsError,
                     IrodsError('Error encountered while executing '
@@ -331,8 +360,7 @@ def create_database_tables(irods_config, cursor, default_resource_directory=None
                         stdin=sql_file)
         l.info('Creating database tables...')
         sql_files = [
-                os.path.join(irods_config.irods_directory, 'packaging', 'sql', 'icatSysTables.sql'),
-                os.path.join(irods_config.irods_directory, 'packaging', 'sql', 'icatSysInserts.sql')
+                os.path.join(irods_config.irods_directory, 'packaging', 'sql', 'icatSysTables.sql')
             ]
         for sql_file in sql_files:
             try:
@@ -342,6 +370,17 @@ def create_database_tables(irods_config, cursor, default_resource_directory=None
                         IrodsError('Database setup failed while running %s:\n%s' % (sql_file, str(e))),
                         sys.exc_info()[2])
 
+        cursor.commit()
+        sql_files = [
+                os.path.join(irods_config.irods_directory, 'packaging', 'sql', 'icatSysInserts.sql')
+            ]
+        for sql_file in sql_files:
+            try:
+                execute_queryarrow_file(sql_file, by_line=True)
+            except IrodsError as e:
+                six.reraise(IrodsError,
+                        IrodsError('Database setup failed while running %s:\n%s' % (sql_file, str(e))),
+                        sys.exc_info()[2])
 def setup_database_values(irods_config, cursor=None, default_resource_directory=None):
     l = logging.getLogger(__name__)
     timestamp = '{0:011d}'.format(int(time.time()))
@@ -357,7 +396,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
             raise IrodsError('no next object id function defined for %s' % irods_config.catalog_database_type)
 
     def get_next_object_id_queryarrow():
-            return int(execute_queryarrow_statement("next_id(x)", "x"))
+            return int(execute_queryarrow_statement("nextid(x)", "x"))
 
     #zone
     zone_id = get_next_object_id_queryarrow()
@@ -380,7 +419,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
               timestamp))
 
     public_group_id = get_next_object_id_queryarrow()
-    execute_sql_statement(
+    execute_queryarrow_statement(
             'insert USER_OBJ({0}) USER_NAME({0}, "{1}") ZONE_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
             public_group_id,
             'public',

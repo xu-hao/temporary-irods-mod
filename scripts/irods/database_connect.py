@@ -410,7 +410,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
     #groups
     admin_group_id = get_next_object_id_queryarrow()
     execute_queryarrow_statement(
-            'insert USER_OBJ({0}) USER_NAME({0}, "{1}") ZONE_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
+            'insert USER_OBJ({0}) USER_NAME({0}, "{1}") USER_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
               admin_group_id,
               'rodsadmin',
               'rodsgroup',
@@ -420,7 +420,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
 
     public_group_id = get_next_object_id_queryarrow()
     execute_queryarrow_statement(
-            'insert USER_OBJ({0}) USER_NAME({0}, "{1}") ZONE_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
+            'insert USER_OBJ({0}) USER_NAME({0}, "{1}") USER_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
             public_group_id,
             'public',
             'rodsgroup',
@@ -431,7 +431,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
     #users
     admin_user_id = get_next_object_id_queryarrow()
     execute_queryarrow_statement(
-            'insert USER_OBJ({0}) USER_NAME({0}, "{1}") ZONE_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
+            'insert USER_OBJ({0}) USER_NAME({0}, "{1}") USER_TYPE_NAME({0}, "{2}") USER_ZONE_NAME({0}, "{3}") USER_CREATE_TS({0}, "{4}") USER_MODIFY_TS({0}, "{5}")'.format(
               admin_user_id,
               irods_config.server_config['zone_user'],
               'rodsadmin',

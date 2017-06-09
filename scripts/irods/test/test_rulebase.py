@@ -22,9 +22,9 @@ from ..controller import IrodsController
 from ..core_file import temporary_core_file
 from .rule_texts_for_tests import rule_texts
 
-def delayAssert(a):
-            for i in range(100):
-                time.sleep(35)  # wait for test to fire
+def delayAssert(a, interval=1, maxrep=100):
+            for i in range(maxrep):
+                time.sleep(interval)  # wait for test to fire
                 if a():
                     break
             assert a()

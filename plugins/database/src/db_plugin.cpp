@@ -666,7 +666,7 @@ bool _userInRUserAuth( char* userName, char* zoneName ) {
 
     logger.log();
     {
-        status = hs_get_int_user_id_by_user_zone_and_name2(svc, session, userName, zoneName, &iVal);
+        status = hs_get_int_user_id_by_user_zone_and_name2(svc, session, zoneName, userName, &iVal);
     }
     if ( status != 0 ) {
         if ( status != CAT_NO_ROWS_FOUND ) {

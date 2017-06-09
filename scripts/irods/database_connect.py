@@ -226,7 +226,9 @@ def execute_queryarrow_statement(statement, headers = "", **kwargs):
             statement if log_params else '<hidden>', headers)
     try:
         print(statement)
-        return subprocess.check_output(["QueryArrow", statement, headers])
+        out = subprocess.check_output(["QueryArrow", statement, headers])
+        print(out)
+        return out
     except pypyodbc.Error:
         six.reraise(IrodsError,
             IrodsError('pypyodbc encountered an error executing the query'),
@@ -500,7 +502,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
                   timestamp))
 
         execute_queryarrow_statement(
-                'insert OBJT_ACCESS_OBJ({0}, {1}) OBJT_ACCESS_CREATE_TS({0}, {1}, "{2}") OBJT_ACCESS_MODIFY_TS({0}, {1}, "{3}")'.format(
+                'insert OBJT_ACCESS_OBJ({0}, {1}, 1200) OBJT_ACCESS_CREATE_TS({0}, {1}, 1200, "{2}") OBJT_ACCESS_MODIFY_TS({0}, {1}, 1200, "{3}")'.format(
                   collection_id,
                   public_group_id if collection in public_collections else admin_user_id,
                   timestamp,
@@ -509,9 +511,9 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
     #bundle resource
     bundle_resc_id = get_next_object_id()
     execute_queryarrow_statement(
-            'insert RESC_OBJ({0}) RESC_NAME({0}, "bundleResc") RESC_ZONE_NAME({0}, "{1}") RESC_TYPE_NAME({0}, "unixfilesystem") RESC_CLASS_NAME({0}, "bundle") ' + 
+            ('insert RESC_OBJ({0}) RESC_NAME({0}, "bundleResc") RESC_ZONE_NAME({0}, "{1}") RESC_TYPE_NAME({0}, "unixfilesystem") RESC_CLASS_NAME({0}, "bundle") ' + 
               'RESC_NET({0}, "localhost") RESC_DEF_PATH({0}, "/bundle") RESC_FREE_SPACE({0}, "") RESC_FREE_SPACE_TS({0}, "") RESC_INFO({0}, "") RESC_COMMENT({0}, "") ' + 
-              'RESC_STATUS({0}, "") RESC_CREATE_TS({0}, "{2}") RESC_MODIFY_TS({0}, "{3}")'.format(
+              'RESC_STATUS({0}, "") RESC_CREATE_TS({0}, "{2}") RESC_MODIFY_TS({0}, "{3}")').format(
               bundle_resc_id,
               irods_config.server_config['zone_name'],
               timestamp,
@@ -520,9 +522,9 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
     if default_resource_directory:
         default_resc_id = get_next_object_id()
         execute_queryarrow_statement(
-            'insert RESC_OBJ({0}) RESC_NAME({0}, "{1}") RESC_ZONE_NAME({0}, "{2}") RESC_TYPE_NAME({0}, "unixfilesystem") RESC_CLASS_NAME({0}, "bundle") ' + 
+            ('insert RESC_OBJ({0}) RESC_NAME({0}, "{1}") RESC_ZONE_NAME({0}, "{2}") RESC_TYPE_NAME({0}, "unixfilesystem") RESC_CLASS_NAME({0}, "bundle") ' + 
               'RESC_NET({0}, "{3}") RESC_DEF_PATH({0}, "{4}") RESC_FREE_SPACE({0}, "") RESC_FREE_SPACE_TS({0}, "") RESC_INFO({0}, "") RESC_COMMENT({0}, "") ' + 
-              'RESC_STATUS({0}, "") RESC_CREATE_TS({0}, "{5}") RESC_MODIFY_TS({0}, "{6}")'.format(
+              'RESC_STATUS({0}, "") RESC_CREATE_TS({0}, "{5}") RESC_MODIFY_TS({0}, "{6}")').format(
                 default_resc_id,
                 'demoResc',
                 irods_config.server_config['zone_name'],

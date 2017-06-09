@@ -492,7 +492,9 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
         parent_collection = '/'.join(['', collection[1:].rpartition('/')[0]])
         collection_id = get_next_object_id()
         execute_queryarrow_statement(
-                'insert COLL_OBJ({0}) COLL_PARENT_COLL_NAME({0}, "{1}") COLL_NAME({0}, "{2}") COLL_OWNER_NAME({0}, "{3}") COLL_OWNER_ZONE({0}, "{4}") COLL_CREATE_TS({0}, "{5}") COLL_MODIFY_TS({0}, "{6}")'.format(
+                ('insert COLL_OBJ({0}) COLL_PARENT_COLL_NAME({0}, "{1}") COLL_NAME({0}, "{2}") COLL_OWNER_NAME({0}, "{3}") COLL_OWNER_ZONE({0}, "{4}") ' + 
+                  'COLL_MAP_ID({0}, 0) COLL_INHERITANCE({0}, "") COLL_TYPE({0}, "") COLL_INFO1({0}, "") COLL_INFO2({0}, "") ' + 
+                  'COLL_EXPIRY_TS({0}, "") COLL_CREATE_TS({0}, "{5}") COLL_MODIFY_TS({0}, "{6}")').format(
                   collection_id,
                   parent_collection,
                   collection,

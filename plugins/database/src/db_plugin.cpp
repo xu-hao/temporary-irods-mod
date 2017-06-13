@@ -60,6 +60,7 @@ extern irods::resource_manager resc_mgr;
 
 extern int get64RandomBytes( char *buf );
 extern int icatApplyRule( rsComm_t *rsComm, char *ruleName, char *arg1 );
+void freeStringArray(char **, int);
 
 static char prevChalSig[200]; /* a 'signature' of the previous
                           challenge.  This is used as a sessionSignature on the ICAT server
@@ -1332,7 +1333,146 @@ int _modInheritance( int inheritFlag, int recursiveFlag, const char *collIdStr, 
   indicates how much space is left before reaching the quota.
 */
 int setOverQuota( rsComm_t *rsComm ) {
-    return 0;
+    int status;
+    int rowsFound;
+    char myTime[50];
+    /* For each defined group limit (if any), get a total usage on that
+     * resource for all users in that group: */
+//    char mySQL1[] = "select sum(quota_usage), UM1.user_id, R_QUOTA_USAGE.resc_id from R_QUOTA_USAGE, R_QUOTA_MAIN, R_USER_MAIN UM1, R_USER_GROUP, R_USER_MAIN UM2 where 
+//R_QUOTA_MAIN.user_id = UM1.user_id and UM1.user_type_name = 'rodsgroup' and R_USER_GROUP.group_user_id = UM1.user_id and UM2.user_id = R_USER_GROUP.user_id and 
+//R_QUOTA_USAGE.user_id = UM2.user_id and R_QUOTA_MAIN.resc_id = R_QUOTA_USAGE.resc_id group by UM1.user_id, R_QUOTA_USAGE.resc_id";
+
+    /* For each defined group limit on total usage (if any), get a
+     * total usage on any resource for all users in that group: */
+//    char mySQL2a[] = "select sum(quota_usage), R_QUOTA_MAIN.quota_limit, UM1.user_id from R_QUOTA_USAGE, R_QUOTA_MAIN, R_USER_MAIN UM1, R_USER_GROUP, R_USER_MAIN UM2 where 
+//R_QUOTA_MAIN.user_id = UM1.user_id and UM1.user_type_name = 'rodsgroup' and R_USER_GROUP.group_user_id = UM1.user_id and UM2.user_id = R_USER_GROUP.user_id and 
+//R_QUOTA_USAGE.user_id = UM2.user_id and R_QUOTA_USAGE.resc_id != %s and R_QUOTA_MAIN.resc_id = %s group by UM1.user_id,  R_QUOTA_MAIN.quota_limit";
+//    char mySQL2b[MAX_SQL_SIZE];
+
+//    char mySQL3a[] = "update R_QUOTA_MAIN set quota_over= %s - ?, modify_ts=? where user_id=? and %s - ? > quota_over";
+//    char mySQL3b[MAX_SQL_SIZE];
+
+
+    /* Initialize over_quota values (if any) to the no-usage value
+       which is the negative of the limit.  */
+    if ( logSQL != 0 ) {
+        rodsLog( LOG_SQL, "setOverQuota SQL 1" );
+    }
+    status =  hs_create_quota_over(svc, session);
+    if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+        return ( 0 );   /* no quotas, done */
+    }
+    if ( status != 0 ) {
+        return status;
+    }
+
+    /* Set the over_quota values for per-resource, if any */
+    if ( logSQL != 0 ) {
+        rodsLog( LOG_SQL, "setOverQuota SQL 2" );
+    }
+    status =  hs_create_quota_over2(svc, session);
+    if ( status == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+        status = 0;    /* none */
+    }
+    if ( status != 0 ) {
+        return status;
+    }
+
+    /* Set the over_quota values for irods-total, if any, and only if
+       the this over_quota value is higher than the previous.  Do it in
+       two steps to keep it simplier (there may be a better way tho).
+    */
+    if ( logSQL != 0 ) {
+        rodsLog( LOG_SQL, "setOverQuota SQL 3" );
+    }
+    getNowStr( myTime );
+        char **dVal;
+        int nCols;
+            status = hs_get_all_quota_usage_by_user(svc, session, &dVal, &nCols);
+    if(status >= 0) {
+    for ( rowsFound = 0;rowsFound * 2 < nCols; rowsFound++ ) {
+        int status2;
+        if ( logSQL != 0 ) {
+            rodsLog( LOG_SQL, "setOverQuota SQL 4" );
+        }
+printf("setting quota over 3 %s %s\n", dVal[rowsFound * 2], dVal[rowsFound * 2 + 1]);
+        status2 = hs_create_quota_over3( svc, session, dVal[rowsFound * 2], dVal[rowsFound * 2 + 1], myTime);
+        if ( status2 == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+            status2 = 0;
+        }
+        if ( status2 != 0 ) {
+            return status2;
+        }
+    }
+    freeStringArray(dVal, nCols);
+    }
+
+    /* Handle group quotas on resources */
+    if ( logSQL != 0 ) {
+        rodsLog( LOG_SQL, "setOverQuota SQL 5" );
+    }
+            status = hs_get_all_quota_usage_by_user_group_and_resc(svc, session, &dVal, &nCols);
+    if(status >= 0) {
+    for ( rowsFound = 0;rowsFound * 3 < nCols; rowsFound++ ) {
+        int status2;
+        if ( logSQL != 0 ) {
+            rodsLog( LOG_SQL, "setOverQuota SQL 6" );
+        }
+printf("setting quota over 4 %s %s %s\n", dVal[rowsFound * 3], dVal[rowsFound * 3 + 1], dVal[rowsFound * 3 + 2]);
+        status2 = hs_create_quota_over4(svc, session, dVal[rowsFound * 3], dVal[rowsFound * 3 + 1], dVal[rowsFound * 3 + 2], myTime); 
+        if ( status2 == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+            status2 = 0;
+        }
+        if ( status2 != 0 ) {
+            return status2;
+        }
+    }
+    freeStringArray(dVal, nCols);
+    }
+    if ( status == CAT_NO_ROWS_FOUND ) {
+        status = 0;
+    }
+    if ( status != 0 ) {
+        return status;
+    }
+    
+
+    /* Handle group quotas on total usage */
+    if ( logSQL != 0 ) {
+        rodsLog( LOG_SQL, "setOverQuota SQL 7" );
+    }
+    getNowStr( myTime );
+            status = hs_get_all_quota_usage_by_limit_and_user_group( svc, session, &dVal, &nCols);
+   if(status >= 0) {
+    for ( rowsFound = 0; rowsFound * 3 < nCols; rowsFound++ ) {
+        int status2;
+        if ( logSQL != 0 ) {
+            rodsLog( LOG_SQL, "setOverQuota SQL 8" );
+        }
+printf("setting quota over 5 %s %s %s\n", dVal[rowsFound * 3], dVal[rowsFound * 3 + 1], dVal[rowsFound * 3 + 2]);
+        status2 = hs_create_quota_over5(svc, session, dVal[rowsFound * 3], dVal[rowsFound * 3 + 1], dVal[rowsFound * 3 + 2], myTime );
+        if ( status2 == CAT_SUCCESS_BUT_WITH_NO_INFO ) {
+            status2 = 0;
+        }
+        if ( status2 != 0 ) {
+            return status2;
+        }
+    }
+    freeStringArray(dVal, nCols);
+    }
+    if ( status == CAT_NO_ROWS_FOUND ) {
+        status = 0;
+    }
+    if ( status != 0 ) {
+        return status;
+    }
+
+    /* To simplify the query, if either of the above group operations
+       found some over_quota, will probably want to update and insert rows
+       for each user into R_QUOTA_MAIN.  For now tho, this is not done and
+       perhaps shouldn't be, to keep it a little less complicated. */
+
+   return status;
 }
 
 int

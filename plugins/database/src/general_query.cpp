@@ -30,7 +30,7 @@
 #include "low_level.hpp"
 #include "rodsGenQueryNames.h"
 #include "GenQuery_stub.h"
-
+#include "PluginGen_stub.h"
 
 char accessControlUserName[MAX_NAME_LEN];
 char accessControlZone[MAX_NAME_LEN];
@@ -326,6 +326,14 @@ genThatQuery( const genQueryInp_t *q, std::string &qu ) {
     return 0;
 }
 
+void freeStringArray(char **arr, int len) {
+    for(int i = 0; i < len; i++) {
+        free(arr[i]);
+    }
+    free(arr);
+
+}
+
 int maxLen(char **out, int n) {
   int max = 0;
   for(int i = 0; i< n;i++) {
@@ -337,6 +345,108 @@ int maxLen(char **out, int n) {
   return max;
 }
 
+int fillResultInGenQueryOut(void *svc, void* icss, char **out, int col, int row, int *attrinx, genQueryInp_t &genQueryInp, genQueryOut_t *result) {
+    int status;
+    int len = maxLen(out, col * row) + 1;
+    for(int i = 0; i < col; i++) {
+        result->sqlResult[i].attriInx = attrinx[i];
+        result->sqlResult[i].len = len;
+        result->sqlResult[i].value = (char *) malloc(row * len);
+        memset(result->sqlResult[i].value, 0, row * len);
+    }
+        for(int j = 0; j< row; j++ ) {
+            if ( genQueryInp.condInput.len > 0 ) {                                                                                                                                                                                   
+                status = checkCondInputAccess( genQueryInp, out + col * j, svc, icss, 0 );                                                                                                                                                 
+                // need to free the rest of out
+                if ( status != 0 ) {                                                                                                                                                                                                 
+                    return status;                                                                                                                                                                                                   
+                }                                                                                                                                                                                                                    
+            }
+          for(int i = 0; i < col; i++) {
+            snprintf(result->sqlResult[i].value + j * len, len, "%s", out[col * j + i]);
+          }                                                                                                                                                                                                                        
+        }
+    
+
+    result->rowCnt = row;
+    result->totalRowCount = row;
+    result->attriCnt = col;
+    result->continueInx = 0;
+    return 0;
+}
+
+/*
+ This is used for the QUOTA_QUERY option where a specific query is
+ needed for efficiency, handling all the quota types in a single query
+ (the group and individual quotas, per-resource and total-usage).
+ I decided to make this part of General-Query, since it is so similar but
+ it is really a specific-query (as an option to general-query).
+ The caller specifies a user (COL_USER_NAME) and optionally a resource
+ (COL_R_RESC_NAME).  Rows are returned with the quotas that apply,
+ most severe (most over or closest to going over) first, if any.  For
+ global-usage quotas, the returned RESC_ID is 0.  If the user is a
+ member of a group with a quota (per-resource or total-usage) a row is
+ returned for that quota too.  All in the appropriate order.
+ */
+int
+generateSpecialQuery( void *svc, void *session, genQueryInp_t &genQueryInp, genQueryOut_t *result ) {
+    static char rescName[LONG_NAME_LEN] = "";
+    static char userName[NAME_LEN] = "";
+    static char userZone[NAME_LEN] = "";
+
+//    char quotaQuery1[] = "( select distinct QM.user_id, RM.resc_name, QM.quota_limit, QM.quota_over, QM.resc_id from R_QUOTA_MAIN QM, R_RESC_MAIN RM, R_USER_GROUP UG, R_USER_MAIN UM2 where QM.resc_id = RM.resc_id AND (QM.user_id = UG.group_user_id and UM2.user_name = ? and UM2.zone_name = ? and UG.user_id = UM2.user_id )) UNION ( select distinct QM.user_id, RM.resc_name, QM.quota_limit, QM.quota_over, QM.resc_id from R_QUOTA_MAIN QM, R_USER_GROUP UG, R_USER_MAIN UM2, R_RESC_MAIN RM where QM.resc_id = '0' AND (QM.user_id = UG.group_user_id and UM2.user_name = ? and UM2.zone_name = ? and UG.user_id = UM2.user_id)) UNION ( select distinct QM.user_id, RM.resc_name, QM.quota_limit, QM.quota_over, QM.resc_id from R_QUOTA_MAIN QM, R_USER_MAIN UM, R_RESC_MAIN RM WHERE (QM.resc_id = RM.resc_id or QM.resc_id = '0') AND (QM.user_id = UM.user_id and UM.user_name = ? and UM.zone_name = ? )) order by quota_over DESC";
+
+//    char quotaQuery2[] = "( select distinct QM.user_id, RM.resc_name, QM.quota_limit, QM.quota_over, QM.resc_id from R_QUOTA_MAIN QM, R_RESC_MAIN RM, R_USER_GROUP UG, R_USER_MAIN UM2 where QM.resc_id = RM.resc_id AND RM.resc_name = ? AND (QM.user_id = UG.group_user_id and UM2.user_name = ? and UM2.zone_name = ? and UG.user_id = UM2.user_id )) UNION ( select distinct QM.user_id, RM.resc_name, QM.quota_limit, QM.quota_over, QM.resc_id from R_QUOTA_MAIN QM, R_USER_GROUP UG, R_USER_MAIN UM2, R_RESC_MAIN RM where QM.resc_id = '0' AND RM.resc_name = ? AND (QM.user_id = UG.group_user_id and UM2.user_name = ? and UM2.zone_name = ? and UG.user_id = UM2.user_id)) UNION ( select distinct QM.user_id, RM.resc_name, QM.quota_limit, QM.quota_over, QM.resc_id from R_QUOTA_MAIN QM, R_USER_MAIN UM, R_RESC_MAIN RM WHERE (QM.resc_id = RM.resc_id or QM.resc_id = '0') AND RM.resc_name = ? AND (QM.user_id = UM.user_id and UM.user_name = ? and UM.zone_name = ? )) order by quota_over DESC";
+
+    int i, valid = 0;
+
+    for ( i = 0; i < genQueryInp.sqlCondInp.len; i++ ) {
+        if ( genQueryInp.sqlCondInp.inx[i] == COL_USER_NAME ) {
+            int status = parseUserName( genQueryInp.sqlCondInp.value[i], userName,
+                                        userZone );
+            if ( status ) {
+                rodsLog( LOG_ERROR, "parseUserName failed in generateSpecialQuery on %s with status %d.",
+                         genQueryInp.sqlCondInp.value[i], status );
+                return status;
+            }
+            if ( userZone[0] == '\0' ) {
+                std::string zoneName;
+                if ( !chlGetLocalZone( zoneName ) ) {
+
+                }
+
+                snprintf( userZone, sizeof( userZone ), "%s", zoneName.c_str() );
+                rodsLog( LOG_ERROR, "userZone1=:%s:\n", userZone );
+            }
+            valid = 1;
+        }
+        if ( genQueryInp.sqlCondInp.inx[i] == COL_R_RESC_NAME ) {
+            snprintf( rescName, sizeof( rescName ), "%s", genQueryInp.sqlCondInp.value[i] );
+        }
+    }
+    if ( valid == 0 ) {
+        return CAT_INVALID_ARGUMENT;
+    }
+    int nvals;
+    char **vals;
+    int status;
+    if (rescName[0] == '\0') {
+        status = hs_get_all_quota_by_user_zone_and_name(svc, session, userZone, userName, &vals, &nvals);
+    } else {
+        status = hs_get_all_quota_by_user_zone_and_name_and_resc_name(svc, session, userZone, userName, rescName, &vals, &nvals);
+    }
+    if(status < 0) {
+        return status;
+    }
+    int attrinx[] = {COL_QUOTA_USER_ID,COL_R_RESC_NAME,COL_QUOTA_LIMIT,COL_QUOTA_OVER,COL_QUOTA_RESC_ID};
+    status = fillResultInGenQueryOut(svc, session, vals, 5, nvals/5, attrinx, genQueryInp, result);
+    freeStringArray(vals, nvals);
+    if(status >= 0) {
+        status = 0;
+    }
+    return status;
+}
+
 /* General Query */
  int chl_gen_query_impl(
     void* svc,
@@ -344,6 +454,11 @@ int maxLen(char **out, int n) {
     genQueryInp_t  genQueryInp,
     genQueryOut_t* result ) {
 
+
+if ( genQueryInp.options & QUOTA_QUERY ) {
+            return generateSpecialQuery( svc, icss, genQueryInp, result );
+        }
+else {
     std::string qu;
     genThatQuery(&genQueryInp, qu);
     int doCheck = 0;
@@ -373,35 +488,12 @@ int maxLen(char **out, int n) {
         return status;
     }
 
-    int len = maxLen(out, col * row) + 1;
-    for(int i = 0; i < genQueryInp.selectInp.len; i++) {
-        result->sqlResult[i].attriInx = genQueryInp.selectInp.inx[i];
-        result->sqlResult[i].len = len;
-        result->sqlResult[i].value = (char *) malloc(row * len);
-        memset(result->sqlResult[i].value, 0, row * len);
+    status = fillResultInGenQueryOut(svc, icss, out, col, row, genQueryInp.selectInp.inx, genQueryInp, result);
+    freeStringArray(out, row * col);
+    if (status >= 0) {
+        status = 0;
     }
-        for(int j = 0; j< row; j++ ) {
-            if ( genQueryInp.condInput.len > 0 ) {                                                                                                                                                                                   
-                status = checkCondInputAccess( genQueryInp, out + col * j, svc, icss, 0 );                                                                                                                                                 
-                // need to free the rest of out
-                if ( status != 0 ) {                                                                                                                                                                                                 
-                    return status;                                                                                                                                                                                                   
-                }                                                                                                                                                                                                                    
-            }
-          for(int i = 0; i < genQueryInp.selectInp.len; i++) {
-            snprintf(result->sqlResult[i].value + j * len, len, "%s", out[col * j + i]);
-            free(out[col * j + i]);
-          }                                                                                                                                                                                                                        
-        }
-    
-    free(out);
-
-    result->rowCnt = row;
-    result->totalRowCount = row;
-    result->attriCnt = col;
-    result->continueInx = 0;
-
-    return 0;
-
+    return status;
+}
 }
 

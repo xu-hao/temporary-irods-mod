@@ -226,7 +226,7 @@ def execute_queryarrow_statement(statement, headers = "", **kwargs):
             statement if log_params else '<hidden>', headers)
     try:
         print(statement)
-        out = subprocess.check_output(["QueryArrow", statement, headers])
+        out = subprocess.check_output(["QueryArrow", "--udsaddr", "/tmp/QueryArrow", statement, headers])
         print(out)
         return out
     except pypyodbc.Error:
@@ -301,9 +301,12 @@ def irods_tables_in_database(irods_config, cursor):
 
 def get_schema_version_in_database(cursor):
     l = logging.getLogger(__name__)
-    query = "select option_value from R_GRID_CONFIGURATION where namespace='database' and option_name='schema_version';"
+    # query = "select option_value from R_GRID_CONFIGURATION where namespace='database' and option_name='schema_version';"
+    query = 'GRID_CONFIGURATION_OBJ("database","schema_version",z)'
+    headers = 'z'
     try:
-        rows = execute_sql_statement(cursor, query).fetchall()
+        # rows = execute_sql_statement(cursor, query).fetchall()
+        rows = list(map(lambda x:x.strip('"'), filter(lambda x:x != "", execute_queryarrow_statement(query, headers).split("\n"))))
     except IrodsError as e:
         six.reraise(IrodsError,
             IrodsError('Error encountered while executing '
@@ -318,7 +321,8 @@ def get_schema_version_in_database(cursor):
             'for database schema version, received %d rows' % (len(rows)))
 
     try:
-        schema_version = int(rows[0][0])
+#        schema_version = int(rows[0][0])
+        schema_version = int(rows[0])
     except ValueError:
         raise RuntimeError(
             'Failed to convert [%s] to an int for database schema version' % (rows[0][0]))

@@ -62,4 +62,6 @@ def run_update(irods_config, cursor):
     else:
         raise IrodsError('Upgrade to schema version %d is unsupported.' % (new_schema_version))
 
-    database_connect.execute_sql_statement(cursor, "update R_GRID_CONFIGURATION set option_value = ? where namespace = 'database' and option_name = 'schema_version';", new_schema_version)
+    # database_connect.execute_sql_statement(cursor, "update R_GRID_CONFIGURATION set option_value = ? where namespace = 'database' and option_name = 'schema_version';", new_schema_version)
+    database_connect.execute_queryarrow_statement(('GRID_CONFIGURATION_OBJ("database", "schema_version", z) delete GRID_CONFIGURATION_OBJ("database", "schema_version", z) ' +
+                                                   'insert GRID_CONFIGURATION_OBJ("database", "schema_version", "{0}")').format(new_schema_version))

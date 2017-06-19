@@ -11432,42 +11432,32 @@ irods::error db_get_repl_list_for_leaf_bundles_op(
     }
 
     // capture list of child resc ids
-    std::stringstream child_array_stream;
-    child_array_stream << "{";
+    std::vector<char *> child_array;
     for( auto id : (*_bundles)[_child_index] ) {
-        child_array_stream << id << ",";
+        child_array.push_back(id.c_str());
     }
 
-    if(child_array_stream.str().empty()) {
+    if(child_array.empty()) {
         return ERROR(
                   SYS_INVALID_INPUT_PARAM,
                   "leaf arry is empty");
     }
 
-    std::string child_array = child_array_stream.str();
-    child_array.pop_back(); // trim last ','
-    child_array += "}";
-
-    std::stringstream not_child_stream;
-    not_child_stream << "{";
+    std::vector<char *> not_child_array;
     for( size_t idx = 0; idx < _bundles->size(); ++idx ) {
         if( idx == _child_index ) {
             continue;
         }
         for( auto id : (*_bundles)[idx] ) {
-            not_child_stream << id << ",";
+            not_child_array.push_back(id.c_str());
         }
     } // for idx
-
-    std::string not_child_array = not_child_stream.str();
-    not_child_array.pop_back(); // trim last ','
-    not_child_array += "}";
 
 	char **resultValue;
   int len;
         int status = 0;
-char *not_ca = (char *) not_child_array.c_str();
-char *ca = (char *) child_array.c_str(); 
+char **not_ca = not_child_array.data();
+char **ca = child_array.data(); 
 
             status = hs_get_all_data_by_resc_list(svc,
 				session, not_ca, ca, &resultValue, &len

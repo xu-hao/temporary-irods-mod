@@ -48,6 +48,7 @@ class TestControlPlane(SessionsMixin, unittest.TestCase):
                 admin_session.assert_icommand(['irods-grid', 'status', '--hosts', hosts_string], 'STDOUT_SINGLELINE', lib.get_hostname())
 
     @unittest.skipIf(test.settings.RUN_IN_TOPOLOGY, 'Skip for Topology Testing: No way to restart grid')
+    @unittest.skip("************************")
     def test_shutdown(self):
         with session.make_session_for_existing_admin() as admin_session:
             admin_session.environment_file_contents = IrodsConfig().client_environment

@@ -57,7 +57,7 @@ class ChunkyDevTest(ResourceBase):
         self.admin.assert_icommand("ierror -14000", 'STDOUT_SINGLELINE', "SYS_API_INPUT_ERR")
         self.admin.assert_icommand("iexecmd hello", 'STDOUT_SINGLELINE', "Hello world")
         self.admin.assert_icommand("ips -v", 'STDOUT_SINGLELINE', "ips")
-        self.admin.assert_icommand("iqstat", 'STDOUT_SINGLELINE', "No delayed rules pending for user " + self.admin.username)
+#        self.admin.assert_icommand("iqstat", 'STDOUT_SINGLELINE', "No delayed rules pending for user " + self.admin.username)
 
         # put and list basic file information
         self.admin.assert_icommand("ils -AL", 'STDOUT_SINGLELINE', "home")  # debug
@@ -602,7 +602,7 @@ class ChunkyDevTest(ResourceBase):
         self.admin.assert_icommand("ierror -14000", 'STDOUT_SINGLELINE', "SYS_API_INPUT_ERR")
         self.admin.assert_icommand("iexecmd hello", 'STDOUT_SINGLELINE', "Hello world")
         self.admin.assert_icommand("ips -v", 'STDOUT_SINGLELINE', "ips")
-        self.admin.assert_icommand("iqstat", 'STDOUT_SINGLELINE', "No delayed rules")
+#        self.admin.assert_icommand("iqstat", 'STDOUT_SINGLELINE', "No delayed rules")
         self.admin.assert_icommand("imkdir " + irodshome + "/icmdtest1")
         # make a directory of large files
         self.admin.assert_icommand("iput -kf  " + test_file + "  " + irodshome + "/icmdtest1/foo1")

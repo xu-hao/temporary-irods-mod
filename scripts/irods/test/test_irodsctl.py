@@ -19,10 +19,12 @@ from ..configuration import IrodsConfig
 
 
 class Test_Irodsctl(unittest.TestCase):
+    @unittest.skip("********************")
     def test_re_shm_creation(self):
         if 'irods_rule_engine_plugin-irods_rule_language' in IrodsConfig().configured_rule_engine_plugins:
             assert lib.re_shm_exists()
 
+    @unittest.skip("********************")
     def test_re_shm_cleanup(self):
         irodsctl_fullpath = os.path.join(IrodsConfig().irods_directory, 'irodsctl')
         assert_command([irodsctl_fullpath, 'stop'], 'STDOUT_SINGLELINE', 'Stopping iRODS server')

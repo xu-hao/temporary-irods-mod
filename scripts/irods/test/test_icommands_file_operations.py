@@ -612,6 +612,7 @@ class Test_ICommands_File_Operations(resource_suite.ResourceBase, unittest.TestC
         self.admin.assert_icommand('iadmin rmresc test1')
         self.admin.assert_icommand('iadmin rmresc test2')
 
+    @unittest.skip("**********************")
     def test_delay_in_dynamic_pep__3342(self):
         with temporary_core_file() as core:
             time.sleep(1)  # remove once file hash fix is committed #2279

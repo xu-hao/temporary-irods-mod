@@ -75,7 +75,11 @@ class RegisteredTestResult(unittest.TextTestResult):
     def startTest(self, test):
         # TextTestResult's impl prints as "test (module.class)" which prevents copy/paste
         print('{0} ... '.format(test.id()), end='', file=self.stream)
+        with open("/tmp/qatest.log", "a") as f:
+            f.write("**********TEST BEGIN {0}\n".format(test.id()))
         unittest.TestResult.startTest(self, test)
+        with open("/tmp/qatest.log", "a") as f:
+            f.write("**********TEST END {0}\n".format(test.id()))
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.NOTSET)
@@ -107,13 +111,20 @@ if __name__ == '__main__':
     if options.include_auth_tests:
         test_identifiers.append('test_auth')
     if options.run_python_suite:
-        test_identifiers.extend(['test_xmsg', 'test_iadmin', 'test_resource_types', 'test_catalog', 'test_rulebase',
-                                 'test_resource_tree', 'test_load_balanced_suite', 'test_icommands_file_operations', 'test_imeta_set',
+        test_identifiers.extend(['test_xmsg', 'test_iadmin', 'test_resource_types', 'test_catalog', 
+                                 'test_rulebase',
+                                 'test_resource_tree', 'test_load_balanced_suite', 
+                                 'test_icommands_file_operations', 'test_imeta_set',
                                  'test_all_rules', 'test_iscan', 'test_ichmod', 'test_iput_options', 'test_ireg', 'test_irsync',
                                  'test_iticket', 'test_irodsctl', 'test_resource_configuration', 'test_control_plane',
                                  'test_native_rule_engine_plugin', 'test_quotas', 'test_ils', 'test_irmdir', 'test_iquest'])
 
+    with open("/tmp/qatest.log", "w") as f:
+            f.write("**********ALL TEST BEGIN\n")
+
     results = run_tests_from_names(test_identifiers, options.buffer_test_output, options.xml_output)
+    with open("/tmp/qatest.log", "a") as f:
+            f.write("**********ALL TEST END\n")
     print(results)
     if not results.wasSuccessful():
         sys.exit(1)

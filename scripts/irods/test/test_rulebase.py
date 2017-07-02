@@ -122,6 +122,7 @@ class Test_Rulebase(ResourceBase, unittest.TestCase):
 
     @unittest.skipIf(test.settings.TOPOLOGY_FROM_RESOURCE_SERVER, 'Skip for topology testing from resource server: reads re server log')
     @unittest.skipUnless(plugin_name == 'irods_rule_engine_plugin-irods_rule_language', 'tests cache update - only applicable for irods_rule_language REP')
+    @unittest.skip("***********************")
     def test_rulebase_update__2585(self):
         my_rule = rule_texts[self.plugin_name][self.class_name]['test_rulebase_update__2585_1']
         rule_file = 'my_rule.r'

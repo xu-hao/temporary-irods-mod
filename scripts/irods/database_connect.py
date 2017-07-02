@@ -225,9 +225,10 @@ def execute_queryarrow_statement(statement, headers = "", **kwargs):
     l.debug('Executing SQL statement:\n%s\nwith the following parameters:\n%s',
             statement if log_params else '<hidden>', headers)
     try:
-        print(statement)
+        with open("/tmp/qatestsetup.log", "a") as f:
+            f.write(statement + "\n")
         out = subprocess.check_output(["QueryArrow", "--udsaddr", "/tmp/QueryArrow", statement, headers])
-        print(out)
+        # print(out)
         return out
     except pypyodbc.Error:
         six.reraise(IrodsError,
@@ -244,7 +245,7 @@ def execute_sql_file(filepath, cursor, by_line=False):
                     continue
                 l.debug('Executing SQL statement:\n%s', line)
                 try:
-                    print(line)
+                    # print(line)
                     cursor.execute(line)
                 except IrodsError as e:
                     six.reraise(IrodsError,
@@ -270,7 +271,7 @@ def execute_queryarrow_file(filepath, by_line=False):
                     continue
                 l.debug('Executing SQL statement:\n%s', line)
                 try:
-                    print(line)
+                    # print(line)
                     execute_queryarrow_statement(line)
                 except IrodsError as e:
                     six.reraise(IrodsError,
@@ -494,7 +495,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
         ]
     for collection in itertools.chain(system_collections, public_collections, admin_collections):
         parent_collection = '/'.join(['', collection[1:].rpartition('/')[0]])
-        collection_id = get_next_object_id()
+        collection_id = get_next_object_id_queryarrow()
         execute_queryarrow_statement(
                 ('insert COLL_OBJ({0}) COLL_PARENT_COLL_NAME({0}, "{1}") COLL_NAME({0}, "{2}") COLL_OWNER_NAME({0}, "{3}") COLL_OWNER_ZONE({0}, "{4}") ' + 
                   'COLL_MAP_ID({0}, 0) COLL_INHERITANCE({0}, "") COLL_TYPE({0}, "") COLL_INFO1({0}, "") COLL_INFO2({0}, "") ' + 
@@ -515,7 +516,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
                   timestamp))
 
     #bundle resource
-    bundle_resc_id = get_next_object_id()
+    bundle_resc_id = get_next_object_id_queryarrow()
     execute_queryarrow_statement(
             ('insert RESC_OBJ({0}) RESC_NAME({0}, "bundleResc") RESC_ZONE_NAME({0}, "{1}") RESC_TYPE_NAME({0}, "unixfilesystem") RESC_CLASS_NAME({0}, "bundle") ' + 
               'RESC_NET({0}, "localhost") RESC_DEF_PATH({0}, "/bundle") RESC_FREE_SPACE({0}, "") RESC_FREE_SPACE_TS({0}, "") RESC_INFO({0}, "") RESC_COMMENT({0}, "") ' + 
@@ -526,7 +527,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
               timestamp))
 
     if default_resource_directory:
-        default_resc_id = get_next_object_id()
+        default_resc_id = get_next_object_id_queryarrow()
         execute_queryarrow_statement(
             ('insert RESC_OBJ({0}) RESC_NAME({0}, "{1}") RESC_ZONE_NAME({0}, "{2}") RESC_TYPE_NAME({0}, "unixfilesystem") RESC_CLASS_NAME({0}, "cache") ' + 
               'RESC_NET({0}, "{3}") RESC_DEF_PATH({0}, "{4}") RESC_FREE_SPACE({0}, "") RESC_FREE_SPACE_TS({0}, "") RESC_INFO({0}, "") RESC_COMMENT({0}, "") ' + 

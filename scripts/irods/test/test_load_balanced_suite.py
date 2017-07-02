@@ -19,6 +19,7 @@ from . import resource_suite
 from . import session
 from .. import lib
 from ..configuration import IrodsConfig
+from .. import database_connect
 
 
 class Test_LoadBalanced_Resource(resource_suite.ResourceBase, unittest.TestCase):
@@ -65,10 +66,7 @@ class Test_LoadBalanced_Resource(resource_suite.ResourceBase, unittest.TestCase)
             with contextlib.closing(database_connect.get_database_connection(cfg)) as connection:
                 with contextlib.closing(connection.cursor()) as cursor:
                     secs = int(time.time())
-                    cursor.execute("insert into r_server_load_digest values ('rescA', 50, %s)" % secs)
-                    cursor.execute("insert into r_server_load_digest values ('rescB', 75, %s)" % secs)
-                    cursor.execute("insert into r_server_load_digest values ('rescC', 95, %s)" % secs)
-                    cursor.commit()
+                    database_connect.execute_queryarrow_statement("insert SERVER_LOAD_DIGEST_OBJ(\"rescA\", 50, \"{0}\") SERVER_LOAD_DIGEST_OBJ(\"rescB\", 75, \"{0}\") SERVER_LOAD_DIGEST_OBJ(\"rescC\", 95, \"{0}\")".format(secs))
 
                     # Make a local file to put
                     local_filepath = os.path.join(self.admin.local_session_dir, 'things.txt')
@@ -86,8 +84,7 @@ class Test_LoadBalanced_Resource(resource_suite.ResourceBase, unittest.TestCase)
 
                     # =-=-=-=-=-=-=-
                     # drop rescC to a load of 15 - this should now win
-                    cursor.execute("update r_server_load_digest set load_factor=15 where resc_name='rescC'")
-                    cursor.commit()
+                    database_connect.execute_queryarrow_statement("SERVER_LOAD_DIGEST_OBJ(\"rescC\",load_factor,cts) delete SERVER_LOAD_DIGEST_OBJ(\"rescC\", load_factor, cts) insert SERVER_LOAD_DIGEST_OBJ(\"rescC\", 15, cts)")
 
                     # =-=-=-=-=-=-=-
                     # put a test_file.txt - should be on rescC given load table values
@@ -97,9 +94,6 @@ class Test_LoadBalanced_Resource(resource_suite.ResourceBase, unittest.TestCase)
 
                     # =-=-=-=-=-=-=-
                     # clean up our alterations to the load table
-                    cursor.execute("delete from r_server_load_digest where resc_name='rescA'")
-                    cursor.execute("delete from r_server_load_digest where resc_name='rescB'")
-                    cursor.execute("delete from r_server_load_digest where resc_name='rescC'")
-                    cursor.commit()
+                    database_connect.execute_queryarrow_statement("SERVER_LOAD_DIGEST_OBJ(\"rescA\",load_factora,ctsa) (delete SERVER_LOAD_DIGEST_OBJ(\"rescA\", load_factora, ctsa)) SERVER_LOAD_DIGEST_OBJ(\"rescB\",load_factorb,ctsb) (delete SERVER_LOAD_DIGEST_OBJ(\"rescB\", load_factorb, ctsb)) SERVER_LOAD_DIGEST_OBJ(\"rescC\",load_factorc,ctsc) (delete SERVER_LOAD_DIGEST_OBJ(\"rescC\", load_factorc, ctsc)) ")
         else:
             print('skipping test_load_balanced due to unsupported database for this test.')

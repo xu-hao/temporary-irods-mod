@@ -11434,7 +11434,7 @@ irods::error db_get_repl_list_for_leaf_bundles_op(
     // capture list of child resc ids
     std::vector<char *> child_array;
     for( auto id : (*_bundles)[_child_index] ) {
-        child_array.push_back(id.c_str());
+        child_array.push_back(strdup(boost::lexical_cast<std::string>(id).c_str()));
     }
 
     if(child_array.empty()) {
@@ -11442,6 +11442,7 @@ irods::error db_get_repl_list_for_leaf_bundles_op(
                   SYS_INVALID_INPUT_PARAM,
                   "leaf arry is empty");
     }
+    child_array.push_back(NULL);
 
     std::vector<char *> not_child_array;
     for( size_t idx = 0; idx < _bundles->size(); ++idx ) {
@@ -11449,9 +11450,10 @@ irods::error db_get_repl_list_for_leaf_bundles_op(
             continue;
         }
         for( auto id : (*_bundles)[idx] ) {
-            not_child_array.push_back(id.c_str());
+            not_child_array.push_back(strdup(boost::lexical_cast<std::string>(id).c_str()));
         }
     } // for idx
+    not_child_array.push_back(NULL);
 
 	char **resultValue;
   int len;
@@ -11462,7 +11464,12 @@ char **ca = child_array.data();
             status = hs_get_all_data_by_resc_list(svc,
 				session, not_ca, ca, &resultValue, &len
 			);
-
+    for(size_t i = 0 ; i < child_array.size(); i++) {
+        free(child_array[i]);
+    }
+    for(size_t i = 0 ; i < not_child_array.size(); i++) {
+        free(not_child_array[i]);
+    }
         if ( status < 0 ) {
             return ERROR( status, "failed to get a row" );
         }
@@ -11470,7 +11477,7 @@ char **ca = child_array.data();
     // =-=-=-=-=-=-=-
     // iterate over resulting rows
     for ( int i = 0; i < status; i++ ) {
-        _results->push_back( atoi( resultValue[i] ) );
+        _results->push_back( boost::lexical_cast<rodsLong_t>( resultValue[i] ) );
 free(resultValue[i]);
 
     } // for i

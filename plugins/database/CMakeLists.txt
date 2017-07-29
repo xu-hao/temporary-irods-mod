@@ -45,7 +45,7 @@ configure_file(
   @ONLY
   )
 
-set(GHC_INSTALL /opt/irods-externals/ghc-8.0.2-0/lib/ghc-8.0.2)
+set(GHC_INSTALL /opt/irods-externals/ghc8.0.2-0/lib/ghc-8.0.2)
 set(
   GHC_CXX_FLAGS
   "-fno-stack-protector -DTABLES_NEXT_TO_CODE -D__GLASGOW_HASKELL__=800 -include ${GHC_INSTALL}/include/ghcversion.h"

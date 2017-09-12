@@ -2885,6 +2885,15 @@ irods::error db_unreg_replica_op(
                              logicalDirName, MAX_NAME_LEN, logicalFileName, MAX_NAME_LEN, '/' );
 
 
+    // remove after phybun is removed 
+    // begin
+    std::string fp = _data_obj_info->filePath;
+    size_t pos;
+    if(fp[0] == '/' && (pos = fp.substr(1).find("/")) != std::string::npos && fp.substr(pos + 2, 6) == "bundle") {
+        return SUCCESS();
+    }
+    // end
+
     if ( adminMode == 0 ) {
         /* Check the access to the dataObj */
         if ( logSQL != 0 ) {

@@ -1329,7 +1329,7 @@ resolveSingleReplCopy( dataObjInfo_t **dataObjInfoHead,
                               _resc_name,
                               destRescHier ) ) != NULL ) {
         /* have a good copy already */
-        *destDataObjInfo = NULL; // JMC - backport 4594
+        // *destDataObjInfo = NULL; // JMC - backport 4594
         return HAVE_GOOD_COPY;
     }
 

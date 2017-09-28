@@ -349,7 +349,7 @@ _rsDataObjRepl(
 
             freeAllDataObjInfo( dataObjInfoHead );
             freeAllDataObjInfo( oldDataObjInfoHead );
-            freeAllDataObjInfo( destDataObjInfo ); // JMC - backport 4494
+            // freeAllDataObjInfo( destDataObjInfo ); // JMC - backport 4494
 
             return 0;
         }

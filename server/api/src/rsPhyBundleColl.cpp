@@ -496,6 +496,8 @@ bundleAndRegSubFiles( rsComm_t *rsComm, int l1descInx, char *phyBunDir,
         /* register the replica */
         rstrcpy( regReplicaInp.srcDataObjInfo->objPath,
                  tmpBunReplCache->objPath, MAX_NAME_LEN );
+        rstrcpy( regReplicaInp.destDataObjInfo->objPath,
+                 tmpBunReplCache->objPath, MAX_NAME_LEN );
         regReplicaInp.srcDataObjInfo->dataId =
             regReplicaInp.destDataObjInfo->dataId =
                 tmpBunReplCache->dataId;

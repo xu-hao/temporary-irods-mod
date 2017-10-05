@@ -1,11 +1,11 @@
 {
     "schema_name": "database_config",
     "schema_version": "v3",
-    "catalog_database_type": "postgres", 
+    "catalog_database_type": "cockroachdb", 
     "db_host": "localhost", 
     "db_name": "ICAT", 
     "db_odbc_type": "unix", 
     "db_password": "testpassword", 
-    "db_port": 5432, 
+    "db_port": 26257, 
     "db_username": "irods"
 }

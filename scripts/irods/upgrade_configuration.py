@@ -311,7 +311,7 @@ def convert_legacy_configuration_to_json(irods_config):
         database_config_v2 = {
                 'schema_name': 'database_config',
                 'schema_version': 'v2',
-                "catalog_database_type": legacy_server_config.get('catalog_database_type', "postgres"),
+                "catalog_database_type": legacy_server_config.get('catalog_database_type', "cockroachdb"),
                 "db_host": legacy_irods_config.get('$DATABASE_HOST', "localhost"),
                 "db_name": legacy_irods_config.get('$DB_NAME', "ICAT"),
                 "db_odbc_type": legacy_irods_config.get('$DATABASE_ODBC_TYPE', "unix"),

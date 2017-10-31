@@ -16,9 +16,11 @@ namespace irods {
             THROW(-1, "dli_fname is null");
         }
         try {
-            boost::filesystem::path path{dl_info.dli_fname};
+            boost::filesystem::path path{dl_info.dli_fname[1] == '/'? dl_info.dli_fname+1:dl_info.dli_fname};
             path = boost::filesystem::canonical(path);
-            path.remove_filename().remove_filename().remove_filename(); // Removes filename and the two directories (usr and lib) between libirods_common.so and base of irods install
+            path.remove_filename();
+            path.remove_filename();
+            path.remove_filename(); // Removes filename and the two directories (usr and lib) between libirods_common.so and base of irods install
             return path;
         } catch(const boost::filesystem::filesystem_error& e) {
             THROW(-1, e.what());

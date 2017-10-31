@@ -55,7 +55,7 @@ namespace irods {
         }
 
         plugin_home.append(_type);
-
+        
         try {
             if ( !fs::exists( plugin_home ) ) {
                 std::string msg( "does not exist [" );

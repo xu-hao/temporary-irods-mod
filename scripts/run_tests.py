@@ -55,9 +55,23 @@ def optparse_callback_federation(option, opt_str, value, parser):
     if irods.test.settings.FEDERATION.REMOTE_IRODS_VERSION < (4,2):
         irods.test.settings.FEDERATION.REMOTE_VAULT = '/var/lib/irods/iRODS/Vault'
 
-def run_tests_from_names(names, buffer_test_output, xml_output):
+def run_tests_from_names(names, buffer_test_output, xml_output, skipUntil):
     loader = unittest.TestLoader()
-    suites = [loader.loadTestsFromName('irods.test.' + name) for name in names] # test files used to be standalone python packages, now that they are in the irods python module, they cannot be loaded directly, but must be loaded with the full module path
+    suites0 = [loader.loadTestsFromName('irods.test.' + name) for name in names] # test files used to be standalone python packages, now that they are in the irods python module, they cannot be loaded directly, but must be loaded with the full module path
+    suites = []
+    print("skipUntil", skipUntil)
+    keep = skipUntil == "" or skipUntil == None
+
+    for suite0 in suites0:
+        suite = unittest.TestSuite()
+        for test in suite0:
+            if not keep and skipUntil in test.id():
+                keep = True
+            if keep:
+                suite.addTest(test)
+        if keep:
+            suites.append(suite)
+        
     super_suite = unittest.TestSuite(suites)
     if xml_output:
         import xmlrunner
@@ -86,6 +100,7 @@ if __name__ == '__main__':
 
     parser = optparse.OptionParser()
     parser.add_option('--run_specific_test', metavar='dotted name')
+    parser.add_option('--skip_until', action="store")
     parser.add_option('--run_python_suite', action='store_true')
     parser.add_option('--include_auth_tests', action='store_true')
     parser.add_option('--run_devtesty', action='store_true')
@@ -113,7 +128,7 @@ if __name__ == '__main__':
                                  'test_iticket', 'test_irodsctl', 'test_resource_configuration', 'test_control_plane',
                                  'test_native_rule_engine_plugin', 'test_quotas', 'test_ils', 'test_irmdir', 'test_iquest', 'test_imeta_help'])
 
-    results = run_tests_from_names(test_identifiers, options.buffer_test_output, options.xml_output)
+    results = run_tests_from_names(test_identifiers, options.buffer_test_output, options.xml_output, options.skip_until)
     print(results)
     if not results.wasSuccessful():
         sys.exit(1)

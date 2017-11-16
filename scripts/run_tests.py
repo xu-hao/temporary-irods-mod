@@ -60,13 +60,19 @@ def run_tests_from_names(names, buffer_test_output, xml_output, skipUntil):
     suites0 = [loader.loadTestsFromName('irods.test.' + name) for name in names] # test files used to be standalone python packages, now that they are in the irods python module, they cannot be loaded directly, but must be loaded with the full module path
     suites = []
     print("skipUntil", skipUntil)
-    keep = skipUntil == "" or skipUntil == None
+    if skipUntil == "" or skipUntil == None:
+        keep = True
+        markers = []
+    else:
+        keep = False
+        markers = skipUntil.split(",")
 
     for suite0 in suites0:
         suite = unittest.TestSuite()
         for test in suite0:
-            if not keep and skipUntil in test.id():
-                keep = True
+            if len(markers) > 0 and markers[0] in test.id():
+                del markers[0]
+                keep = not keep
             if keep:
                 suite.addTest(test)
         if keep:

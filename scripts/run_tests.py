@@ -59,23 +59,44 @@ def run_tests_from_names(names, buffer_test_output, xml_output, skipUntil):
     loader = unittest.TestLoader()
     suites0 = [loader.loadTestsFromName('irods.test.' + name) for name in names] # test files used to be standalone python packages, now that they are in the irods python module, they cannot be loaded directly, but must be loaded with the full module path
     suites = []
-    print("skipUntil", skipUntil)
-    if skipUntil == "" or skipUntil == None:
+
+    if skipUntil == None:
         keep = True
         markers = []
     else:
         keep = False
-        markers = skipUntil.split(",")
+        markers = map(lambda x: map(lambda y : y.strip(), x.split("-")), skipUntil.split(","))
 
+    print("skipUntil", markers)
+    for marker in markers:
+        if len(marker) == 1:
+            print(marker[0])
+        else:
+            print(marker[0], "-", marker[1])
+            
     for suite0 in suites0:
-        suite = unittest.TestSuite()
+        suitelist = []
         for test in suite0:
-            if len(markers) > 0 and markers[0] in test.id():
-                del markers[0]
-                keep = not keep
-            if keep:
-                suite.addTest(test)
-        if keep:
+            if len(markers) > 0:
+                if len(markers[0]) == 1:
+                    if markers[0][0] in test.id():
+                        suitelist.append(test)
+                        del markers[0]
+                else:
+                    if keep:
+                        suitelist.append(test)
+                        if markers[0][1] != "" and markers[0][1] in test.id():
+                            keep = False
+                            del markers[0]
+                    else:
+                        if markers[0][0] in test.id():
+                            keep = True
+                            suitelist.append(test)
+            else:
+                if keep:
+                    suitelist.append(test)
+        if len(suitelist) > 0:
+            suite = unittest.TestSuite(suitelist)
             suites.append(suite)
         
     super_suite = unittest.TestSuite(suites)

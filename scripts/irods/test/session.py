@@ -188,8 +188,8 @@ class IrodsSession(object):
             icommand = arg[0]
             log_string = ' '.join(arg)
 
-        message = ' --- IrodsSession: icommand executed by [{0}] [{1}] --- \n'.format(
-            self.username, log_string)
+        message = '{2} --- IrodsSession: icommand executed by [{0}] [{1}] --- \n'.format(
+            self.username, log_string, datetime.datetime.now())
         if IrodsConfig().version_tuple < (4, 2, 0):
             server_log_dir = os.path.join(paths.irods_directory(), 'iRODS', 'server', 'log')
             server_log_path = sorted([os.path.join(server_log_dir, name)

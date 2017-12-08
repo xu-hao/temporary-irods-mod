@@ -76,7 +76,8 @@ def run_tests_from_names(names, buffer_test_output, xml_output, skipUntil):
             
     for suite0 in suites0:
         suitelist = []
-        for test in suite0:
+        for suite1 in suite0:
+          for test in suite1:
             if len(markers) > 0:
                 if len(markers[0]) == 1:
                     if markers[0][0] in test.id():

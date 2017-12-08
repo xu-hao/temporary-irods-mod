@@ -198,7 +198,7 @@ class IrodsSession(object):
                 key=lambda path: os.path.getctime(path))[-1]
         else:
             server_log_path = paths.server_log_path()
-        lib.write_to_log(server_log_path, message)
+        lib.write_to_log("/tmp/irodssessionlog", message)
         print(message, end='')
 
     def _write_environment_file(self):

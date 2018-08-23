@@ -185,8 +185,12 @@ main( int argc, char **argv )
 #endif
 
     ServerBootTime = time( 0 );
-    while ( ( c = getopt( argc, argv, "uvVqsh" ) ) != EOF ) {
+    while ( ( c = getopt( argc, argv, "c:uvVqsh" ) ) != EOF ) {
         switch ( c ) {
+        case 'c':
+            snprintf( tmpStr2, 100, "%s=%s", SP_CONFIGURATION_DIRECTORY, optarg );
+            putenv( tmpStr2 );
+            break;
         case 'u':               /* user command level. without serverized */
             uFlag = 1;
             break;

@@ -1,6 +1,7 @@
 #include <dlfcn.h>
 #include <boost/filesystem.hpp>
 #include "irods_exception.hpp"
+#include "rodsDef.h"
 
 
 namespace irods {
@@ -27,9 +28,14 @@ namespace irods {
 
     boost::filesystem::path
     get_irods_config_directory() {
-        boost::filesystem::path path{get_irods_root_directory()};
-        path.append("etc").append("irods");
-        return path;
+        const char *config_dir = std::getenv(SP_CONFIGURATION_DIRECTORY);
+        if(config_dir == nullptr) {
+            boost::filesystem::path path{get_irods_root_directory()};
+            path.append("etc").append("irods");
+            return path;
+        } else {
+            return boost::filesystem::path{config_dir};
+        }
     }
 
     boost::filesystem::path

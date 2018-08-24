@@ -342,24 +342,24 @@ def create_database_tables(irods_config, cursor, default_resource_directory=None
                         IrodsError('Database setup failed while running %s:\n%s' % (sql_file, str(e))),
                         sys.exc_info()[2])
 
+def get_next_object_id(catalog_database_type, cursor):
+    if catalog_database_type == 'postgres':
+        return execute_sql_statement(cursor, "select nextval('R_OBJECTID');").fetchone()[0]
+    elif catalog_database_type == 'cockroachdb':
+        return execute_sql_statement(cursor, "insert into r_objectid default values returning object_id;").fetchone()[0]
+    elif catalog_database_type == 'mysql':
+        return execute_sql_statement(cursor, "select R_OBJECTID_nextval();").fetchone()[0]
+    elif catalog_database_type == 'oracle':
+        return execute_sql_statement(cursor, "select R_OBJECTID.nextval from DUAL;").fetchone()[0]
+    else:
+        raise IrodsError('no next object id function defined for %s' % catalog_database_type)
+
 def setup_database_values(irods_config, cursor=None, default_resource_directory=None):
     l = logging.getLogger(__name__)
     timestamp = '{0:011d}'.format(int(time.time()))
 
-    def get_next_object_id():
-        if irods_config.catalog_database_type == 'postgres':
-            return execute_sql_statement(cursor, "select nextval('R_OBJECTID');").fetchone()[0]
-        elif irods_config.catalog_database_type == 'cockroachdb':
-            return execute_sql_statement(cursor, "insert into r_objectid default values returning object_id;").fetchone()[0]
-        elif irods_config.catalog_database_type == 'mysql':
-            return execute_sql_statement(cursor, "select R_OBJECTID_nextval();").fetchone()[0]
-        elif irods_config.catalog_database_type == 'oracle':
-            return execute_sql_statement(cursor, "select R_OBJECTID.nextval from DUAL;").fetchone()[0]
-        else:
-            raise IrodsError('no next object id function defined for %s' % irods_config.catalog_database_type)
-
     #zone
-    zone_id = get_next_object_id()
+    zone_id = get_next_object_id(irods_config.catalog_database_type, cursor)
     execute_sql_statement(cursor,
             "insert into R_ZONE_MAIN values (?,?,'local','','',?,?);",
             zone_id,
@@ -368,7 +368,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
             timestamp)
 
     #groups
-    admin_group_id = get_next_object_id()
+    admin_group_id = get_next_object_id(irods_config.catalog_database_type, cursor)
     execute_sql_statement(cursor,
             "insert into R_USER_MAIN values (?,?,?,?,'','',?,?);",
             admin_group_id,
@@ -378,7 +378,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
             timestamp,
             timestamp)
 
-    public_group_id = get_next_object_id()
+    public_group_id = get_next_object_id(irods_config.catalog_database_type, cursor)
     execute_sql_statement(cursor,
             "insert into R_USER_MAIN values (?,?,?,?,'','',?,?);",
             public_group_id,
@@ -389,7 +389,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
             timestamp)
 
     #users
-    admin_user_id = get_next_object_id()
+    admin_user_id = get_next_object_id(irods_config.catalog_database_type, cursor)
     execute_sql_statement(cursor,
             "insert into R_USER_MAIN values (?,?,?,?,'','',?,?);",
             admin_user_id,
@@ -448,7 +448,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
         ]
     for collection in itertools.chain(system_collections, public_collections, admin_collections):
         parent_collection = '/'.join(['', collection[1:].rpartition('/')[0]])
-        collection_id = get_next_object_id()
+        collection_id = get_next_object_id(irods_config.catalog_database_type, cursor)
         execute_sql_statement(cursor,
                 "insert into R_COLL_MAIN values (?,?,?,?,?,0,'','','','','','',?,?);",
                 collection_id,
@@ -467,7 +467,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
                 timestamp)
 
     #bundle resource
-    bundle_resc_id = get_next_object_id()
+    bundle_resc_id = get_next_object_id(irods_config.catalog_database_type, cursor)
     execute_sql_statement(cursor,
             "insert into R_RESC_MAIN (resc_id,resc_name,zone_name,resc_type_name,resc_class_name,resc_net,resc_def_path,free_space,free_space_ts,resc_info,r_comment,resc_status,create_ts,modify_ts) values (?,'bundleResc',?,'unixfilesystem','bundle','localhost','/bundle','','','','','',?,?);",
             bundle_resc_id,
@@ -476,7 +476,7 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
             timestamp)
 
     if default_resource_directory:
-        default_resc_id = get_next_object_id()
+        default_resc_id = get_next_object_id(irods_config.catalog_database_type, cursor)
         execute_sql_statement(cursor,
                 "insert into R_RESC_MAIN (resc_id,resc_name,zone_name,resc_type_name,resc_class_name,resc_net,resc_def_path,free_space,free_space_ts,resc_info,r_comment,resc_status,create_ts,modify_ts) values (?,?,?,'unixfilesystem','cache',?,?,'','','','','',?,?);",
                 default_resc_id,
@@ -486,3 +486,21 @@ def setup_database_values(irods_config, cursor=None, default_resource_directory=
                 default_resource_directory,
                 timestamp,
                 timestamp)
+
+def setup_resource(irods_config, cursor, name, resc_type, resc_class, host, path, context_string):
+    l = logging.getLogger(__name__)
+    timestamp = '{0:011d}'.format(int(time.time()))
+
+    resc_id = get_next_object_id(irods_config.catalog_database_type, cursor)
+    execute_sql_statement(cursor,
+            "insert into R_RESC_MAIN (resc_id,resc_name,zone_name,resc_type_name,resc_class_name,resc_net,resc_def_path,free_space,free_space_ts,resc_info,r_comment,resc_status,create_ts,modify_ts) values (?,?,?,?,?,?,?,'','',?,'','',?,?);",
+            resc_id,
+            name,
+            irods_config.server_config['zone_name'],
+            resc_type,
+            resc_class,
+            host,
+            path,
+            context_string,
+            timestamp,
+            timestamp)

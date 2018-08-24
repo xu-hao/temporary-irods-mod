@@ -1,6 +1,23 @@
 from . import start_options
+import json
 
 def add_options(parser):
+    parser.add_option('--database',
+                      dest='database', action="store_true",
+                      help='Setup database.')
+
+    parser.add_option('--provider',
+                      dest='provider', action="store_true",
+                      help='Setup provider.')
+
+    parser.add_option('--consumer',
+                      dest='consumer', action="store_true",
+                      help='Setup consumer.')
+
+    parser.add_option('--resc',
+                      dest='resc', action="store_true",
+                      help='Setup resource.')
+
     parser.add_option('-d', '--database_type',
                       dest='database_type', metavar='DB_TYPE',
                       help='The type of database to be used by the iRODS '

@@ -59,6 +59,89 @@ from irods.configuration import IrodsConfig
 from irods.controller import IrodsController
 from irods.exceptions import IrodsError, IrodsWarning
 import irods.log
+from irods import paths
+
+def setup_provider(irods_config, json_configuration_file, setupdb=True):
+    l = logging.getLogger(__name__)
+
+    check_hostname()
+
+    with open(json_configuration_file) as f:
+        json_configuration_dict = json.load(f)
+
+    irods_user = json_configuration_dict["irods_user"]
+    irods_group = json_configuration_dict["irods_group"]
+    if irods_user != "root":
+        setup_service_account(irods_config, irods_user, irods_group)
+
+        #Do the rest of the setup as the irods user
+        if os.getuid() == 0:
+            irods.lib.switch_user(irods_user, irods_group)
+
+    if not os.path.exists(irods_config.version_path):
+        with open('.'.join([irods_config.version_path, 'dist'])) as f:
+            version_json = json.load(f)
+        version_json['installation_time'] = datetime.datetime.now().isoformat()
+        irods_config.commit(version_json, irods.paths.version_path())
+
+    irods_config.commit(json_configuration_dict['server_config'], irods.paths.server_config_path())
+    irods_config.commit(json_configuration_dict['hosts_config'], irods.paths.hosts_config_path())
+    irods_config.commit(json_configuration_dict['host_access_control_config'], irods.paths.host_access_control_config_path())
+    if not os.path.exists(os.path.dirname(irods_config.client_environment_path)):
+        os.makedirs(os.path.dirname(irods_config.client_environment_path), mode=0o700)
+    irods_config.commit(json_configuration_dict['service_account_environment'], irods_config.client_environment_path)
+
+    for f in ['core.re', 'core.dvm', 'core.fnm']:
+        path = os.path.join(irods_config.config_directory, f)
+        if not os.path.exists(path):
+            shutil.copyfile(paths.get_template_filepath(path), path)
+
+    if setupdb:
+        from irods import database_connect
+        database_connect.sync_odbc_ini(irods_config)
+
+def setup_consumer(irods_config, json_configuration_file):
+    setup_provider(irods_config, json_configuration_file, setupdb=False)
+
+def setup_resource(irods_config, json_configuration_file):
+    l = logging.getLogger(__name__)
+
+    with open(json_configuration_file) as f:
+        json_configuration_dict = json.load(f)
+
+    irods_config.admin_password = json_configuration_dict['admin_password']
+
+    from irods import database_interface
+    l.info(irods.lib.get_header('Configuring the database communications'))
+    irods_config.commit(json_configuration_dict['server_config'], irods.paths.server_config_path())
+    if not database_interface.database_already_in_use_by_irods(irods_config):
+        raise IrodsError('Database specified not already in use by iRODS.')
+
+    resc_type = str(json_configuration_dict["type"])
+    resc_class = str(json_configuration_dict["class"])
+    host = str(json_configuration_dict["host"])
+    context_string = str(json_configuration_dict["context_string"])
+    default_resource_directory = str(json_configuration_dict["default_resource_directory"])
+    database_interface.setup_resource(irods_config, irods_config.server_config['default_resource_name'], resc_type, resc_class, host, default_resource_directory, context_string)
+
+def setup_database(irods_config, json_configuration_file):
+    l = logging.getLogger(__name__)
+
+    with open(json_configuration_file) as f:
+        json_configuration_dict = json.load(f)
+
+    irods_config.admin_password = json_configuration_dict["admin_password"]
+
+    from irods import database_interface
+    l.info(irods.lib.get_header('Configuring the database communications'))
+    irods_config.commit(json_configuration_dict['server_config'], irods.paths.server_config_path())
+    if database_interface.database_already_in_use_by_irods(irods_config):
+        raise IrodsError('Database specified already in use by iRODS.')
+
+    # database_interface.setup_database_config(irods_config)
+    default_resource_directory = str(json_configuration_dict["default_resource_directory"])
+    database_interface.setup_catalog(irods_config, default_resource_directory=default_resource_directory)
+
 
 def setup_server(irods_config, json_configuration_file=None):
     l = logging.getLogger(__name__)
@@ -433,7 +516,16 @@ def main():
 
 
     try:
-        setup_server(irods_config, json_configuration_file=options.json_configuration_file)
+        if options.database:
+            setup_database(irods_config, options.json_configuration_file)
+        elif options.provider:
+            setup_provider(irods_config, options.json_configuration_file)
+        elif options.consumer:
+            setup_consumer(irods_config, options.json_configuration_file)
+        elif options.resc:
+            setup_resource(irods_config, options.json_configuration_file)
+        else:
+            setup_server(irods_config, json_configuration_file=options.json_configuration_file)
     except IrodsError:
         l.error('Error encountered running setup_irods:\n', exc_info=True)
         l.info('Exiting...')

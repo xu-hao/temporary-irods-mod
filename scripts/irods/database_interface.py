@@ -25,6 +25,26 @@ def setup_catalog(irods_config, default_resource_directory=None):
             try:
                 database_connect.create_database_tables(irods_config, cursor)
                 database_connect.setup_database_values(irods_config, cursor, default_resource_directory=default_resource_directory)
+                for i in range(4):
+                    database_upgrade.run_update(irods_config, cursor)
+                l.debug('Committing database changes...')
+                cursor.commit()
+            except:
+                l.debug('Rolling back database changes...')
+                cursor.rollback()
+                raise
+
+def setup_resource(irods_config, name, resc_type, resc_class, host, path, context_string):
+    l = logging.getLogger(__name__)
+
+    with contextlib.closing(database_connect.get_database_connection(irods_config)) as connection:
+        if irods_config.catalog_database_type == "cockroachdb":
+            connection.autocommit = True
+        else:
+            connection.autocommit = False
+        with contextlib.closing(connection.cursor()) as cursor:
+            try:
+                database_connect.setup_resource(irods_config, cursor, name, resc_type, resc_class, host, path, context_string)
                 l.debug('Committing database changes...')
                 cursor.commit()
             except:

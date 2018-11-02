@@ -1,0 +1,24 @@
+{
+    "server_config": {
+        "default_resource_name": "irods-consumerResource",
+        "plugin_configuration": {
+            "database": {
+                "postgres": {
+                    "db_host": "icat", 
+                    "db_name": "ICAT", 
+                    "db_odbc_driver": "PostgreSQL ANSI", 
+                    "db_password": "testpassword", 
+                    "db_port": 5432, 
+                    "db_username": "irods"
+                }
+            }
+        },
+        "zone_name": "tempZone"
+    },
+    "default_resource_directory": "/var/lib/irods/Vault",
+    "host": "irods-consumer",
+    "class": "cache",
+    "type": "unixfilesystem",
+    "context_string": "",
+    "admin_password": "rods"
+}

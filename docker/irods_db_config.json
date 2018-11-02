@@ -1,0 +1,20 @@
+{
+    "server_config": {
+        "plugin_configuration": {
+            "database": {
+                "postgres": {
+                    "db_host": "icat", 
+                    "db_name": "ICAT", 
+                    "db_odbc_driver": "PostgreSQL ANSI", 
+                    "db_password": "testpassword", 
+                    "db_port": 5432, 
+                    "db_username": "irods"
+                }
+            }
+        }, 
+        "zone_name": "tempZone",
+        "zone_user": "rods"
+    },
+    "default_resource_directory": "/var/lib/irods/Vault",
+    "admin_password": "rods"
+}

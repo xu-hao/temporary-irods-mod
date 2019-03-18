@@ -1554,10 +1554,12 @@ BUILD_NODE( N_QUERY_COND_JUNCTION, op, &start, n + 1, n + 1 );
 END_TRY( QueryCond )
 PARSER_FUNC_END( QueryCond )
 
-int nextStringBase2( Pointer *e, char *value, char* delim ) {
+int nextStringBase2( Pointer *e, char *value, int max_len, char* delim ) {
     nextChar( e );
     int ch = nextChar( e );
     while ( ch != -1 ) {
+        if (value >= value0 + max_len)
+	    return -1;
         if ( delim[0] == ch && delim[1] == lookAhead( e, 1 ) ) {
             if ( delim[0] == delim[1] ) {
                 while ( lookAhead( e, 2 ) == delim[1] ) {
@@ -1579,7 +1581,7 @@ int nextStringBase2( Pointer *e, char *value, char* delim ) {
 /*
  * return number of vars or -1 if no string found
  */
-int nextStringBase( Pointer *e, char *value, char* delim, int consumeDelim, char escape, int cntOffset, int vars[] ) {
+int nextStringBase( Pointer *e, char *value, int max_len, char* delim, int consumeDelim, char escape, int cntOffset, int vars[] ) {
     int mode = 1; /* 1 string 3 escape */
     int nov = 0;
     char* value0 = value;
@@ -1587,6 +1589,8 @@ int nextStringBase( Pointer *e, char *value, char* delim, int consumeDelim, char
     value++;
     int ch = nextChar( e );
     while ( ch != -1 ) {
+        if (value >= value0 + max_len)
+	    return -1;
         *value = ch;
         switch ( mode ) {
         case 1:
@@ -1636,12 +1640,14 @@ int nextStringBase( Pointer *e, char *value, char* delim, int consumeDelim, char
     }
     return -1;
 }
-int nextStringParsed( Pointer *e, char *value, char* deliml, char *delimr, char *delim, int consumeDelim, int vars[] ) {
+int nextStringParsed( Pointer *e, char *value, int max_len, char* deliml, char *delimr, char *delim, int consumeDelim, int vars[] ) {
     int mode = 0; /* level */
     int nov = 0;
     char* value0 = value;
     int ch = lookAhead( e, 0 );
     while ( ch != -1 ) {
+        if (value >= value0 + max_len)
+	    return -1;
         *value = ch;
         if ( strchr( deliml, ch ) != NULL ) {
             mode ++;
